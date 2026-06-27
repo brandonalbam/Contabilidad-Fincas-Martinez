@@ -491,7 +491,7 @@ let ui={view:'dash',
   dashFrom:'2026-01-01',dashTo:'2026-12-31',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
-  iFinca:'',iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
+  iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
   frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frLines:[{q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null
 };
@@ -1322,23 +1322,47 @@ async function addComercio(){const inp=document.getElementById('newCom');const v
 async function delComercio(name){CFG.comercios=CFG.comercios.filter(c=>c!==name);await persistCfg();renderComercios();toast('Comercio quitado de la lista');}
 
 /* ===== INFORME CONTABLE ===== */
+function informeFincasModal(){
+  const sel=new Set(ui.iFincas);
+  const body=`
+   <div class="field"><label>Elige las fincas a incluir en el informe</label>
+     <label style="display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;cursor:pointer;font-weight:600;background:var(--surface2)">
+       <input type="checkbox" id="if_all" ${sel.size===0?'checked':''} onchange="if(this.checked)document.querySelectorAll('.if_one').forEach(c=>c.checked=false)">
+       Todas las fincas (consolidado)</label>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:300px;overflow:auto">
+       ${CFG.fincas.map(f=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer">
+         <input type="checkbox" class="if_one" value="${esc(f)}" ${sel.has(f)?'checked':''} onchange="if(this.checked)document.getElementById('if_all').checked=false">
+         <span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span></label>`).join('')}
+     </div></div>
+   <div class="note">Marca <b>2 o más fincas</b> para un informe consolidado solo de ellas, o deja «Todas» para incluirlas todas.</div>`;
+  showModal('Fincas del informe',body,[
+    {label:'Cancelar',cls:'btn',fn:closeModal},
+    {label:'Aplicar',cls:'btn primary',fn:()=>{
+      const chosen=[...document.querySelectorAll('.if_one')].filter(c=>c.checked).map(c=>c.value);
+      ui.iFincas=document.getElementById('if_all').checked?[]:chosen;closeModal();renderInforme();}}]);
+}
 function renderInforme(){
-  const finca=ui.iFinca, from=ui.iFrom, to=ui.iTo, desc=ui.iDesc;
+  const selFincas=Array.isArray(ui.iFincas)?ui.iFincas.filter(f=>CFG.fincas.includes(f)):[];
+  const from=ui.iFrom, to=ui.iTo, desc=ui.iDesc;
+  const single=selFincas.length===1;
+  const finca=single?selFincas[0]:'';
+  const title=selFincas.length===0?'Consolidado de fincas':single?esc(selFincas[0]):'Consolidado de '+selFincas.length+' fincas';
+  const fincaBtn=selFincas.length===0?'Todas las fincas':single?esc(selFincas[0]):selFincas.length+' fincas seleccionadas';
   document.getElementById('topctl').innerHTML=`
    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap" class="no-print">
-     <div class="field"><label>Finca</label><select class="input" onchange="ui.iFinca=this.value;renderInforme()">
-       <option value="" ${finca===''?'selected':''}>Todas (consolidado)</option>
-       ${CFG.fincas.map(f=>`<option ${finca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+     <div class="field"><label>Fincas</label><button class="btn" style="height:38px" onclick="informeFincasModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg> ${fincaBtn}</button></div>
      <div class="field"><label>Desde</label><input class="input tnum" type="date" value="${from}" onchange="ui.iFrom=this.value;renderInforme()"></div>
      <div class="field"><label>Hasta</label><input class="input tnum" type="date" value="${to}" onchange="ui.iTo=this.value;renderInforme()"></div>
      <div class="field"><label>Desc. admin %</label><input class="input tnum" style="width:80px" type="number" value="${(desc*100).toFixed(0)}" onchange="ui.iDesc=Math.max(0,Math.min(100,+this.value))/100;renderInforme()"></div>
      <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / PDF</button>
    </div>`;
 
-  const inSel=m=>(!finca||m.fi===finca)&&inRange(m.f,from,to);
+  const inSel=m=>(selFincas.length===0||selFincas.includes(m.fi))&&inRange(m.f,from,to);
   const a=agg(inSel);
   const utiDesc=a.uti*desc, utiFinal=a.uti-utiDesc;
-  const series=monthlySeries(from,to,finca||null);
+  const msMap={};
+  for(const m of MOVS){if(!inSel(m))continue;const k=m.f.slice(0,7);if(!msMap[k])msMap[k]={ing:0,egr:0};if(m.t==='I')msMap[k].ing+=+m.tot||0;else msMap[k].egr+=+m.tot||0;}
+  const series=Object.keys(msMap).sort().map(k=>({k,...msMap[k]}));
   let best=null,worst=null,sum=0;
   series.forEach(s=>{s.u=s.ing-s.egr;sum+=s.u;if(best===null||s.u>best.u)best=s;if(worst===null||s.u<worst.u)worst=s;});
   const avg=series.length?sum/series.length:0;
@@ -1353,8 +1377,9 @@ function renderInforme(){
   const topEx=MOVS.filter(m=>inSel(m)&&m.t==='E'&&(+m.tot||0)>0).sort((x,y)=>(+y.tot||0)-(+x.tot||0)).slice(0,10);
   const cobrar=MOVS.filter(m=>inSel(m)&&m.t==='I'&&m.e==='X'&&saldo(m)>0).sort((x,y)=>saldo(y)-saldo(x));
   const pagar=MOVS.filter(m=>inSel(m)&&m.t==='E'&&m.e==='X'&&saldo(m)>0).sort((x,y)=>saldo(y)-saldo(x));
+  const compSource=selFincas.length?selFincas:CFG.fincas;
   let comp=[];
-  if(!finca){comp=CFG.fincas.map(fi=>({fi,...agg(m=>m.fi===fi&&inRange(m.f,from,to))})).filter(r=>r.ing||r.egr).sort((x,y)=>y.uti-x.uti);}
+  if(!single){comp=compSource.map(fi=>({fi,...agg(m=>m.fi===fi&&inRange(m.f,from,to))})).filter(r=>r.ing||r.egr).sort((x,y)=>y.uti-x.uti);}
 
   const sec=(icn,title,inner)=>`<div class="report-sec"><div class="sec-title">${ic(icn)}${title}<span class="ln"></span></div>${inner}</div>`;
   const catTable=(rows,total,color)=>`<div class="card"><div class="tablewrap" style="border:none"><table>
@@ -1369,7 +1394,7 @@ function renderInforme(){
   C.innerHTML=`
    <div class="rep-head">
      <div><div class="rh-brand">Fincas Martínez · Informe contable</div>
-       <h2>${finca?esc(finca):'Consolidado de fincas'}</h2>
+       <h2>${title}</h2>
        <div class="rh-sub">Periodo: ${fmtFecha(from)} — ${fmtFecha(to)}</div></div>
      <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b><br>${nTx.toLocaleString('es-CO')} movimientos<br>${finca?'1 finca':comp.length+' fincas con actividad'}</div>
    </div>
