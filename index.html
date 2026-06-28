@@ -911,6 +911,7 @@ function addDaysISO(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate
 const DOW=['dom','lun','mar','mié','jue','vie','sáb'];
 const dowOf=iso=>new Date(iso+'T00:00:00').getDay();
 function nomCat(){return CFG.catEgresos.find(c=>/n[oó]mina/i.test(c))||'Nómina';}
+function empPagoOf(name){if(!CFG.empPago)return{};if(CFG.empPago[name])return CFG.empPago[name];const norm=s=>(s||'').trim().toLowerCase().replace(/\s+/g,' ');const t=norm(name);const k=Object.keys(CFG.empPago).find(x=>norm(x)===t);return k?CFG.empPago[k]:{};}
 
 function renderNomina(){
   if(ui.nomView==='edit')return renderNomEditor();
@@ -994,12 +995,13 @@ function renderNomEditor(){
 }
 function empRow(nom,e,i){
   const bruto=entryBruto(e),neto=entryNeto(e),open=ui.nomExp.has(i);
+  const pg=empPagoOf(e.emp);
   const jOpts=sel=>CFG.jornadas.map(j=>`<option ${sel===j.l?'selected':''} value="${esc(j.l)}">${esc(j.l)}</option>`).join('');
   const fOpts=sel=>`<option value="">—</option>`+CFG.fincas.map(f=>`<option ${sel===f?'selected':''}>${esc(f)}</option>`).join('');
   return `<div class="card emp-card" data-emp="${esc((e.emp||'').toLowerCase())}">
     <div class="emp-head" onclick="toggleEmp(${i})">
       <span class="av" style="background:${fincaColor(e.emp)}">${esc((e.emp[0]||'·').toUpperCase())}</span>
-      <div class="nmb"><div class="nn">${esc(e.emp)}</div><div class="ss">Bruto ${fmt(bruto)} · Neto ${fmt(neto)}${e.prestamo?' · préstamo '+fmt(e.prestamo):''}</div></div>
+      <div class="nmb"><div class="nn">${esc(e.emp)}</div><div class="ss">Bruto ${fmt(bruto)} · Neto ${fmt(neto)}${e.prestamo?' · préstamo '+fmt(e.prestamo):''}</div>${(pg.medio||pg.cuenta)?`<div class="ss" style="color:var(--green2)">${esc(pg.medio||'')}${pg.medio&&pg.cuenta?' · ':''}${esc(pg.cuenta||'')}</div>`:''}</div>
       <span class="chev ${open?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       <button class="iconbtn" title="PDF del empleado" onclick="event.stopPropagation();printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
       <button class="iconbtn del" title="Quitar" onclick="event.stopPropagation();removeEmp(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -1086,7 +1088,7 @@ function empPayslipHTML(nom,e){
 }
 function nominaStatementHTML(nom){
   const t=nomTotals(nom),ft=nomFincaTotals(nom);
-  const empRows=nom.entries.slice().sort((a,b)=>a.emp.localeCompare(b.emp)).map(e=>{const b=entryBruto(e),n=entryNeto(e);const p=(CFG.empPago&&CFG.empPago[e.emp])||{};
+  const empRows=nom.entries.slice().sort((a,b)=>a.emp.localeCompare(b.emp)).map(e=>{const b=entryBruto(e),n=entryNeto(e);const p=empPagoOf(e.emp);
     return `<tr><td>${esc(e.emp)}</td><td>${esc(p.medio||'—')}</td><td class="tnum">${esc(p.cuenta||'—')}</td><td class="r tnum">${fmt(b)}</td><td class="r tnum">${e.prestamo?fmt(e.prestamo):'—'}</td><td class="r tnum"><b>${fmt(n)}</b></td></tr>`;}).join('');
   const fincaRows=Object.entries(ft).sort((a,b)=>b[1]-a[1]).map(([f,v])=>`<tr><td><span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span></td><td class="r tnum"><b>${fmt(v)}</b></td><td class="r tnum" style="color:var(--muted)">${t.bruto?pct(v/t.bruto):'0%'}</td></tr>`).join('');
   return `
@@ -1115,7 +1117,7 @@ function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(
   document.getElementById('printArea').innerHTML=nominaStatementHTML(nom);document.body.classList.add('printing');setTimeout(()=>window.print(),60);}
 function empleadoNominaHTML(nom,e){
   const bruto=entryBruto(e),neto=entryNeto(e),prest=+e.prestamo||0;
-  const pago=(CFG.empPago&&CFG.empPago[e.emp])||{};
+  const pago=empPagoOf(e.emp);
   const rows=e.dias.map((d,di)=>{const date=addDaysISO(nom.desde,di),dn=dowOf(date);const val=jVal(d.j);
     return `<tr class="${dn===0?'sunrow':''}"><td class="tnum">${fmtFecha(date)}</td><td style="text-transform:capitalize">${DOW[dn]}</td><td>${esc(d.j)}</td><td>${esc(d.fi)||'—'}</td><td class="r tnum">${val?fmt(val):'—'}</td></tr>`;}).join('');
   return `
