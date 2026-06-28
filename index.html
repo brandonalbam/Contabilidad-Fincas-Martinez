@@ -1086,8 +1086,8 @@ function empPayslipHTML(nom,e){
 }
 function nominaStatementHTML(nom){
   const t=nomTotals(nom),ft=nomFincaTotals(nom);
-  const empRows=nom.entries.slice().sort((a,b)=>a.emp.localeCompare(b.emp)).map(e=>{const b=entryBruto(e),n=entryNeto(e);
-    return `<tr><td>${esc(e.emp)}</td><td class="r tnum">${fmt(b)}</td><td class="r tnum">${e.prestamo?fmt(e.prestamo):'—'}</td><td class="r tnum"><b>${fmt(n)}</b></td></tr>`;}).join('');
+  const empRows=nom.entries.slice().sort((a,b)=>a.emp.localeCompare(b.emp)).map(e=>{const b=entryBruto(e),n=entryNeto(e);const p=(CFG.empPago&&CFG.empPago[e.emp])||{};
+    return `<tr><td>${esc(e.emp)}</td><td>${esc(p.medio||'—')}</td><td class="tnum">${esc(p.cuenta||'—')}</td><td class="r tnum">${fmt(b)}</td><td class="r tnum">${e.prestamo?fmt(e.prestamo):'—'}</td><td class="r tnum"><b>${fmt(n)}</b></td></tr>`;}).join('');
   const fincaRows=Object.entries(ft).sort((a,b)=>b[1]-a[1]).map(([f,v])=>`<tr><td><span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span></td><td class="r tnum"><b>${fmt(v)}</b></td><td class="r tnum" style="color:var(--muted)">${t.bruto?pct(v/t.bruto):'0%'}</td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Nómina quincenal</div>
@@ -1102,8 +1102,8 @@ function nominaStatementHTML(nom){
      </div>
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Resumen por empleado<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Empleado</th><th class="r">Sueldo bruto</th><th class="r">Préstamo</th><th class="r">Sueldo neto</th></tr></thead>
-       <tbody>${empRows}<tr style="border-top:2px solid var(--line)"><td><b>TOTALES</b></td><td class="r tnum"><b>${fmt(t.bruto)}</b></td><td class="r tnum"><b>${fmt(t.prest)}</b></td><td class="r tnum"><b>${fmt(t.neto)}</b></td></tr></tbody></table></div></div>
+       <thead><tr><th>Empleado</th><th>Medio de pago</th><th>N° de cuenta</th><th class="r">Sueldo bruto</th><th class="r">Préstamo</th><th class="r">Sueldo neto</th></tr></thead>
+       <tbody>${empRows}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>TOTALES</b></td><td class="r tnum"><b>${fmt(t.bruto)}</b></td><td class="r tnum"><b>${fmt(t.prest)}</b></td><td class="r tnum"><b>${fmt(t.neto)}</b></td></tr></tbody></table></div></div>
      <div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Consolidado de nómina por finca<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Finca</th><th class="r">Total nómina</th><th class="r">Participación</th></tr></thead>
