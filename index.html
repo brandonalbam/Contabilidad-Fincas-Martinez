@@ -1021,6 +1021,7 @@ function empRow(nom,e,i){
       <div class="emp-foot">
         <div class="field" style="max-width:200px"><label>Préstamo / anticipo (se descuenta del neto)</label><input class="input tnum" type="number" step="any" value="${e.prestamo||0}" onchange="setPrestamo(${nom.id},${i},this.value)"></div>
         <div class="emp-tot"><span>Bruto<b class="tnum">${fmt(bruto)}</b></span><span>Neto<b class="tnum">${fmt(neto)}</b></span></div>
+        <button class="btn sm primary" onclick="printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF de este empleado</button>
       </div></div>`:''}
   </div>`;
 }
@@ -1649,7 +1650,7 @@ function closeModal(){document.getElementById('overlay').classList.remove('show'
 let toastT;function toast(msg){const t=document.getElementById('toast');t.innerHTML=ic('check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
-window.addEventListener('afterprint',()=>document.body.classList.remove('printing'));
+window.addEventListener('afterprint',()=>{document.body.classList.remove('printing');const pa=document.getElementById('printArea');if(pa)pa.innerHTML='';});
 init();
 </script>
 </body>
