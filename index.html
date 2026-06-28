@@ -492,8 +492,8 @@ let ui={view:'dash',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
-  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frLines:[{q:'',p:''}],
-  nomView:'list',nomId:null,nomExp:new Set(),nomYear:null
+  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frLines:[{q:'',p:''}],
+  nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:''
 };
 
 /* ===== helpers ===== */
@@ -854,9 +854,10 @@ function renderFruta(){
    <div class="grid" style="grid-template-columns:1.5fr 1fr">
     <div class="card panel">
       <div class="ph"><div><h2>Liquidación de cosecha</h2><p>Suma cantidad × precio por cada entrega o lote</p></div></div>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
         <div class="field"><label>Finca</label><select class="input" onchange="ui.frFinca=this.value;renderFruta()">${CFG.fincas.map(f=>`<option ${ui.frFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
         <div class="field"><label>Unidad</label><select class="input" onchange="ui.frUnit=this.value">${CFG.unidades.map(u=>`<option ${ui.frUnit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
+        <div class="field"><label>Cliente</label><select class="input" onchange="ui.frCli=this.value;renderFruta()"><option value="">— Sin cliente —</option>${CFG.clientes.map(c=>`<option ${ui.frCli===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
       </div>
       <div class="fruta-lines">
         <div class="fruta-line" style="font-size:11.5px;color:var(--muted);font-weight:600"><span>CANTIDAD</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
@@ -871,9 +872,9 @@ function renderFruta(){
     </div>
     <div class="card panel">
       <div class="ph"><h2>Resultado</h2></div>
-      <div class="card kpi lead"><div class="lab">Total venta</div><div class="val tnum" id="fr_total">${fmt(total)}</div><div class="meta"><span id="fr_q">${totalQ.toLocaleString('es-CO')}</span> ${esc(ui.frUnit)} · ${esc(ui.frFinca)}</div></div>
+      <div class="card kpi lead"><div class="lab">Total venta</div><div class="val tnum" id="fr_total">${fmt(total)}</div><div class="meta"><span id="fr_q">${totalQ.toLocaleString('es-CO')}</span> ${esc(ui.frUnit)} · ${esc(ui.frFinca)}${ui.frCli?' · '+esc(ui.frCli):''}</div></div>
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px" onclick="frutaToIngreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Registrar como ingreso</button>
-      <div class="note">Al registrar, se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)} con la categoría de venta correspondiente y el total calculado, listo en la pestaña Movimientos.</div>
+      <div class="note">Al registrar, se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)}${ui.frCli?' a nombre de <b>'+esc(ui.frCli)+'</b>':''} con la categoría de venta y el total calculado, listo en la sección Movimientos${ui.frCli?' y en la cartera del cliente':''}.</div>
     </div>
    </div>`;
 }
@@ -889,7 +890,7 @@ async function frutaToIngreso(){
   const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
   if(total<=0){toast('Agrega cantidades y precios primero');return;}
   const cat=CFG.catIngresos[0]||'Otros Ingresos';
-  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,d:'Liquidación de cosecha',u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
+  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Liquidación de cosecha',u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
   await persistMovs();ui.frLines=[{q:'',p:''}];toast('Ingreso registrado por '+fmt(total));renderFruta();
 }
 
@@ -968,9 +969,10 @@ function renderNomEditor(){
    </div>
    <div class="grid nom-edit-grid">
      <div>
-       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">
          <h2 style="font-family:var(--display);font-size:15px">Empleados de la quincena</h2>
          <button class="btn sm primary" onclick="addEmpModal(${nom.id})" ${avail.length?'':'disabled style="opacity:.5"'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>Agregar empleado</button></div>
+       ${nom.entries.length>1?`<div class="search" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="input" placeholder="Buscar trabajador en esta quincena…" value="${esc(ui.nomQ||'')}" oninput="ui.nomQ=this.value;nomFilter(this.value)" autocomplete="off"></div>`:''}
        ${nom.entries.length?nom.entries.map((e,i)=>empRow(nom,e,i)).join(''):`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Agrega los empleados que trabajaron esta quincena</span></div></div>`}
      </div>
      <div class="card panel" style="position:sticky;top:84px">
@@ -982,16 +984,18 @@ function renderNomEditor(){
        ${nom.estado==='enviada'?`<div class="note" style="margin-top:10px">Ya enviada: ${nom.movIds.length} egreso(s) creados en Movimientos. Si reenvías, se reemplazan por los valores actuales.</div>`:`<div class="note" style="margin-top:10px">Al enviar se crea un egreso de nómina por cada finca, con fecha ${fmtFecha(nom.hasta)} y categoría «${esc(nomCat())}».</div>`}
      </div>
    </div>`;
+  if(ui.nomQ)nomFilter(ui.nomQ);
 }
 function empRow(nom,e,i){
   const bruto=entryBruto(e),neto=entryNeto(e),open=ui.nomExp.has(i);
   const jOpts=sel=>CFG.jornadas.map(j=>`<option ${sel===j.l?'selected':''} value="${esc(j.l)}">${esc(j.l)}</option>`).join('');
   const fOpts=sel=>`<option value="">—</option>`+CFG.fincas.map(f=>`<option ${sel===f?'selected':''}>${esc(f)}</option>`).join('');
-  return `<div class="card emp-card">
+  return `<div class="card emp-card" data-emp="${esc((e.emp||'').toLowerCase())}">
     <div class="emp-head" onclick="toggleEmp(${i})">
       <span class="av" style="background:${fincaColor(e.emp)}">${esc((e.emp[0]||'·').toUpperCase())}</span>
       <div class="nmb"><div class="nn">${esc(e.emp)}</div><div class="ss">Bruto ${fmt(bruto)} · Neto ${fmt(neto)}${e.prestamo?' · préstamo '+fmt(e.prestamo):''}</div></div>
       <span class="chev ${open?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <button class="iconbtn" title="PDF del empleado" onclick="event.stopPropagation();printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
       <button class="iconbtn del" title="Quitar" onclick="event.stopPropagation();removeEmp(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
     </div>
     ${open?`<div class="emp-body">
@@ -1013,6 +1017,7 @@ function empRow(nom,e,i){
   </div>`;
 }
 function toggleEmp(i){if(ui.nomExp.has(i))ui.nomExp.delete(i);else ui.nomExp.add(i);renderNomina();}
+function nomFilter(q){q=(q||'').trim().toLowerCase();document.querySelectorAll('#content .emp-card').forEach(c=>{c.style.display=(!q||(c.dataset.emp||'').includes(q))?'':'none';});}
 async function setDay(id,i,di,k,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].dias[di][k]=v;await persistNom();renderNomina();}
 async function setPrestamo(id,i,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].prestamo=+v||0;await persistNom();renderNomina();}
 async function applyTpl(id,i,mode){const nom=NOMINAS.find(x=>x.id===id);const j=document.getElementById('qf_j_'+i).value,f=document.getElementById('qf_f_'+i).value;
@@ -1104,6 +1109,33 @@ function nominaStatementHTML(nom){
 }
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
   document.getElementById('printArea').innerHTML=nominaStatementHTML(nom);document.body.classList.add('printing');setTimeout(()=>window.print(),60);}
+function empleadoNominaHTML(nom,e){
+  const bruto=entryBruto(e),neto=entryNeto(e),prest=+e.prestamo||0;
+  const rows=e.dias.map((d,di)=>{const date=addDaysISO(nom.desde,di),dn=dowOf(date);const val=jVal(d.j);
+    return `<tr class="${dn===0?'sunrow':''}"><td class="tnum">${fmtFecha(date)}</td><td style="text-transform:capitalize">${DOW[dn]}</td><td>${esc(d.j)}</td><td>${esc(d.fi)||'—'}</td><td class="r tnum">${val?fmt(val):'—'}</td></tr>`;}).join('');
+  return `
+   <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Desprendible de nómina</div>
+     <h2>${esc(e.emp)}</h2><div class="rh-sub">${MES_FULL[nom.mes]} ${nom.year} · Quincena ${nom.q} · ${fmtFecha(nom.desde)} — ${fmtFecha(nom.hasta)}</div></div>
+     <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   <div class="report-sec">
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Detalle por día · tarifa y finca<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Fecha</th><th>Día</th><th>Tarifa / jornada</th><th>Finca</th><th class="r">Valor</th></tr></thead>
+       <tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="4"><b>SUELDO BRUTO</b></td><td class="r tnum"><b>${fmt(bruto)}</b></td></tr></tbody></table></div></div>
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
+       <div class="card kpi"><div class="lab">Sueldo bruto</div><div class="val tnum">${fmt(bruto)}</div></div>
+       <div class="card kpi"><div class="lab" style="color:var(--red)">Préstamo / anticipo</div><div class="val tnum" style="color:var(--red)">${prest?'− '+fmt(prest):fmt(0)}</div></div>
+       <div class="card kpi" style="border-color:#bfe3cc;background:linear-gradient(160deg,#fff,#f1faf4)"><div class="lab" style="color:var(--green2)">Sueldo neto a pagar</div><div class="val tnum" style="color:var(--green2)">${fmt(neto)}</div></div>
+     </div>
+     <div style="display:flex;gap:50px;margin-top:42px;flex-wrap:wrap">
+       <div style="flex:1;min-width:170px;border-top:1px solid var(--ink);padding-top:6px;font-size:12px;color:var(--muted)">Firma del empleado</div>
+       <div style="flex:1;min-width:170px;border-top:1px solid var(--ink);padding-top:6px;font-size:12px;color:var(--muted)">Firma del administrador</div>
+     </div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). El préstamo/anticipo se descuenta del sueldo bruto para obtener el sueldo neto.</div>
+   </div>`;
+}
+function printEmpleadoNomina(id,i){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;const e=nom.entries[i];if(!e)return;
+  document.getElementById('printArea').innerHTML=empleadoNominaHTML(nom,e);document.body.classList.add('printing');setTimeout(()=>window.print(),60);}
 
 /* ===== CLIENTES ===== */
 function clientesData(){
