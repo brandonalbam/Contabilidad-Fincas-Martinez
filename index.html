@@ -1114,8 +1114,25 @@ function nominaStatementHTML(nom){
      <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). El sueldo neto descuenta préstamos/anticipos. El consolidado por finca corresponde al costo bruto de nómina asignado a cada finca, que es el valor enviado a Movimientos. Para el detalle día a día de un empleado, usa el botón de PDF en su ficha.</div>
    </div>`;
 }
+function printIsolated(bodyHTML,title){
+  let head='';
+  document.querySelectorAll('style').forEach(s=>{head+='<style>'+s.textContent+'</style>';});
+  document.querySelectorAll('link[rel="stylesheet"]').forEach(l=>{head+=l.outerHTML;});
+  let f=document.getElementById('printFrame'); if(f)f.remove();
+  f=document.createElement('iframe'); f.id='printFrame';
+  f.style.cssText='position:fixed;left:-9999px;top:0;width:820px;height:0;border:0';
+  document.body.appendChild(f);
+  const w=f.contentWindow, doc=w.document;
+  doc.open();
+  doc.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(title||'Documento')+'</title>'+head+'<style>html,body{background:#fff!important;margin:0;padding:16px;color:var(--ink)}@page{margin:13mm}.no-print{display:none!important}</style></head><body>'+bodyHTML+'</body></html>');
+  doc.close();
+  let done=false;const go=()=>{if(done)return;done=true;try{w.focus();w.print();}catch(e){}};
+  w.onafterprint=()=>{setTimeout(()=>{try{f.remove();}catch(e){}},800);};
+  try{w.document.fonts.ready.then(()=>setTimeout(go,150));}catch(e){}
+  setTimeout(go,1200);
+}
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
-  document.getElementById('printArea').innerHTML=nominaStatementHTML(nom);document.body.classList.add('printing');setTimeout(()=>window.print(),60);}
+  printIsolated(nominaStatementHTML(nom),'Nómina '+MES_FULL[nom.mes]+' '+nom.year+' Q'+nom.q);}
 function empleadoNominaHTML(nom,e){
   const bruto=entryBruto(e),neto=entryNeto(e),prest=+e.prestamo||0;
   const pago=empPagoOf(e.emp);
@@ -1144,7 +1161,7 @@ function empleadoNominaHTML(nom,e){
    </div>`;
 }
 function printEmpleadoNomina(id,i){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;const e=nom.entries[i];if(!e)return;
-  document.getElementById('printArea').innerHTML=empleadoNominaHTML(nom,e);document.body.classList.add('printing');setTimeout(()=>window.print(),60);}
+  printIsolated(empleadoNominaHTML(nom,e),'Nómina · '+e.emp);}
 
 /* ===== CLIENTES ===== */
 function clientesData(){
@@ -1208,9 +1225,7 @@ function printCliente(name){
   if(name==='__SIN__')d={cl:'Sin cliente asignado',pend:sinCl,movs:sinCl,deuda:sinCl.reduce((a,m)=>a+saldo(m),0),comprado:sinCl.reduce((a,m)=>a+(+m.tot||0),0)};
   else d=data.find(x=>x.cl===name);
   if(!d){toast('Cliente no encontrado');return;}
-  document.getElementById('printArea').innerHTML=clienteStatementHTML(d);
-  document.body.classList.add('printing');
-  setTimeout(()=>{window.print();},60);
+  printIsolated(clienteStatementHTML(d),'Estado de cuenta · '+d.cl);
 }
 function renderClientes(){
   document.getElementById('topctl').innerHTML=`
@@ -1306,8 +1321,7 @@ function printComercio(name){
   if(name==='__SIN__')d={co:'Sin comercio asignado',pend:sinCom,movs:sinCom,deuda:sinCom.reduce((a,m)=>a+saldo(m),0),comprado:sinCom.reduce((a,m)=>a+(+m.tot||0),0)};
   else d=data.find(x=>x.co===name);
   if(!d){toast('Comercio no encontrado');return;}
-  document.getElementById('printArea').innerHTML=comercioStatementHTML(d);
-  document.body.classList.add('printing');setTimeout(()=>window.print(),60);
+  printIsolated(comercioStatementHTML(d),'Estado de cuenta · '+d.co);
 }
 function renderComercios(){
   document.getElementById('topctl').innerHTML=`
