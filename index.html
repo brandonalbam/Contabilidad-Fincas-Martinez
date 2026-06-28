@@ -1089,12 +1089,12 @@ function nominaStatementHTML(nom){
      <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b><br>${nom.entries.length} empleado(s)</div></div>
    <div class="report-sec">
      <div class="grid kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-       <div class="card kpi lead"><div class="lab">Total bruto</div><div class="val tnum">${fmt(t.bruto)}</div></div>
-       <div class="card kpi"><div class="lab">Préstamos</div><div class="val tnum" style="font-size:20px">${fmt(t.prest)}</div></div>
-       <div class="card kpi"><div class="lab">Neto a pagar</div><div class="val tnum" style="font-size:20px">${fmt(t.neto)}</div></div>
+       <div class="card kpi lead"><div class="lab">Valor total de la quincena</div><div class="val tnum">${fmt(t.bruto)}</div></div>
+       <div class="card kpi"><div class="lab" style="color:var(--red)">Préstamos (total)</div><div class="val tnum neg" style="font-size:20px">${fmt(t.prest)}</div></div>
+       <div class="card kpi"><div class="lab" style="color:var(--green2)">Saldo a pagar (neto)</div><div class="val tnum" style="font-size:20px;color:var(--green2)">${fmt(t.neto)}</div></div>
        <div class="card kpi"><div class="lab">Empleados</div><div class="val tnum" style="font-size:20px">${nom.entries.length}</div></div>
      </div>
-     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Salario por empleado<span class="ln"></span></div>
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Resumen por empleado<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Empleado</th><th class="r">Sueldo bruto</th><th class="r">Préstamo</th><th class="r">Sueldo neto</th></tr></thead>
        <tbody>${empRows}<tr style="border-top:2px solid var(--line)"><td><b>TOTALES</b></td><td class="r tnum"><b>${fmt(t.bruto)}</b></td><td class="r tnum"><b>${fmt(t.prest)}</b></td><td class="r tnum"><b>${fmt(t.neto)}</b></td></tr></tbody></table></div></div>
@@ -1102,9 +1102,7 @@ function nominaStatementHTML(nom){
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Finca</th><th class="r">Total nómina</th><th class="r">Participación</th></tr></thead>
        <tbody>${fincaRows||'<tr><td colspan="3" style="padding:16px;color:var(--muted)">Sin asignación por finca.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL GENERAL</b></td><td class="r tnum"><b>${fmt(t.bruto)}</b></td><td class="r tnum">100%</td></tr></tbody></table></div></div>
-     <div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>Desprendibles por empleado · detalle día a día<span class="ln"></span></div>
-     ${nom.entries.slice().sort((a,b)=>a.emp.localeCompare(b.emp)).map(e=>empPayslipHTML(nom,e)).join('')||'<p style="color:var(--muted);font-size:13px">Sin empleados en la quincena.</p>'}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). El sueldo neto descuenta préstamos/anticipos. El consolidado por finca corresponde al costo bruto de nómina asignado a cada finca, que es el valor enviado a Movimientos.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). El sueldo neto descuenta préstamos/anticipos. El consolidado por finca corresponde al costo bruto de nómina asignado a cada finca, que es el valor enviado a Movimientos. Para el detalle día a día de un empleado, usa el botón de PDF en su ficha.</div>
    </div>`;
 }
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
@@ -1124,7 +1122,7 @@ function empleadoNominaHTML(nom,e){
        <tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="4"><b>SUELDO BRUTO</b></td><td class="r tnum"><b>${fmt(bruto)}</b></td></tr></tbody></table></div></div>
      <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
        <div class="card kpi"><div class="lab">Sueldo bruto</div><div class="val tnum">${fmt(bruto)}</div></div>
-       <div class="card kpi"><div class="lab" style="color:var(--red)">Préstamo / anticipo</div><div class="val tnum" style="color:var(--red)">${prest?'− '+fmt(prest):fmt(0)}</div></div>
+       <div class="card kpi" style="border-color:#f0c9be;background:linear-gradient(160deg,#fff,#fdf2ef)"><div class="lab" style="color:var(--red)">Préstamo / anticipo</div><div class="val tnum" style="color:var(--red)">${prest?'− '+fmt(prest):fmt(0)}</div></div>
        <div class="card kpi" style="border-color:#bfe3cc;background:linear-gradient(160deg,#fff,#f1faf4)"><div class="lab" style="color:var(--green2)">Sueldo neto a pagar</div><div class="val tnum" style="color:var(--green2)">${fmt(neto)}</div></div>
      </div>
      <div style="display:flex;gap:50px;margin-top:42px;flex-wrap:wrap">
