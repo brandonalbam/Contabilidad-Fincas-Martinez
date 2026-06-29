@@ -158,6 +158,15 @@ td.r,th.r{text-align:right}
 
 /* config */
 .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.rha-row{display:grid;grid-template-columns:140px 1fr 120px;align-items:center;gap:10px;padding:5px 0}
+.rha-name{font-size:12.5px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.rha-track{position:relative;height:20px;background:var(--surface3);border-radius:6px;overflow:hidden}
+.rha-bar{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--green-bright);transition:width .3s}
+.rha-bar.below{background:#e0b341}
+.rha-bar.neg{background:var(--red)}
+.rha-val{font-size:12.5px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.rha-avg{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.finca-ha-row{display:grid;grid-template-columns:1fr 110px 36px;gap:8px;align-items:center;margin-bottom:6px}
 .taglist{display:flex;flex-direction:column;gap:6px;margin-top:4px;max-height:280px;overflow-y:auto;padding-right:4px}
 .emp-pago-head{display:grid;grid-template-columns:1.4fr 1fr 1fr 30px;gap:8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;padding:0 2px 4px}
 .emp-pago-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 30px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface3)}
@@ -261,6 +270,27 @@ td.r,th.r{text-align:right}
 .dlab span{color:var(--faint);font-weight:500}
 .input.sm{padding:5px 7px;font-size:11.5px;border-radius:7px;width:100%}
 .input.sm+.input.sm{margin-top:4px}
+.day-j{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 6px;font-size:11.5px;font-weight:700;cursor:pointer;background:var(--surface);color:var(--ink);text-align:center;transition:.12s;margin-bottom:4px}
+.day-j:active{transform:scale(.97)}
+.day-j.j-full{background:#e9f6ee;border-color:#bfe6cd;color:var(--green)}
+.day-j.j-media{background:#fef6e7;border-color:#f3e0b5;color:#9a6a12}
+.day-j.j-falta{background:#f4f5f4;border-color:#e2e6e2;color:var(--muted)}
+.day-j.j-extra{background:#eaf1fb;border-color:#c6dbf5;color:#1f5fae}
+.wheel-wrap{position:relative;height:230px;margin:6px 0 2px;-webkit-user-select:none;user-select:none}
+.wheel{height:230px;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;text-align:center;scrollbar-width:none;-webkit-mask:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);mask:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
+.wheel::-webkit-scrollbar{display:none}
+.wheel-pad{height:92px}
+.wheel-item{height:46px;scroll-snap-align:center;font-size:15px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:10px;transition:color .12s,font-size .12s,font-weight .12s}
+.wheel-item.sel{color:var(--ink);font-weight:700;font-size:18px}
+.wheel-item .wv{font-size:12.5px;color:var(--green2);font-weight:600}
+.wheel-center{position:absolute;left:14px;right:14px;top:92px;height:46px;border-top:1.6px solid var(--green-bright);border-bottom:1.6px solid var(--green-bright);background:var(--green-soft);opacity:.5;border-radius:9px;pointer-events:none}
+.wheel-row{display:flex;align-items:center;gap:8px}
+.wheel-arrow{flex:0 0 48px;height:72px;border:1px solid var(--line);background:var(--surface);border-radius:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--green);transition:.12s}
+.wheel-arrow:active{transform:scale(.94);background:var(--green-soft)}
+.wheel-arrow:disabled{opacity:.3;cursor:default}
+.wheel-arrow svg{width:26px;height:26px}
+.wheel-prog{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin:10px 4px 0}
+.wheel-prog>i{display:block;height:100%;background:var(--green-bright);border-radius:3px;transition:.2s}
 .emp-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;flex-wrap:wrap;gap:14px}
 .emp-tot{display:flex;gap:18px;font-size:13px;color:var(--muted)}.emp-tot b{font-family:var(--display);font-size:17px;margin-left:6px;color:var(--ink)}
 @media(max-width:1100px){.nom-edit-grid{grid-template-columns:1fr}.day-grid{grid-template-columns:repeat(4,1fr)}}
@@ -331,6 +361,7 @@ table.mini tr.sunrow td{color:var(--faint);background:#faf7f5}
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="resumen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg><span>Resumen por finca</span></a>
+      <a data-view="rent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Rentabilidad/ha</span></a>
       <a data-view="ficha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg><span>Ficha por finca</span></a>
       <a data-view="fruta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c0-2 2-3.5 4-3.5"/><path d="M16 8.5C16 12 14 19 12 19S8 12 8 8.5 9.8 4 12 4s4 1 4 4.5z"/></svg><span>Cuentas de fruta</span></a>
       <div class="nav-label">Ajustes</div>
@@ -470,7 +501,7 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
@@ -503,7 +534,8 @@ let ui={view:'dash',
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
   frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frLines:[{q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
-  dronFrom:'',dronTo:''
+  dronFrom:'',dronTo:'',
+  rentYear:'',rentFrom:'',rentTo:''
 };
 
 /* ===== helpers ===== */
@@ -543,6 +575,8 @@ async function init(){
   if(!CFG.dronSocios){CFG.dronSocios=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.cultivos){CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
   ui.fDesc=CFG.descAdmin; ui.iDesc=CFG.descAdmin;
   await Cloud.load();
   bindNav(); render(); updateCloudBadge();
@@ -572,13 +606,14 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
+ rent:['Rentabilidad por hectárea','Comparación justa entre fincas y cultivos · $/ha'],
  ficha:['Ficha por finca','Estado financiero individual con descuento administrativo'],
  fruta:['Cuentas de fruta','Liquidación de cosecha por finca'],
  config:['Configuración','Listas, parámetros y respaldo de datos']};
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,informe:renderInforme,resumen:renderResumen,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,informe:renderInforme,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
 }
 
 /* ===== aggregations ===== */
@@ -667,14 +702,21 @@ function barChart(series){
 
 /* ===== MOVIMIENTOS ===== */
 function filteredMovs(){
-  return MOVS.filter(m=>{
+  const res=MOVS.filter(m=>{
     if(ui.mFinca&&m.fi!==ui.mFinca)return false;
     if(ui.mTipo&&m.t!==ui.mTipo)return false;
     if(ui.mEstado&&m.e!==ui.mEstado)return false;
     if(ui.mPeriodo&&!(m.f||'').startsWith(ui.mPeriodo))return false;
     if(ui.mQ){const q=ui.mQ.toLowerCase();if(!((m.d||'')+(m.c||'')+(m.co||'')+(m.fa||'')).toLowerCase().includes(q))return false;}
     return true;
-  }).sort((a,b)=>(b.f||'').localeCompare(a.f||'')||b.id-a.id);
+  });
+  const hoy=todayISO();
+  return res.sort((a,b)=>{
+    const af=a.f||'',bf=b.f||'',aFut=af>hoy,bFut=bf>hoy;
+    if(aFut!==bFut)return aFut?1:-1;                 // fechas futuras al final
+    if(aFut)return af.localeCompare(bf)||a.id-b.id;  // futuros: el más próximo primero
+    return bf.localeCompare(af)||b.id-a.id;          // hasta hoy: el más reciente primero
+  });
 }
 function renderMovs(){
   document.getElementById('topctl').innerHTML=`<button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
@@ -1026,7 +1068,7 @@ function empRow(nom,e,i){
       </div>
       <div class="day-grid">${e.dias.map((d,di)=>{const date=addDaysISO(nom.desde,di),dn=dowOf(date);return `
         <div class="day ${dn===0?'sun':''}"><div class="dlab">${DOW[dn]} ${+date.slice(8)}<span>${di<7?'S1':'S2'}</span></div>
-          <select class="input sm" onchange="setDay(${nom.id},${i},${di},'j',this.value)">${jOpts(d.j)}</select>
+          <button class="day-j ${jClass(d.j)}" onclick="openJornadaWheel(${nom.id},${i},${di})">${esc(jShort(d.j))}</button>
           <select class="input sm" onchange="setDay(${nom.id},${i},${di},'fi',this.value)">${fOpts(d.fi)}</select>
         </div>`;}).join('')}</div>
       <div class="emp-foot">
@@ -1039,6 +1081,67 @@ function empRow(nom,e,i){
 function toggleEmp(i){if(ui.nomExp.has(i))ui.nomExp.delete(i);else ui.nomExp.add(i);renderNomina();}
 function nomFilter(q){q=(q||'').trim().toLowerCase();document.querySelectorAll('#content .emp-card').forEach(c=>{c.style.display=(!q||(c.dataset.emp||'').includes(q))?'':'none';});}
 async function setDay(id,i,di,k,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].dias[di][k]=v;await persistNom();renderNomina();}
+const WHEEL_ITEM=46;
+function jornadasWheel(){const rank=j=>{const l=(j.l||'').toLowerCase();if(/completa/.test(l))return 0;if(/asist/.test(l))return 1;if(l==='media')return 2;const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 3+parseFloat(m[1].replace(',','.'));return 100;};return CFG.jornadas.slice().sort((a,b)=>rank(a)-rank(b));}
+function jShort(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'No asistió';if(/completa/.test(l))return 'Completa';if(l==='media')return 'Media';const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 'Extra '+m[1];return j;}
+function jClass(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'j-falta';if(/completa/.test(l))return 'j-full';if(l==='media')return 'j-media';if(/extra/.test(l))return 'j-extra';return '';}
+let wheelCtx=null; // {id,i,day,mode:'j'|'fi'}
+function wheelOptions(mode){
+  if(mode==='j')return jornadasWheel().map(j=>({val:j.l,label:jShort(j.l),sub:j.v?fmt(j.v):''}));
+  return [{val:'',label:'— Sin finca —',sub:''}].concat(CFG.fincas.map(f=>({val:f,label:f,sub:''})));
+}
+function wheelCurVal(){const nom=NOMINAS.find(x=>x.id===wheelCtx.id);const d=nom.entries[wheelCtx.i].dias[wheelCtx.day];return wheelCtx.mode==='j'?(d.j||'No Asistió'):(d.fi||'');}
+function openJornadaWheel(id,i,di){wheelCtx={id,i,day:di,mode:'j'};renderWheelStep();}
+function renderWheelStep(){
+  const{id,i,day,mode}=wheelCtx;
+  const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;const e=nom.entries[i];
+  const date=addDaysISO(nom.desde,day),dn=dowOf(date);
+  const opts=wheelOptions(mode),cur=wheelCurVal();
+  const items=opts.map((o,idx)=>`<div class="wheel-item" data-idx="${idx}">${esc(o.label)}${o.sub?`<span class="wv">${o.sub}</span>`:''}</div>`).join('');
+  const step=day*2+(mode==='fi'?2:1), last=(day===13&&mode==='fi'), firstStep=(day===0&&mode==='j');
+  const ov=document.getElementById('overlay');
+  ov.innerHTML=`<div class="modal" style="max-width:430px">
+     <div class="modal-h"><h3>${esc(e.emp)}</h3><button class="iconbtn" onclick="closeWheel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+     <div class="modal-b" style="padding:10px 16px 16px">
+       <div style="text-align:center;margin-bottom:2px"><div style="font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize">${DOW[dn]} ${+date.slice(8)} · ${mode==='j'?'Tarifa del día':'Finca del día'}</div>
+       <div style="font-size:12px;color:var(--muted)">Día ${day+1} de 14 · ${mode==='j'?'1) jornada':'2) finca'}</div></div>
+       <div class="wheel-prog"><i style="width:${Math.round(step/28*100)}%"></i></div>
+       <div class="wheel-row" style="margin-top:10px">
+         <button class="wheel-arrow" onclick="wheelNav(-1)" ${firstStep?'disabled':''} title="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+         <div class="wheel-wrap" style="flex:1"><div class="wheel-center"></div>
+           <div class="wheel" id="jwheel"><div class="wheel-pad"></div>${items}<div class="wheel-pad"></div></div>
+         </div>
+         <button class="wheel-arrow" onclick="wheelNav(1)" title="${mode==='j'?'Ir a la finca':(last?'Terminar':'Siguiente día')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+       </div>
+       <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:8px">‹ atrás &nbsp;·&nbsp; gira y avanza ›</div>
+     </div>
+     <div class="modal-f"><button class="btn" onclick="closeWheel()">Cerrar</button><button class="btn primary" onclick="wheelNav(1)">${last?'Terminar':(mode==='j'?'Finca ›':'Siguiente día ›')}</button></div>
+   </div>`;
+  ov.classList.add('show');ov.onclick=ev=>{if(ev.target===ov)closeWheel();};
+  const wheel=document.getElementById('jwheel');
+  let curIdx=opts.findIndex(o=>o.val===cur);if(curIdx<0)curIdx=0;
+  const mark=()=>{const idx=Math.round(wheel.scrollTop/WHEEL_ITEM);wheel.querySelectorAll('.wheel-item').forEach(el=>el.classList.toggle('sel',+el.dataset.idx===idx));};
+  wheel.addEventListener('scroll',()=>{clearTimeout(wheel._t);mark();wheel._t=setTimeout(mark,60)});
+  requestAnimationFrame(()=>{wheel.scrollTop=curIdx*WHEEL_ITEM;mark();});
+}
+function wheelCommit(){
+  if(!wheelCtx)return;const wheel=document.getElementById('jwheel');if(!wheel)return;
+  const opts=wheelOptions(wheelCtx.mode);
+  const idx=Math.max(0,Math.min(opts.length-1,Math.round(wheel.scrollTop/WHEEL_ITEM)));
+  const val=opts[idx]?opts[idx].val:'';
+  const nom=NOMINAS.find(x=>x.id===wheelCtx.id);if(!nom)return;
+  nom.entries[wheelCtx.i].dias[wheelCtx.day][wheelCtx.mode]=val;persistNom();
+}
+function wheelNav(dir){
+  wheelCommit();
+  let{day,mode}=wheelCtx;
+  if(dir>0){ if(mode==='j')mode='fi'; else {mode='j';day++;} }
+  else { if(mode==='fi')mode='j'; else {mode='fi';day--;} }
+  if(day>13){closeWheel();toast('Quincena registrada');return;}
+  if(day<0){day=0;mode='j';}
+  wheelCtx.day=day;wheelCtx.mode=mode;renderWheelStep();
+}
+function closeWheel(){wheelCommit();wheelCtx=null;document.getElementById('overlay').classList.remove('show');renderNomina();}
 async function setPrestamo(id,i,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].prestamo=+v||0;await persistNom();renderNomina();}
 async function applyTpl(id,i,mode){const nom=NOMINAS.find(x=>x.id===id);const j=document.getElementById('qf_j_'+i).value,f=document.getElementById('qf_f_'+i).value;
   nom.entries[i].dias.forEach((d,di)=>{const dn=dowOf(addDaysISO(nom.desde,di));if(mode==='week'&&dn===0){d.j='No Asistió';d.fi='';}else{d.j=j;d.fi=f;}});
@@ -1622,6 +1725,85 @@ function dronStatementHTML(){
 }
 function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
 
+/* ===== RENTABILIDAD POR HECTÁREA ===== */
+function rentData(){
+  const from=ui.rentFrom,to=ui.rentTo,inR=m=>{const f=m.f||'';return(!from||f>=from)&&(!to||f<=to);};
+  const fincas=CFG.fincas.map(f=>{
+    const ms=MOVS.filter(m=>m.fi===f&&inR(m));
+    const ing=ms.reduce((a,m)=>a+(m.t==='I'?(+m.tot||0):0),0);
+    const egr=ms.reduce((a,m)=>a+(m.t==='E'?(+m.tot||0):0),0);
+    const haMap=CFG.fincaHa[f]||{};const ha=Object.values(haMap).reduce((a,v)=>a+(+v||0),0);
+    const util=ing-egr;
+    return{finca:f,ing,egr,util,ha,haMap,ingHa:ha?ing/ha:0,egrHa:ha?egr/ha:0,utilHa:ha?util/ha:0,margen:ing?util/ing:0};
+  });
+  const withHa=fincas.filter(f=>f.ha>0);
+  const crop={};
+  withHa.forEach(fd=>{Object.entries(fd.haMap).forEach(([c,h])=>{h=+h||0;if(!h)return;if(!crop[c])crop[c]={ing:0,egr:0,ha:0};const sh=h/fd.ha;crop[c].ing+=fd.ing*sh;crop[c].egr+=fd.egr*sh;crop[c].ha+=h;});});
+  const cultivos=Object.entries(crop).map(([c,v])=>({cultivo:c,ing:v.ing,egr:v.egr,ha:v.ha,util:v.ing-v.egr,ingHa:v.ha?v.ing/v.ha:0,egrHa:v.ha?v.egr/v.ha:0,utilHa:v.ha?(v.ing-v.egr)/v.ha:0,margen:v.ing?(v.ing-v.egr)/v.ing:0})).sort((a,b)=>b.utilHa-a.utilHa);
+  const totHa=withHa.reduce((a,f)=>a+f.ha,0),totUtil=withHa.reduce((a,f)=>a+f.util,0),totIng=withHa.reduce((a,f)=>a+f.ing,0);
+  return{fincas:withHa.slice().sort((a,b)=>b.utilHa-a.utilHa),sinHa:fincas.filter(f=>!f.ha),cultivos,totHa,totUtil,totIng,avgUtilHa:totHa?totUtil/totHa:0,from,to};
+}
+function rentYears(){return [...new Set(MOVS.map(m=>(m.f||'').slice(0,4)).filter(Boolean))].sort().reverse();}
+function renderRent(){
+  const d=rentData();
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+     <div class="field"><label>Desde</label><input class="input tnum" type="date" value="${d.from||''}" onchange="ui.rentFrom=this.value;renderRent()"></div>
+     <div class="field"><label>Hasta</label><input class="input tnum" type="date" value="${d.to||''}" onchange="ui.rentTo=this.value;renderRent()"></div>
+     <button class="btn" onclick="ui.rentFrom='';ui.rentTo='';renderRent()">Todo</button>
+     <button class="btn primary" onclick="printRent()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Informe</button></div>`;
+  const C=document.getElementById('content');
+  if(!d.totHa){
+    C.innerHTML=`<div class="card panel"><div class="ph"><div><h2>Aún no hay hectáreas registradas</h2><p>Para calcular la rentabilidad por hectárea, registra cuántas hectáreas de cada cultivo tiene cada finca.</p></div></div>
+      <button class="btn primary" onclick="ui.view='config';render();setTimeout(()=>{const el=document.getElementById('fincaHaPanel');if(el)el.scrollIntoView({behavior:'smooth'})},80)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Ir a registrar hectáreas</button></div>`;
+    return;
+  }
+  const maxAbs=Math.max(1,...d.fincas.map(f=>Math.abs(f.utilHa)));
+  const bar=f=>{const w=Math.abs(f.utilHa)/maxAbs*100;const cls=f.utilHa<0?'neg':(f.utilHa>=d.avgUtilHa?'':'below');return `<div class="rha-row"><span class="rha-name"><i style="width:9px;height:9px;border-radius:50%;background:${fincaColor(f.finca)};display:inline-block;flex:0 0 auto"></i>${esc(f.finca)}</span><div class="rha-track"><div class="rha-bar ${cls}" style="width:${w}%"></div><div class="rha-avg" style="left:${Math.max(0,d.avgUtilHa)/maxAbs*100}%"></div></div><span class="rha-val" style="color:${f.utilHa<0?'var(--red)':'var(--ink)'}">${fmt(f.utilHa)}</span></div>`;};
+  const fRow=f=>`<tr><td><span class="fdot"><i style="background:${fincaColor(f.finca)}"></i>${esc(f.finca)}</span></td><td class="r tnum">${f.ha.toLocaleString('es-CO')}</td><td class="r tnum">${fmt(f.ingHa)}</td><td class="r tnum" style="color:var(--red)">${fmt(f.egrHa)}</td><td class="r tnum"><b style="color:${f.utilHa<0?'var(--red)':'var(--green2)'}">${fmt(f.utilHa)}</b></td><td class="r tnum" style="color:var(--muted)">${pct(f.margen)}</td></tr>`;
+  const cRow=c=>`<tr><td><b>${esc(c.cultivo)}</b></td><td class="r tnum">${c.ha.toLocaleString('es-CO')}</td><td class="r tnum">${fmt(c.ingHa)}</td><td class="r tnum" style="color:var(--red)">${fmt(c.egrHa)}</td><td class="r tnum"><b style="color:${c.utilHa<0?'var(--red)':'var(--green2)'}">${fmt(c.utilHa)}</b></td><td class="r tnum" style="color:var(--muted)">${pct(c.margen)}</td></tr>`;
+  C.innerHTML=`
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+     <div class="card kpi lead"><div class="lab">Hectáreas totales</div><div class="val tnum">${d.totHa.toLocaleString('es-CO')}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--green2)">Utilidad/ha promedio</div><div class="val tnum" style="font-size:20px;color:var(--green2)">${fmt(d.avgUtilHa)}</div></div>
+     <div class="card kpi"><div class="lab">Utilidad total</div><div class="val tnum" style="font-size:20px">${fmt(d.totUtil)}</div></div>
+   </div>
+   <div class="card panel" style="margin-top:16px">
+     <div class="ph"><div><h2>Utilidad por hectárea — comparación entre fincas</h2><p>Barra = $/ha · línea negra = promedio (${fmt(d.avgUtilHa)}/ha) · ámbar = bajo el promedio</p></div></div>
+     ${d.fincas.map(bar).join('')}
+   </div>
+   <div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Ranking de fincas por \$/ha</h2></div>
+     <div class="tablewrap"><table><thead><tr><th>Finca</th><th class="r">Hectáreas</th><th class="r">Ingreso/ha</th><th class="r">Costo/ha</th><th class="r">Utilidad/ha</th><th class="r">Margen</th></tr></thead>
+       <tbody>${d.fincas.map(fRow).join('')}</tbody></table></div>
+   </div>
+   <div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Rentabilidad por cultivo</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Ingresos y costos de cada finca repartidos entre sus cultivos según hectáreas</p></div>
+     <div class="tablewrap"><table><thead><tr><th>Cultivo</th><th class="r">Hectáreas</th><th class="r">Ingreso/ha</th><th class="r">Costo/ha</th><th class="r">Utilidad/ha</th><th class="r">Margen</th></tr></thead>
+       <tbody>${d.cultivos.length?d.cultivos.map(cRow).join(''):`<tr><td colspan="6">${emptyRow('Asigna cultivos y hectáreas a las fincas en Configuración')}</td></tr>`}</tbody></table></div>
+   </div>
+   ${d.sinHa.length?`<div class="note">Fincas sin hectáreas registradas (no entran en el cálculo): ${d.sinHa.map(f=>esc(f.finca)).join(', ')}. Agrégalas en Configuración → Hectáreas por finca y cultivo.</div>`:''}`;
+}
+function printRent(){printIsolated(rentStatementHTML(),'Rentabilidad por hectárea');}
+function rentStatementHTML(){
+  const d=rentData(),periodo=(d.from||d.to)?`${d.from?fmtFecha(d.from):'inicio'} — ${d.to?fmtFecha(d.to):fmtFecha(todayISO())}`:'Todo el histórico';
+  const fRow=f=>`<tr><td>${esc(f.finca)}</td><td class="r tnum">${f.ha.toLocaleString('es-CO')}</td><td class="r tnum">${fmt(f.ingHa)}</td><td class="r tnum">${fmt(f.egrHa)}</td><td class="r tnum"><b>${fmt(f.utilHa)}</b></td><td class="r tnum">${pct(f.margen)}</td></tr>`;
+  const cRow=c=>`<tr><td>${esc(c.cultivo)}</td><td class="r tnum">${c.ha.toLocaleString('es-CO')}</td><td class="r tnum">${fmt(c.ingHa)}</td><td class="r tnum">${fmt(c.egrHa)}</td><td class="r tnum"><b>${fmt(c.utilHa)}</b></td><td class="r tnum">${pct(c.margen)}</td></tr>`;
+  return `
+   <div class="rep-head"><div><div class="rh-brand">Fincas Martínez</div><h2>Rentabilidad por hectárea</h2><div class="rh-sub">Periodo: ${periodo}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   <div class="report-sec">
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+       <div class="card kpi lead"><div class="lab">Hectáreas totales</div><div class="val tnum">${d.totHa.toLocaleString('es-CO')}</div></div>
+       <div class="card kpi"><div class="lab">Utilidad/ha promedio</div><div class="val tnum" style="font-size:20px">${fmt(d.avgUtilHa)}</div></div>
+       <div class="card kpi"><div class="lab">Utilidad total</div><div class="val tnum" style="font-size:20px">${fmt(d.totUtil)}</div></div>
+     </div>
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>Ranking de fincas por \$/ha<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table><thead><tr><th>Finca</th><th class="r">Hectáreas</th><th class="r">Ingreso/ha</th><th class="r">Costo/ha</th><th class="r">Utilidad/ha</th><th class="r">Margen</th></tr></thead>
+       <tbody>${d.fincas.map(fRow).join('')}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL / promedio</b></td><td class="r tnum"><b>${d.totHa.toLocaleString('es-CO')}</b></td><td></td><td></td><td class="r tnum"><b>${fmt(d.avgUtilHa)}</b></td><td></td></tr></tbody></table></div></div>
+     <div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c0-2 2-3.5 4-3.5"/><path d="M16 8.5C16 12 14 19 12 19S8 12 8 8.5 9.8 4 12 4s4 1 4 4.5z"/></svg>Rentabilidad por cultivo<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table><thead><tr><th>Cultivo</th><th class="r">Hectáreas</th><th class="r">Ingreso/ha</th><th class="r">Costo/ha</th><th class="r">Utilidad/ha</th><th class="r">Margen</th></tr></thead>
+       <tbody>${d.cultivos.map(cRow).join('')||'<tr><td colspan="6" style="padding:16px;color:var(--muted)">Sin cultivos asignados.</td></tr>'}</tbody></table></div></div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Utilidad por hectárea = (ingresos − egresos) ÷ hectáreas. En los cultivos, los ingresos y costos de cada finca se reparten entre sus cultivos en proporción a las hectáreas de cada uno.</div>
+   </div>`;
+}
+
 /* ===== INFORME CONTABLE ===== */
 function informeFincasModal(){
   const sel=new Set(ui.iFincas);
@@ -1781,6 +1963,7 @@ function renderConfig(){
      ${listBlock('Categorías de egreso','catEgresos')}
      ${listBlock('Unidades','unidades')}
      ${listBlock('Comercios / proveedores','comercios')}
+     ${listBlock('Cultivos','cultivos','Tipos de cultivo o actividad para la rentabilidad por hectárea')}
    </div>
    <div class="card panel" style="margin-top:16px">
      <div class="ph"><div><h2>Empleados y medio de pago</h2><p>Personal de la nómina. Registra el medio de pago y número de cuenta de cada uno.</p></div></div>
@@ -1795,6 +1978,17 @@ function renderConfig(){
            <input class="input" placeholder="N° de cuenta" value="${esc(p.cuenta||'')}" onchange="setEmpPago('${js}','cuenta',this.value)">
            <button class="iconbtn del" title="Eliminar" onclick="delEmpleado('${js}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
          </div>`;}).join('')||'<span style="color:var(--faint);font-size:12.5px">Sin empleados</span>'}
+     </div>
+   </div>
+   <div class="card panel" style="margin-top:16px" id="fincaHaPanel">
+     <div class="ph"><div><h2>Hectáreas por finca y cultivo</h2><p>Define cuántas hectáreas de cada cultivo tiene cada finca. Es la base de la rentabilidad por hectárea.</p></div></div>
+     <div class="cfg-grid">
+       ${CFG.fincas.map((f,fi)=>{const hm=CFG.fincaHa[f]||{};const tot=Object.values(hm).reduce((a,v)=>a+(+v||0),0);const avail=CFG.cultivos.filter(c=>!(c in hm));const fid=esc(f).replace(/'/g,"\\'");
+         return `<div class="card" style="padding:14px">
+           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="fdot"><i style="background:${fincaColor(f)}"></i><b>${esc(f)}</b></span><span class="chip pay">${tot.toLocaleString('es-CO')} ha</span></div>
+           ${Object.keys(hm).length?Object.entries(hm).map(([c,h])=>`<div class="finca-ha-row"><span style="font-size:13px">${esc(c)}</span><input class="input tnum" type="number" step="any" value="${h}" onchange="setFincaHa('${fid}','${esc(c).replace(/'/g,"\\'")}',this.value)"><button class="iconbtn del" onclick="delFincaHa('${fid}','${esc(c).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`).join(''):'<div style="font-size:12.5px;color:var(--faint);margin-bottom:8px">Sin cultivos asignados</div>'}
+           ${avail.length?`<div class="addrow" style="margin-top:8px"><select class="input" id="fha_c_${fi}">${avail.map(c=>`<option>${esc(c)}</option>`).join('')}</select><input class="input tnum" type="number" step="any" placeholder="ha" id="fha_v_${fi}" style="max-width:84px"><button class="btn sm primary" onclick="addFincaHa('${fid}',${fi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>`:'<div style="font-size:11.5px;color:var(--faint);margin-top:6px">Todos los cultivos asignados</div>'}
+         </div>`;}).join('')}
      </div>
    </div>
    <div class="card panel" style="margin-top:16px">
@@ -1890,7 +2084,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
@@ -1906,6 +2100,9 @@ function showModal(title,bodyHTML,actions){
   ov.onclick=e=>{if(e.target===ov)closeModal();};
 }
 function confirmModal(title,msg,onYes){showModal(title,`<p style="color:var(--muted);line-height:1.6">${msg}</p>`,[{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Confirmar',cls:'btn primary',fn:onYes}]);}
+async function setFincaHa(f,c,v){if(!CFG.fincaHa[f])CFG.fincaHa[f]={};const n=+v||0;if(n<=0)delete CFG.fincaHa[f][c];else CFG.fincaHa[f][c]=n;await persistCfg();renderConfig();}
+async function delFincaHa(f,c){if(CFG.fincaHa[f])delete CFG.fincaHa[f][c];await persistCfg();renderConfig();}
+async function addFincaHa(f,fi){const cs=document.getElementById('fha_c_'+fi),vs=document.getElementById('fha_v_'+fi);if(!cs)return;const c=cs.value;const v=+(vs?vs.value:0)||0;if(!c)return;if(!CFG.fincaHa[f])CFG.fincaHa[f]={};CFG.fincaHa[f][c]=v;await persistCfg();renderConfig();toast('Hectáreas guardadas');}
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
 let toastT;function toast(msg){const t=document.getElementById('toast');t.innerHTML=ic('check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
