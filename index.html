@@ -68,7 +68,9 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .top h1{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-.03em}
 .top .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
 .top .spacer{flex:1}
-.content{padding:28px 32px 64px;max-width:1280px;width:100%}
+.content{padding:28px 32px 64px;max-width:1760px;width:100%}
+#movtable th,#movtable td{padding-left:11px;padding-right:11px}
+#movtable table{table-layout:auto}
 
 /* ===== Controls ===== */
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;border-radius:99px;font-weight:500;font-size:13.5px;background:var(--surface);border:1px solid var(--line);color:#fff;transition:background-color .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease),transform .12s var(--ease)}
@@ -100,7 +102,7 @@ select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .kpi{padding:19px 20px;position:relative;overflow:hidden}
 .kpi .lab{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:7px;letter-spacing:.2px}
 .kpi .lab .dot{width:8px;height:8px;border-radius:50%}
-.kpi .val{font-family:var(--display);font-size:21px;font-weight:700;margin-top:10px;letter-spacing:-.03em;white-space:nowrap}
+.kpi .val{font-family:var(--display);font-size:20px;font-weight:700;margin-top:10px;letter-spacing:-.03em;overflow-wrap:anywhere;line-height:1.15}
 .kpi .meta{font-size:11.5px;color:var(--faint);margin-top:4px}
 .kpi.lead{background:linear-gradient(160deg,#122019,#0a1510);color:#fff;border-color:rgba(78,190,150,.25)}
 .kpi.lead .lab{color:var(--growth)}.kpi.lead .meta{color:#7fae96}
@@ -316,8 +318,8 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 @media(max-width:560px){.payslip-weeks{grid-template-columns:1fr}}
 #printArea{display:none}
 @media print{
-  body.printing .app,body.printing .overlay,body.printing .toast{display:none!important}
-  body.printing #printArea{display:block!important}
+  body.printing>*{display:none!important}
+  body.printing>#printArea{display:block!important}
 }
 
 @media print{
@@ -740,11 +742,11 @@ function renderMovs(){
   const periodos=[...new Set(MOVS.map(m=>(m.f||'').slice(0,7)).filter(Boolean))].sort().reverse();
   const C=document.getElementById('content');
   C.innerHTML=`
-  <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-    <div class="card kpi"><div class="lab">Ingresos (filtro)</div><div class="val tnum pos" style="font-size:21px">${fmt(sa.ing)}</div></div>
-    <div class="card kpi"><div class="lab">Egresos (filtro)</div><div class="val tnum neg" style="font-size:21px">${fmt(sa.egr)}</div></div>
-    <div class="card kpi"><div class="lab">Por cobrar</div><div class="val tnum" style="font-size:21px">${fmt(sa.cobrar)}</div></div>
-    <div class="card kpi"><div class="lab">Por pagar</div><div class="val tnum" style="font-size:21px">${fmt(sa.pagar)}</div></div>
+  <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">
+    <div class="card kpi"><div class="lab">Ingresos (filtro)</div><div class="val tnum pos" style="font-size:19px">${fmt(sa.ing)}</div></div>
+    <div class="card kpi"><div class="lab">Egresos (filtro)</div><div class="val tnum neg" style="font-size:19px">${fmt(sa.egr)}</div></div>
+    <div class="card kpi"><div class="lab">Por cobrar</div><div class="val tnum" style="font-size:19px">${fmt(sa.cobrar)}</div></div>
+    <div class="card kpi"><div class="lab">Por pagar</div><div class="val tnum" style="font-size:19px">${fmt(sa.pagar)}</div></div>
   </div>
   <div class="filters">
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="input" placeholder="Buscar descripción, comercio, factura…" value="${esc(ui.mQ)}" oninput="ui.mQ=this.value;ui.mPage=1;refreshMovTable()"></div>
@@ -1241,22 +1243,12 @@ function nominaStatementHTML(nom){
    </div>`;
 }
 function printIsolated(bodyHTML,title){
-  let head='';
-  document.querySelectorAll('style').forEach(s=>{head+='<style>'+s.textContent+'</style>';});
-  document.querySelectorAll('link[rel="stylesheet"]').forEach(l=>{head+=l.outerHTML;});
-  let f=document.getElementById('printFrame'); if(f)f.remove();
-  f=document.createElement('iframe'); f.id='printFrame';
-  f.style.cssText='position:fixed;left:-9999px;top:0;width:820px;height:0;border:0';
-  document.body.appendChild(f);
-  const w=f.contentWindow, doc=w.document;
-  doc.open();
-  const printLight=':root{--bg:#fff;--surface:#fff;--surface2:#f4f7f2;--surface3:#eef2ec;--ink:#16201A;--muted:#5E6E63;--faint:#8A988D;--line:#DCE2D7;--green:#1E5631;--green2:#247A45;--green-bright:#2FA45C;--green-soft:#E4F2E8;--amber:#C9821F;--amber-soft:#FBEFD8;--red:#C03A22;--red-soft:#FBE5DF;--blue:#2B6CB0;--ember:#C9821F;--signal:#2B6CB0;--growth:#247A45}html,body{background:#fff!important;color:#16201A!important;margin:0;padding:16px}@page{margin:13mm}.no-print{display:none!important}.card{box-shadow:none!important;border-color:#DCE2D7!important}td,.fdot{color:#16201A!important}th{background:#f0f3ee!important}.kpi.lead{background:linear-gradient(150deg,#eef7f0,#e6f2ea)!important;color:#16201A!important;border-color:#cfe6d6!important}.kpi.lead .lab{color:#247A45!important}.chip.i{background:#E4F2E8!important;color:#1c6b3a!important}.chip.e{background:#FBE5DF!important;color:#a8331e!important}.chip.pend{background:#FBEFD8!important;color:#9a6313!important}.chip.pay{background:#eef2ec!important;color:#5E6E63!important}.mcard.good{background:linear-gradient(160deg,#fff,#f1faf4)!important;border-color:#BFE3CC!important}.mcard.bad{background:linear-gradient(160deg,#fff,#fdf2ef)!important;border-color:#F0C9BE!important}';
-  doc.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(title||'Documento')+'</title>'+head+'<style>'+printLight+'</style></head><body>'+bodyHTML+'</body></html>');
-  doc.close();
-  let done=false;const go=()=>{if(done)return;done=true;try{w.focus();w.print();}catch(e){}};
-  w.onafterprint=()=>{setTimeout(()=>{try{f.remove();}catch(e){}},800);};
-  try{w.document.fonts.ready.then(()=>setTimeout(go,150));}catch(e){}
-  setTimeout(go,1200);
+  const pa=document.getElementById('printArea');
+  if(!pa)return;
+  pa.innerHTML=bodyHTML;
+  if(title){pa._t=document.title;document.title=title;}
+  document.body.classList.add('printing');
+  setTimeout(()=>{try{window.print();}catch(e){}},120);
 }
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
   printIsolated(nominaStatementHTML(nom),'Nómina '+MES_FULL[nom.mes]+' '+nom.year+' Q'+nom.q);}
@@ -2120,7 +2112,7 @@ function closeModal(){document.getElementById('overlay').classList.remove('show'
 let toastT;function toast(msg){const t=document.getElementById('toast');t.innerHTML=ic('check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
-window.addEventListener('afterprint',()=>{document.body.classList.remove('printing');const pa=document.getElementById('printArea');if(pa)pa.innerHTML='';});
+window.addEventListener('afterprint',()=>{document.body.classList.remove('printing');const pa=document.getElementById('printArea');if(pa){pa.innerHTML='';if(pa._t){document.title=pa._t;pa._t=null;}}});
 init();
 </script>
 </body>
