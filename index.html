@@ -546,7 +546,7 @@ let ui={view:'dash',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
-  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frLines:[{cal:'',q:'',p:''}],
+  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frEstado:'P',frLines:[{cal:'',q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:''
@@ -995,8 +995,9 @@ function renderFruta(){
     <div class="card panel">
       <div class="ph"><h2>Resultado</h2></div>
       <div class="card kpi lead"><div class="lab">Total venta</div><div class="val tnum" id="fr_total">${fmt(total)}</div><div class="meta"><span id="fr_q">${totalQ.toLocaleString('es-CO')}</span> ${esc(ui.frUnit)} · ${esc(ui.frFinca)}${ui.frCli?' · '+esc(ui.frCli):''}</div></div>
+      <div class="field" style="margin-top:14px"><label>Estado del movimiento</label><select class="input" onchange="ui.frEstado=this.value;renderFruta()"><option value="P" ${ui.frEstado==='P'?'selected':''}>Pagado / Recibido</option><option value="X" ${ui.frEstado==='X'?'selected':''}>Pendiente (por cobrar)</option></select></div>
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px" onclick="frutaToIngreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Enviar venta a movimientos</button>
-      <div class="note">Se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)}${ui.frCli?' a nombre de <b>'+esc(ui.frCli)+'</b>':''} con el detalle de calidades y el total, listo en Movimientos${ui.frCli?' y en la cartera del cliente':''}.</div>
+      <div class="note">Se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)}${ui.frCli?' a nombre de <b>'+esc(ui.frCli)+'</b>':''} como <b>${ui.frEstado==='X'?'Pendiente':'Pagado'}</b>, con el detalle de calidades y el total, listo en Movimientos${ui.frCli&&ui.frEstado==='X'?' y en la cartera por cobrar del cliente':''}.</div>
     </div>
    </div>`;
 }
@@ -1018,8 +1019,8 @@ async function frutaToIngreso(){
   if(total<=0){toast('Agrega calidad, cantidad y precio primero');return;}
   const cat=ui.frCat||CFG.catIngresos[0]||'Otros Ingresos';
   const detalle=L.filter(l=>(+l.q||0)>0).map(l=>`${l.cal||'Fruta'} ${(+l.q||0).toLocaleString('es-CO')}`).join(', ');
-  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
-  await persistMovs();ui.frLines=[{cal:'',q:'',p:''}];toast('Venta enviada a movimientos por '+fmt(total));renderFruta();
+  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:ui.frEstado||'P',ab:0,fa:'',co:''});
+  await persistMovs();ui.frLines=[{cal:'',q:'',p:''}];toast('Venta enviada a movimientos ('+(ui.frEstado==='X'?'pendiente':'pagada')+') por '+fmt(total));renderFruta();
 }
 
 /* ===== NÓMINA ===== */
