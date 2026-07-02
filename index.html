@@ -1176,7 +1176,7 @@ function empRow(nom,e,i){
       <div class="emp-foot">
         <div class="field" style="max-width:200px"><label>Préstamo / anticipo (se descuenta del neto)</label><input class="input tnum money" inputmode="numeric" value="${fmn(e.prestamo||0)}" onchange="setPrestamo(${nom.id},${i},this.value)"></div>
         <div class="emp-tot"><span>Bruto<b class="tnum">${fmt(bruto)}</b></span><span>Neto<b class="tnum">${fmt(neto)}</b></span></div>
-        <button class="btn sm primary" onclick="printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF de este empleado</button>
+        <button class="btn sm primary" onclick="printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir PDF del empleado</button>
       </div></div>`:''}
   </div>`;
 }
@@ -1330,13 +1330,81 @@ function nominaStatementHTML(nom){
      <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). El sueldo neto descuenta préstamos/anticipos. El consolidado por finca corresponde al costo bruto de nómina asignado a cada finca, que es el valor enviado a Movimientos. Para el detalle día a día de un empleado, usa el botón de PDF en su ficha.</div>
    </div>`;
 }
+const STATEMENT_CSS=`
+:root{--line:#e2e8e2;--muted:#5e6e63;--faint:#8a988d;--ink:#16201a;--red:#c03a22;--green:#1e5631;--green2:#247a45;--green-bright:#2fa45c;--green-soft:#e4f2e8;--amber:#c9821f;--amber-soft:#fbefd8;--blue:#2b6cb0;--surface:#fff;--surface2:#f4f7f2;--surface3:#eef2ec}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,sans-serif;background:#eef1ee;color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.tnum{font-variant-numeric:tabular-nums}
+.toolbar{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;background:#0f2419;color:#fff;padding:11px 20px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.toolbar b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toolbar .sp{flex:1}
+.toolbar button{background:#2fa45c;color:#fff;border:none;padding:9px 18px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px}
+.toolbar button:hover{background:#268a4d}
+.toolbar button svg{width:16px;height:16px}
+.sheet{max-width:920px;margin:22px auto;background:#fff;border:1px solid #e2e8e2;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(20,40,30,.08)}
+.rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:28px 32px;background:linear-gradient(135deg,#1e5631,#123c1d);color:#fff}
+.rep-head h2{font-size:25px;font-weight:700;letter-spacing:-.02em;margin-top:5px;color:#fff}
+.rh-brand{font-size:11.5px;text-transform:uppercase;letter-spacing:1.6px;color:#a7cdb5;font-weight:600}
+.rh-sub{font-size:13px;color:#cfe6d6;margin-top:6px}
+.rh-meta{text-align:right;font-size:12px;color:#cfe6d6;line-height:1.75;white-space:nowrap}
+.rh-meta b{color:#fff;font-size:14px}
+.report-sec{padding:26px 32px 30px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(155px,1fr));margin-bottom:20px}
+.kpi{border:1px solid #e2e8e2;border-radius:13px;padding:16px 17px;background:#fafcfa}
+.kpi .lab{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:23px;font-weight:700;margin-top:8px;letter-spacing:-.02em;color:var(--ink);overflow-wrap:anywhere}
+.kpi .meta{font-size:11px;color:var(--faint);margin-top:3px}
+.kpi.lead{background:linear-gradient(150deg,#edf7f0,#e0f0e7);border-color:#cfe6d6}
+.kpi.lead .lab{color:var(--green2)}
+.sec-title{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;color:var(--green);margin:22px 0 12px;text-transform:none}
+.sec-title svg{width:16px;height:16px;flex:0 0 auto}
+.sec-title .ln{flex:1;height:1px;background:#e2e8e2}
+.card{border:1px solid #e6ece6;border-radius:13px;overflow:hidden;background:#fff}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:10px 13px;background:#eff4ef;border-bottom:1px solid #e2e8e2;white-space:nowrap}
+td{padding:10px 13px;border-bottom:1px solid #eef2ee;white-space:nowrap;vertical-align:top;color:var(--ink)}
+tbody tr:nth-child(even) td{background:#fbfcfb}
+tr:last-child td{border-bottom:none}
+td.r,th.r{text-align:right}
+td.wrap{white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-width:150px}
+tr[style*="border-top"] td{font-weight:700;background:#f4f8f4!important}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.chip.i{background:#e4f2e8;color:#1c6b3a}.chip.e{background:#fbe5df;color:#a8331e}.chip.pay{background:#eef2ec;color:#5e6e63}.chip.pend{background:#fbefd8;color:#9a6313}
+.fdot{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.fdot i{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+.note{margin-top:20px;font-size:11.5px;color:var(--faint);border-top:1px solid #eef2ee;padding-top:13px;line-height:1.6}
+.payslip{border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin-bottom:10px;background:#fff}
+.payslip-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px;flex-wrap:wrap;border-bottom:1px solid #eef2ee;padding-bottom:8px}
+.payslip-weeks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media print{
+  @page{margin:11mm}
+  body{background:#fff}
+  .toolbar,.no-print{display:none!important}
+  .sheet{max-width:none;margin:0;border:none;border-radius:0;box-shadow:none}
+  .rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .kpi.lead,.chip,th,tr[style*="border-top"] td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .report-sec,.card,table,tr,.payslip{break-inside:avoid}
+  .payslip-weeks{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){.payslip-weeks{grid-template-columns:1fr}.rep-head{flex-direction:column}.rh-meta{text-align:left}}
+`;
 function printIsolated(bodyHTML,title){
-  const pa=document.getElementById('printArea');
-  if(!pa)return;
-  pa.innerHTML=bodyHTML;
-  if(title){pa._t=document.title;document.title=title;}
-  document.body.classList.add('printing');
-  setTimeout(()=>{try{window.print();}catch(e){}},120);
+  title=title||'Documento · Fincas Martínez';
+  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+'</style></head><body>'
+    +'<div class="toolbar no-print"><b>'+esc(title)+'</b><span class="sp"></span><button onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / Guardar PDF</button></div>'
+    +'<div class="sheet">'+bodyHTML+'</div></body></html>';
+  try{
+    const w=window.open('','_blank');
+    if(w&&w.document){w.document.open();w.document.write(doc);w.document.close();w.focus();return;}
+  }catch(e){}
+  try{
+    const url=URL.createObjectURL(new Blob([doc],{type:'text/html'}));
+    const w2=window.open(url,'_blank');
+    if(!w2)toast('Permite las ventanas emergentes para ver el documento en una pestaña nueva');
+    setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},60000);
+  }catch(e){toast('No se pudo abrir el documento');}
 }
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
   printIsolated(nominaStatementHTML(nom),'Nómina '+MES_FULL[nom.mes]+' '+nom.year+' Q'+nom.q);}
@@ -1459,10 +1527,10 @@ function renderClientes(){
         <span class="av" style="background:var(--faint)">?</span>
         <div class="nmb"><div class="nn">Sin cliente asignado</div><div class="ss">${sinCl.length} ingreso(s) pendiente(s)</div></div>
         <b class="amt" style="color:var(--amber)">${fmt(sinDeuda)}</b>
-        <button class="cli-x cli-pdf" title="Estado de cuenta (PDF)" onclick="event.stopPropagation();printCliente('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printCliente('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
         <span class="chev" id="chev_sin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
       <div class="cli-detail" id="cli_sin" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Descargar estado de cuenta (PDF)</button></div>
+      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
       ${detailTable(sinCl)}
       <div class="note" style="margin:12px 16px">Estos ingresos están pendientes pero no tienen cliente. Edita el movimiento para asignarle un cliente y se sumará a su cartera.</div></div>
    </div>`:''}`;
@@ -1475,12 +1543,12 @@ function cliCard(d,i){
       <span class="av" style="background:${fincaColor(d.cl)}">${esc(initial)}</span>
       <div class="nmb"><div class="nn">${esc(d.cl)}</div><div class="ss">${alDia?'Al día · sin deudas pendientes':d.pend.length+' cuenta(s) por cobrar'}</div></div>
       <b class="amt ${alDia?'pos':''}" style="${alDia?'':'color:var(--amber)'}">${alDia?'$ 0':fmt(d.deuda)}</b>
-      <button class="cli-x cli-pdf" title="Estado de cuenta (PDF)" onclick="event.stopPropagation();printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+      <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
       <button class="cli-x" title="Quitar de la lista" onclick="event.stopPropagation();delCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <span class="chev" id="chev_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
     </div>
     <div class="cli-detail" id="cli_${i}" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Descargar estado de cuenta (PDF)</button></div>
+      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
       ${d.pend.length?detailTable(d.pend):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin deudas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
     </div></div>`;
 }
@@ -1554,10 +1622,10 @@ function renderComercios(){
         <span class="av" style="background:var(--faint)">?</span>
         <div class="nmb"><div class="nn">Sin comercio asignado</div><div class="ss">${sinCom.length} egreso(s) pendiente(s)</div></div>
         <b class="amt" style="color:var(--amber)">${fmt(sinDeuda)}</b>
-        <button class="cli-x cli-pdf" title="Estado de cuenta (PDF)" onclick="event.stopPropagation();printComercio('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printComercio('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
         <span class="chev" id="chevc_sin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
       <div class="cli-detail" id="com_sin" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Descargar estado de cuenta (PDF)</button></div>
+      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('__SIN__')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
       ${detailTable(sinCom,'Saldo (por pagar)','Total por pagar',true)}
       <div class="note" style="margin:12px 16px">Estos egresos están pendientes pero no tienen comercio. Edita el movimiento para asignarle uno y se sumará a su cartera.</div></div>
    </div>`:''}`;
@@ -1570,12 +1638,12 @@ function comCard(d,i){
       <span class="av" style="background:${fincaColor(d.co)}">${esc(initial)}</span>
       <div class="nmb"><div class="nn">${esc(d.co)}</div><div class="ss">${alDia?'Al día · sin deudas pendientes':d.pend.length+' cuenta(s) por pagar'}</div></div>
       <b class="amt ${alDia?'pos':''}" style="${alDia?'':'color:var(--amber)'}">${alDia?'$ 0':fmt(d.deuda)}</b>
-      <button class="cli-x cli-pdf" title="Estado de cuenta (PDF)" onclick="event.stopPropagation();printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+      <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
       <button class="cli-x" title="Quitar de la lista" onclick="event.stopPropagation();delComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <span class="chev" id="chevc_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
     </div>
     <div class="cli-detail" id="com_${i}" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Descargar estado de cuenta (PDF)</button></div>
+      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
       ${d.pend.length?detailTable(d.pend,'Saldo (por pagar)','Total por pagar',true):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin cuentas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
     </div></div>`;
 }
