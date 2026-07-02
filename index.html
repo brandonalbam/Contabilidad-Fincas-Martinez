@@ -62,6 +62,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .side-foot button:hover{background:rgba(255,255,255,.09);color:#fff}
 .side-foot button:active{transform:scale(.97)}
 .side-foot button svg{width:15px;height:15px}
+.cloud-row{display:flex;gap:8px;margin-bottom:8px}
+.cloud-row button{flex:1;padding:9px 6px;font-size:12px}
 
 /* ===== Topbar ===== */
 .top{position:sticky;top:0;z-index:30;background:rgba(0,0,0,.6);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--line);padding:18px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -383,6 +385,10 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
     </nav>
     <div class="side-foot">
       <div id="cloudBadge" class="cloud-badge off" onclick="gotoConfig()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span>Nube: desactivada</span></div>
+      <div class="cloud-row">
+        <button onclick="cloudUp()" title="Subir los últimos datos a la nube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16l-4-4-4 4M12 12v9"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg><span>Subir</span></button>
+        <button onclick="cloudDown()" title="Descargar los datos de la nube en este dispositivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17l4 4 4-4M12 12v9"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg><span>Descargar</span></button>
+      </div>
       <button onclick="backup()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Respaldar datos</span></button>
     </div>
   </aside>
@@ -500,7 +506,8 @@ const Cloud={
       this.setStatus('ok');this.pulling=false;return false;
     }catch(e){this.setStatus('err');this.pulling=false;return false;}
   },
-  schedulePush(){if(!this.cfg.enabled)return;clearTimeout(this.pushT);this.pushT=setTimeout(()=>this.push(),1600);},
+  schedulePush(){if(!this.cfg.enabled)return;this.dirty=true;clearTimeout(this.pushT);this.pushT=setTimeout(()=>this.push(),1200);},
+  flush(){if(this.pushT){clearTimeout(this.pushT);this.pushT=null;}if(this.cfg.enabled&&this.dirty&&!this.pushing)this.push();},
   async push(){
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
@@ -509,7 +516,7 @@ const Cloud={
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
-      this.localTs=ts;this.cfg.lastSync=ts;this.setStatus('ok');this.pushing=false;await this.save();return true;
+      this.localTs=ts;this.cfg.lastSync=ts;this.dirty=false;this.setStatus('ok');this.pushing=false;await this.save();return true;
     }catch(e){this.setStatus('err');this.pushing=false;return false;}
   }
 };
@@ -521,7 +528,7 @@ function applyCloud(d){
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
 }
 let cloudTimer;
-function startCloudTimer(){clearInterval(cloudTimer);cloudTimer=setInterval(()=>{if(!document.hidden&&Cloud.cfg.enabled&&!Cloud.pushing)Cloud.pull();},25000);}
+function startCloudTimer(){clearInterval(cloudTimer);cloudTimer=setInterval(()=>{if(!document.hidden&&Cloud.cfg.enabled&&!Cloud.pushing&&!Cloud.dirty&&!Cloud.pushT)Cloud.pull();},20000);}
 function updateCloudBadge(){
   const el=document.getElementById('cloudBadge');if(!el)return;
   let cls='off',txt='Nube: desactivada';
@@ -534,6 +541,14 @@ function updateCloudBadge(){
   el.innerHTML=(cls==='sync'?ic('refresh'):ic('cloud'))+'<span>'+txt+'</span>';
 }
 function gotoConfig(){ui.view='config';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='config'));render();}
+async function cloudUp(){
+  if(!Cloud.cfg.enabled){toast('Primero activa la nube en Configuración');gotoConfig();return;}
+  toast('Subiendo a la nube…');const ok=await Cloud.push();toast(ok?'✓ Datos subidos a la nube':'No se pudo subir (revisa tu conexión)');
+}
+async function cloudDown(){
+  if(!Cloud.cfg.enabled){toast('Primero activa la nube en Configuración');gotoConfig();return;}
+  toast('Descargando de la nube…');const ok=await Cloud.pull(true);toast(ok?'✓ Datos descargados de la nube':'No hay datos en la nube o falló la descarga');
+}
 
 /* ===== state ===== */
 let CFG=null, MOVS=[], seq=1;
@@ -600,7 +615,11 @@ async function init(){
   if(Cloud.cfg.enabled){
     if(MOVS.length||NOMINAS.length)Cloud.localTs=Date.now();
     Cloud.pull(false,true); startCloudTimer();
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Cloud.cfg.enabled)Cloud.pull();});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){Cloud.flush();}else if(Cloud.cfg.enabled){Cloud.pull();}});
+    window.addEventListener('focus',()=>{if(Cloud.cfg.enabled&&!Cloud.pushing)Cloud.pull();});
+    window.addEventListener('online',()=>{if(Cloud.cfg.enabled){Cloud.flush();setTimeout(()=>Cloud.pull(),1200);}});
+    window.addEventListener('pagehide',()=>Cloud.flush());
+    window.addEventListener('beforeunload',()=>Cloud.flush());
   }
 }
 async function persistMovs(){await Store.set('movimientos',JSON.stringify(MOVS));Cloud.schedulePush();}
