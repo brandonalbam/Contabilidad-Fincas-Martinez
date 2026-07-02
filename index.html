@@ -515,7 +515,7 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
@@ -546,7 +546,7 @@ let ui={view:'dash',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
-  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frLines:[{q:'',p:''}],
+  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frLines:[{cal:'',q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:''
@@ -556,7 +556,7 @@ let ui={view:'dash',
 const fmt=n=>{n=Math.round(+n||0);const s=n<0?'-':'';return s+CFG.moneda+' '+Math.abs(n).toLocaleString('es-CO');};
 const fmtK=n=>{n=+n||0;const a=Math.abs(n);if(a>=1e9)return (n/1e9).toFixed(1)+'B';if(a>=1e6)return (n/1e6).toFixed(1)+'M';if(a>=1e3)return Math.round(n/1e3)+'k';return Math.round(n)+'';};
 const pct=n=>(n*100).toFixed(1)+'%';
-const todayISO=()=>new Date().toISOString().slice(0,10);
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const saldo=m=>Math.max((+m.tot||0)-(+m.ab||0),0);
 const daysBetween=(iso)=>{if(!iso)return 0;const d=new Date(iso+'T00:00:00');return Math.floor((Date.now()-d.getTime())/86400000);};
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -591,6 +591,7 @@ async function init(){
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.cultivos){CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
   ui.fDesc=CFG.descAdmin; ui.iDesc=CFG.descAdmin;
   await Cloud.load();
   bindNav(); render(); updateCloudBadge();
@@ -792,6 +793,7 @@ function rowHTML(m){
     <td><div class="rowact">
       ${m.e==='X'?`<button class="iconbtn" title="Registrar pago" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></button>`:''}
       <button class="iconbtn" title="Editar" onclick="openMov(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="iconbtn" title="Duplicar" onclick="dupMov(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
       <button class="iconbtn del" title="Eliminar" onclick="delMov(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
     </div></td></tr>`;
 }
@@ -808,7 +810,7 @@ function openMov(id){
       <div class="field"><label>Categoría</label><select class="input" id="m_c">${catOpts(tmp.t,tmp.c)}</select></div>
       <div class="field full"><label>Descripción</label><input class="input" id="m_d" value="${esc(tmp.d)}" placeholder="Ej. Compra de fertilizante foliar"></div>
       <div class="field"><label>Unidad</label><select class="input" id="m_u"><option value="">—</option>${CFG.unidades.map(u=>`<option ${tmp.u===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
-      <div class="field"><label>Comercio / proveedor</label><select class="input" id="m_co"><option value="">—</option>${CFG.comercios.map(c=>`<option ${tmp.co===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+      <div class="field"><label>Comercio / proveedor</label><input class="input" id="m_co" list="m_co_list" autocomplete="off" placeholder="Escribe para buscar…" value="${esc(tmp.co||'')}"><datalist id="m_co_list">${CFG.comercios.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div>
       <div class="field" id="m_clwrap" style="${tmp.t==='I'?'':'display:none'}"><label>Cliente</label><select class="input" id="m_cl"><option value="">—</option>${CFG.clientes.map(c=>`<option ${tmp.cl===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
       <div class="field"><label>Cantidad</label><input class="input tnum" type="number" step="any" id="m_q" value="${tmp.q}" oninput="window.__calc()"></div>
       <div class="field"><label>Precio unitario</label><input class="input tnum" type="number" step="any" id="m_pu" value="${tmp.pu}" oninput="window.__calc()"></div>
@@ -837,6 +839,39 @@ async function saveMov(id){
   if(id){const m=MOVS.find(x=>x.id===id);Object.assign(m,obj);}
   else{obj.id=seq++;MOVS.push(obj);}
   await persistMovs();closeModal();render();toast(id?'Movimiento actualizado':'Movimiento registrado');
+}
+function dupMov(id){
+  const m=MOVS.find(x=>x.id===id);if(!m)return;
+  const tmp={...m};const esI=tmp.t==='I';
+  const info=(lab,val)=>`<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0"><span style="color:var(--muted)">${lab}</span><b>${esc(val)}</b></div>`;
+  const body=`
+    <div class="note" style="margin:0 0 14px">Se creará un movimiento nuevo con los mismos datos; solo cambia lo de abajo. Se conservan: fecha, tipo, categoría, descripción, cantidad y estado.</div>
+    <div class="card" style="padding:12px 14px;margin-bottom:14px;background:var(--surface2)">
+      ${info('Fecha',tmp.f)}${info('Tipo',esI?'Ingreso':'Egreso')}${info('Categoría',tmp.c||'—')}${info('Descripción',tmp.d||'—')}${info('Cantidad',(tmp.q||0)+(tmp.u?' '+tmp.u:''))}${info('Estado',tmp.e==='P'?'Pagado / Recibido':'Pendiente')}
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Finca / centro</label><select class="input" id="d_fi">${CFG.fincas.map(f=>`<option ${tmp.fi===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+      <div class="field"><label># Factura</label><input class="input" id="d_fa" value="${esc(tmp.fa||'')}"></div>
+      ${esI
+        ? `<div class="field"><label>Cliente</label><select class="input" id="d_cl"><option value="">—</option>${CFG.clientes.map(c=>`<option ${tmp.cl===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`
+        : `<div class="field"><label>Comercio / proveedor</label><input class="input" id="d_co" list="d_co_list" autocomplete="off" placeholder="Escribe para buscar…" value="${esc(tmp.co||'')}"><datalist id="d_co_list">${CFG.comercios.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div>`}
+      <div class="field"><label>Valor total</label><input class="input tnum" type="number" step="any" id="d_val" value="${+tmp.tot||0}"></div>
+    </div>`;
+  showModal('Duplicar movimiento',body,[
+    {label:'Cancelar',cls:'btn',fn:closeModal},
+    {label:'Crear duplicado',cls:'btn primary',fn:()=>saveDup(id)}
+  ]);
+}
+async function saveDup(id){
+  const m=MOVS.find(x=>x.id===id);if(!m)return;
+  const g=x=>{const el=document.getElementById(x);return el?el.value:'';};
+  const val=+g('d_val')||0;const q=+m.q||0;
+  const nuevo={...m,id:seq++,fi:g('d_fi'),fa:(g('d_fa')||'').trim(),
+    tot:Math.round(val), pu:q?Math.round(val/q):val,
+    co:m.t==='I'?'':(g('d_co')||'').trim(), cl:m.t==='I'?g('d_cl'):'',
+    ab:m.e==='X'?0:0};
+  MOVS.push(nuevo);
+  await persistMovs();closeModal();render();toast('Movimiento duplicado');
 }
 function delMov(id){const m=MOVS.find(x=>x.id===id);
   confirmModal('Eliminar movimiento',`Se eliminará "${esc(m.d||m.c)}" (${fmt(m.tot)}) de ${esc(m.fi)}. Esta acción no se puede deshacer.`,async()=>{
@@ -918,36 +953,47 @@ function renderFicha(){
 }
 
 /* ===== CUENTAS DE FRUTA ===== */
+function frutaPrecioOf(cal){const c=(CFG.frutaCalidades||[]).find(x=>x.n===cal);return c?(+c.p||0):0;}
 function renderFruta(){
   const L=ui.frLines;
   const lineTotal=l=>(+l.q||0)*(+l.p||0);
   const total=L.reduce((a,l)=>a+lineTotal(l),0);
   const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
+  const cals=CFG.frutaCalidades||[];
+  const calOpts=sel=>`<option value="">— Calidad —</option>`+cals.map(c=>`<option ${sel===c.n?'selected':''}>${esc(c.n)}</option>`).join('');
   document.getElementById('content').innerHTML=`
+   <div class="card panel" style="margin-bottom:16px">
+     <div class="ph"><div><h2>Precios del día por calidad</h2><p>Fija el precio de cada calidad; las ventas de hoy (o hasta que lo cambies) usarán estos precios</p></div></div>
+     <div class="cfg-grid">
+       ${cals.length?cals.map((c,i)=>`<div class="finca-ha-row"><input class="input" value="${esc(c.n)}" onchange="setFrutaCalNombre(${i},this.value)"><input class="input tnum" type="number" step="any" placeholder="Precio" value="${c.p||''}" onchange="setFrutaPrecio(${i},this.value)"><button class="iconbtn del" onclick="delFrutaCalidad(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`).join(''):'<div style="color:var(--muted);font-size:12.5px">Agrega calidades abajo.</div>'}
+     </div>
+     <div class="addrow" style="margin-top:10px"><input class="input" id="fc_n" placeholder="Nueva calidad (ej. Extra)" style="flex:2"><input class="input tnum" id="fc_p" type="number" step="any" placeholder="Precio" style="flex:1"><button class="btn sm primary" onclick="addFrutaCalidad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+   </div>
    <div class="grid" style="grid-template-columns:1.5fr 1fr">
     <div class="card panel">
-      <div class="ph"><div><h2>Liquidación de cosecha</h2><p>Suma cantidad × precio por cada entrega o lote</p></div></div>
+      <div class="ph"><div><h2>Nueva venta de fruta</h2><p>Elige la calidad y la cantidad; el precio se toma del panel de arriba</p></div></div>
       <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
         <div class="field"><label>Finca</label><select class="input" onchange="ui.frFinca=this.value;renderFruta()">${CFG.fincas.map(f=>`<option ${ui.frFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
         <div class="field"><label>Unidad</label><select class="input" onchange="ui.frUnit=this.value">${CFG.unidades.map(u=>`<option ${ui.frUnit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
         <div class="field"><label>Cliente</label><select class="input" onchange="ui.frCli=this.value;renderFruta()"><option value="">— Sin cliente —</option>${CFG.clientes.map(c=>`<option ${ui.frCli===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
       </div>
-      <div class="fruta-lines">
-        <div class="fruta-line" style="font-size:11.5px;color:var(--muted);font-weight:600"><span>CANTIDAD</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
-        ${L.map((l,i)=>`<div class="fruta-line">
+      <div class="fruta-lines" style="margin-top:6px">
+        <div class="fruta-line" style="grid-template-columns:1.4fr .8fr 1fr 1fr 36px;font-size:11px;color:var(--muted);font-weight:600"><span>CALIDAD</span><span>CANT.</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
+        ${L.map((l,i)=>`<div class="fruta-line" style="grid-template-columns:1.4fr .8fr 1fr 1fr 36px">
+           <select class="input" onchange="setFrutaLineCal(${i},this.value)">${calOpts(l.cal)}</select>
            <input class="input tnum" type="number" step="any" placeholder="0" value="${l.q}" oninput="ui.frLines[${i}].q=this.value;renderFrutaTotals()">
            <input class="input tnum" type="number" step="any" placeholder="0" value="${l.p}" oninput="ui.frLines[${i}].p=this.value;renderFrutaTotals()">
-           <div class="ro" data-sub="${i}">${fmt(lineTotal(l))}</div>
-           <button class="iconbtn del" onclick="ui.frLines.splice(${i},1);if(!ui.frLines.length)ui.frLines=[{q:'',p:''}];renderFruta()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+           <div class="ro" data-sub="${i}" style="text-align:right;align-self:center">${fmt(lineTotal(l))}</div>
+           <button class="iconbtn del" onclick="ui.frLines.splice(${i},1);if(!ui.frLines.length)ui.frLines=[{cal:'',q:'',p:''}];renderFruta()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>`).join('')}
       </div>
-      <button class="btn sm" onclick="ui.frLines.push({q:'',p:''});renderFruta()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar línea</button>
+      <button class="btn sm" style="margin-top:10px" onclick="ui.frLines.push({cal:'',q:'',p:''});renderFruta()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar calidad a la factura</button>
     </div>
     <div class="card panel">
       <div class="ph"><h2>Resultado</h2></div>
       <div class="card kpi lead"><div class="lab">Total venta</div><div class="val tnum" id="fr_total">${fmt(total)}</div><div class="meta"><span id="fr_q">${totalQ.toLocaleString('es-CO')}</span> ${esc(ui.frUnit)} · ${esc(ui.frFinca)}${ui.frCli?' · '+esc(ui.frCli):''}</div></div>
-      <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px" onclick="frutaToIngreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Registrar como ingreso</button>
-      <div class="note">Al registrar, se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)}${ui.frCli?' a nombre de <b>'+esc(ui.frCli)+'</b>':''} con la categoría de venta y el total calculado, listo en la sección Movimientos${ui.frCli?' y en la cartera del cliente':''}.</div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px" onclick="frutaToIngreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Enviar venta a movimientos</button>
+      <div class="note">Se crea un movimiento de <b>Ingreso</b> en ${esc(ui.frFinca)}${ui.frCli?' a nombre de <b>'+esc(ui.frCli)+'</b>':''} con el detalle de calidades y el total, listo en Movimientos${ui.frCli?' y en la cartera del cliente':''}.</div>
     </div>
    </div>`;
 }
@@ -958,13 +1004,19 @@ function renderFrutaTotals(){
   const t=document.getElementById('fr_total');if(t)t.textContent=fmt(total);
   const q=document.getElementById('fr_q');if(q)q.textContent=totalQ.toLocaleString('es-CO');
 }
+function setFrutaLineCal(i,cal){ui.frLines[i].cal=cal;ui.frLines[i].p=frutaPrecioOf(cal)||ui.frLines[i].p||'';renderFruta();}
+async function setFrutaPrecio(i,val){CFG.frutaCalidades[i].p=+val||0;await persistCfg();toast('Precio actualizado');}
+async function setFrutaCalNombre(i,val){CFG.frutaCalidades[i].n=(val||'').trim();await persistCfg();renderFruta();}
+async function addFrutaCalidad(){const n=(document.getElementById('fc_n').value||'').trim();const p=+document.getElementById('fc_p').value||0;if(!n){toast('Escribe el nombre de la calidad');return;}if(!CFG.frutaCalidades)CFG.frutaCalidades=[];CFG.frutaCalidades.push({n,p});await persistCfg();renderFruta();toast('Calidad agregada');}
+async function delFrutaCalidad(i){CFG.frutaCalidades.splice(i,1);await persistCfg();renderFruta();}
 async function frutaToIngreso(){
   const L=ui.frLines;const total=Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0));
   const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
-  if(total<=0){toast('Agrega cantidades y precios primero');return;}
+  if(total<=0){toast('Agrega calidad, cantidad y precio primero');return;}
   const cat=CFG.catIngresos[0]||'Otros Ingresos';
-  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Liquidación de cosecha',u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
-  await persistMovs();ui.frLines=[{q:'',p:''}];toast('Ingreso registrado por '+fmt(total));renderFruta();
+  const detalle=L.filter(l=>(+l.q||0)>0).map(l=>`${l.cal||'Fruta'} ${(+l.q||0).toLocaleString('es-CO')}`).join(', ');
+  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
+  await persistMovs();ui.frLines=[{cal:'',q:'',p:''}];toast('Venta enviada a movimientos por '+fmt(total));renderFruta();
 }
 
 /* ===== NÓMINA ===== */
@@ -2089,7 +2141,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
