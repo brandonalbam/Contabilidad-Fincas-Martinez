@@ -215,7 +215,7 @@ td.r,th.r{text-align:right}
 
 /* fruta */
 .fruta-lines{display:flex;flex-direction:column;gap:8px;margin:14px 0}
-.fruta-line{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:9px;align-items:center}
+.fruta-line{display:grid;grid-template-columns:1.4fr .8fr 1fr 1fr 36px;gap:9px;align-items:center}
 .fruta-line .ro{padding:9px 11px;background:var(--surface2);border:1px solid var(--line);border-radius:9px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 
 .note{font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--green-bright);border-radius:8px;padding:10px 13px;margin-top:14px;line-height:1.5}
@@ -306,6 +306,12 @@ td.r,th.r{text-align:right}
 .emp-tot{display:flex;gap:18px;font-size:13px;color:var(--muted)}.emp-tot b{font-family:var(--display);font-size:17px;margin-left:6px;color:var(--ink)}
 @media(max-width:1100px){.nom-edit-grid{grid-template-columns:1fr}.day-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:560px){.day-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){
+  .fruta-line{grid-template-columns:1fr 1fr 1fr auto;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .fruta-line>select{grid-column:1/-1}
+  .fruta-line .ro{align-self:center}
+  .fruta-line.head{display:none}
+}
 .payslip{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;break-inside:avoid;background:var(--surface)}
 .payslip-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px;flex-wrap:wrap;border-bottom:1px solid var(--surface3);padding-bottom:8px}
 .payslip-head>b{font-family:var(--display);font-size:14.5px}
@@ -561,7 +567,7 @@ let ui={view:'dash',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
-  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frEstado:'P',frLines:[{cal:'',q:'',p:''}],
+  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frEstado:'P',frFecha:'',frLines:[{cal:'',q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:''
@@ -990,18 +996,19 @@ function renderFruta(){
      </div>
      <div class="addrow" style="margin-top:10px"><input class="input" id="fc_n" placeholder="Nueva calidad (ej. Extra)" style="flex:2"><input class="input tnum money" inputmode="numeric" id="fc_p" placeholder="Precio" style="flex:1"><button class="btn sm primary" onclick="addFrutaCalidad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
    </div>
-   <div class="grid" style="grid-template-columns:1.5fr 1fr">
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="card panel">
       <div class="ph"><div><h2>Nueva venta de fruta</h2><p>Elige la calidad y la cantidad; el precio se toma del panel de arriba</p></div></div>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        <div class="field"><label>Fecha de la venta</label><input class="input tnum" type="date" value="${ui.frFecha||todayISO()}" onchange="ui.frFecha=this.value"></div>
         <div class="field"><label>¿Qué se vendió?</label><select class="input" onchange="ui.frCat=this.value">${CFG.catIngresos.map(c=>`<option ${(ui.frCat||'')===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
         <div class="field"><label>Finca</label><select class="input" onchange="ui.frFinca=this.value;renderFruta()">${CFG.fincas.map(f=>`<option ${ui.frFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
         <div class="field"><label>Unidad</label><select class="input" onchange="ui.frUnit=this.value">${CFG.unidades.map(u=>`<option ${ui.frUnit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
         <div class="field"><label>Cliente</label><select class="input" onchange="ui.frCli=this.value;renderFruta()"><option value="">— Sin cliente —</option>${CFG.clientes.map(c=>`<option ${ui.frCli===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
       </div>
       <div class="fruta-lines" style="margin-top:6px">
-        <div class="fruta-line" style="grid-template-columns:1.4fr .8fr 1fr 1fr 36px;font-size:11px;color:var(--muted);font-weight:600"><span>CALIDAD</span><span>CANT.</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
-        ${L.map((l,i)=>`<div class="fruta-line" style="grid-template-columns:1.4fr .8fr 1fr 1fr 36px">
+        <div class="fruta-line head" style="font-size:11px;color:var(--muted);font-weight:600"><span>CALIDAD</span><span>CANT.</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
+        ${L.map((l,i)=>`<div class="fruta-line">
            <select class="input" onchange="setFrutaLineCal(${i},this.value)">${calOpts(l.cal)}</select>
            <input class="input tnum" type="number" step="any" placeholder="0" value="${l.q}" oninput="ui.frLines[${i}].q=this.value;renderFrutaTotals()">
            <input class="input tnum money" inputmode="numeric" placeholder="0" value="${fmn(l.p)}" oninput="ui.frLines[${i}].p=this.value;renderFrutaTotals()">
@@ -1038,7 +1045,7 @@ async function frutaToIngreso(){
   if(total<=0){toast('Agrega calidad, cantidad y precio primero');return;}
   const cat=ui.frCat||CFG.catIngresos[0]||'Otros Ingresos';
   const detalle=L.filter(l=>(+l.q||0)>0).map(l=>`${l.cal||'Fruta'} ${(+l.q||0).toLocaleString('es-CO')}`).join(', ');
-  MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:ui.frEstado||'P',ab:0,fa:'',co:''});
+  MOVS.push({id:seq++,f:ui.frFecha||todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:ui.frEstado||'P',ab:0,fa:'',co:''});
   await persistMovs();ui.frLines=[{cal:'',q:'',p:''}];toast('Venta enviada a movimientos ('+(ui.frEstado==='X'?'pendiente':'pagada')+') por '+fmt(total));renderFruta();
 }
 
