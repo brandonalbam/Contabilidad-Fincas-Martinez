@@ -905,17 +905,20 @@ function delMov(id){const m=MOVS.find(x=>x.id===id);
     MOVS=MOVS.filter(x=>x.id!==id);await persistMovs();closeModal();render();toast('Movimiento eliminado');});
 }
 function openPago(id){const m=MOVS.find(x=>x.id===id);const sal=saldo(m);
-  showModal('Registrar pago',`
-   <p style="color:var(--muted);margin-bottom:14px">${esc(m.fi)} · ${esc(m.d||m.c)}</p>
+  showModal('Registrar abono',`
+   <p style="color:var(--muted);margin-bottom:14px">${esc(m.fi)} · ${esc(m.d||m.c)}${m.fa?' · Factura '+esc(m.fa):''}</p>
    <div class="form-grid">
-     <div class="field"><label>Total</label><input class="input tnum" value="${fmt(m.tot)}" disabled></div>
+     <div class="field"><label>Total factura</label><input class="input tnum" value="${fmt(m.tot)}" disabled></div>
      <div class="field"><label>Saldo pendiente</label><input class="input tnum" value="${fmt(sal)}" disabled></div>
-     <div class="field full"><label>Abono a registrar</label><input class="input tnum money" inputmode="numeric" id="p_ab" value="${fmn(sal)}"></div>
+     <div class="field full"><label>Abono a registrar (parcial o total)</label><input class="input tnum money" inputmode="numeric" id="p_ab" value="" placeholder="0"></div>
    </div>
-   <div class="note">Si el abono cubre todo el saldo, el movimiento pasa a <b>Pagado / Recibido</b>. Si es parcial, queda <b>Pendiente</b> con el saldo restante.</div>`,
-   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar pago',cls:'btn primary',fn:async()=>{
-     const ab=(+m.ab||0)+num(document.getElementById('p_ab').value);m.ab=ab;if(ab>=(+m.tot||0))m.e='P';
-     await persistMovs();closeModal();render();toast('Pago registrado');}}]);
+   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('p_ab');e.value='${fmn(sal)}';e.dataset.raw='${Math.round(sal)}'">Abonar todo el saldo (${fmt(sal)})</button></div>
+   <div class="note">Escribe el monto del abono. Si cubre todo el saldo, la factura pasa a <b>Pagada / Recibida</b>; si es parcial, queda <b>Pendiente</b> con el saldo restante.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar abono',cls:'btn primary',fn:async()=>{
+     const abono=num(document.getElementById('p_ab').value);
+     if(abono<=0){toast('Escribe el monto del abono');return;}
+     const ab=(+m.ab||0)+abono;m.ab=ab;if(ab>=(+m.tot||0))m.e='P';
+     await persistMovs();closeModal();render();toast('Abono de '+fmt(abono)+' registrado');}}]);
 }
 
 /* ===== RESUMEN POR FINCA ===== */
@@ -1387,7 +1390,7 @@ function detailTable(movs,saldoLab,totLab,showFa){saldoLab=saldoLab||'Saldo (deb
       <td class="r tnum">${fmt(m.tot)}</td>
       <td class="r tnum" style="color:var(--green2)">${fmt(m.ab||0)}</td>
       <td class="r tnum"><b style="color:var(--amber)">${fmt(saldo(m))}</b></td>
-      <td class="r"><button class="btn sm" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Pago</button></td></tr>`).join('')}
+      <td class="r"><button class="btn sm" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Abonar</button></td></tr>`).join('')}
       <tr style="border-top:2px solid var(--line)"><td colspan="${showFa?6:5}"><b>${totLab}</b></td><td class="r tnum"><b style="color:var(--amber)">${fmt(movs.reduce((a,m)=>a+saldo(m),0))}</b></td><td></td></tr>
     </tbody></table></div>`;
 }
