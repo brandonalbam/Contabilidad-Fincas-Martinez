@@ -1632,13 +1632,12 @@ function renderDron(){
        <div class="ph"><div><h2>Combustible y aceite</h2><p>Se descuenta de los ingresos del dron</p></div></div>
        <div class="form-grid" style="grid-template-columns:1fr 1fr">
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="cb_f" value="${todayISO()}"></div>
-         <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="cb_ha" placeholder="0" oninput="dronFuelCalc()"></div>
-         <div class="field"><label>Gasolina por hectárea</label><input class="input tnum money" inputmode="numeric" id="cb_gas" placeholder="0" oninput="dronFuelCalc()"></div>
-         <div class="field"><label>Aceite por hectárea</label><input class="input tnum money" inputmode="numeric" id="cb_ace" placeholder="0" oninput="dronFuelCalc()"></div>
+         <div class="field"><label>Gasolina comprada ($)</label><input class="input tnum money" inputmode="numeric" id="cb_gas" placeholder="0" oninput="dronFuelCalc()"></div>
+         <div class="field"><label>Aceite comprado ($)</label><input class="input tnum money" inputmode="numeric" id="cb_ace" placeholder="0" oninput="dronFuelCalc()"></div>
        </div>
        <div class="card kpi" style="margin-top:12px"><div class="lab">Total combustible y aceite</div><div class="val tnum" id="cb_total" style="font-size:20px;color:var(--red)">${fmt(0)}</div></div>
        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronAddFuel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar gasto</button>
-       <div class="note">Total = (gasolina/ha + aceite/ha) × hectáreas. Reduce la utilidad del dron.</div>
+       <div class="note">Total = gasolina + aceite. Se registra abajo en los movimientos del dron y reduce la utilidad.</div>
      </div>
    </div>
    ${dronPilotosPanel(d)}
@@ -1704,17 +1703,15 @@ async function dronAddMant(){
 function dronFuelCalc(){
   const gas=num((document.getElementById('cb_gas')||{}).value);
   const ace=num((document.getElementById('cb_ace')||{}).value);
-  const ha=+(document.getElementById('cb_ha')||{}).value||0;
-  const el=document.getElementById('cb_total');if(el)el.textContent=fmt((gas+ace)*ha);
+  const el=document.getElementById('cb_total');if(el)el.textContent=fmt(gas+ace);
 }
 async function dronAddFuel(){
   const f=document.getElementById('cb_f').value||todayISO();
   const gas=num(document.getElementById('cb_gas').value);
   const ace=num(document.getElementById('cb_ace').value);
-  const ha=+document.getElementById('cb_ha').value||0;
-  if(!ha||(!gas&&!ace)){toast('Indica las hectáreas y el gasto de gasolina o aceite por hectárea');return;}
-  const gasTot=Math.round(gas*ha),aceiteTot=Math.round(ace*ha),tot=gasTot+aceiteTot;
-  DRON.push({id:dseq++,k:'fuel',f,gasHa:gas,aceiteHa:ace,ha,gasTot,aceiteTot,tot});
+  if(!gas&&!ace){toast('Indica el valor de gasolina o aceite');return;}
+  const gasTot=Math.round(gas),aceiteTot=Math.round(ace),tot=gasTot+aceiteTot;
+  DRON.push({id:dseq++,k:'fuel',f,gasTot,aceiteTot,tot});
   await persistDron();toast('Combustible y aceite agregado por '+fmt(tot));renderDron();
 }
 function dronSociosPanel(d){
@@ -1747,8 +1744,8 @@ function dronRecordsList(d){
       <tbody>${d.recs.length?d.recs.map(r=>`<tr>
         <td class="tnum">${fmtFecha(r.f)}</td>
         <td>${r.k==='job'?'<span class="chip pay">Fumigación</span>':r.k==='fuel'?'<span class="chip pend">Combustible</span>':'<span class="chip pend">Mantenim.</span>'}</td>
-        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasHa||0)+'/ha + Aceite '+fmt(r.aceiteHa||0)+'/ha':esc(r.d||'Mantenimiento')}</td>
-        <td class="r tnum">${r.k==='job'||r.k==='fuel'?(+r.ha).toLocaleString('es-CO'):'—'}</td>
+        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||'Mantenimiento')}</td>
+        <td class="r tnum">${r.k==='job'?(+r.ha).toLocaleString('es-CO'):'—'}</td>
         <td class="r tnum ${r.k!=='job'?'neg':''}">${r.k!=='job'?'− ':''}${fmt(r.tot)}</td>
         <td class="r"><button class="iconbtn del" onclick="dronDelRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="6">${emptyRow('Sin movimientos del dron en el periodo')}</td></tr>`}
       </tbody></table></div>
@@ -1766,7 +1763,7 @@ function dronStatementHTML(){
   const socioRows=socios.map(s=>{const f=(+s.p||0)/100;return `<tr><td>${esc(s.n)}</td><td class="r tnum">${s.p}%</td><td class="r tnum">${fmt(d.ingresos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.pilotos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.combustible*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.mant*f)}</td><td class="r tnum"><b>${fmt(d.util*f)}</b></td></tr>`;}).join('');
   const jobRows=d.jobs.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td>${esc(r.fi)}</td><td>${esc(r.piloto||'—')}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.pu)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
   const mantRows=d.mants.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td>${esc(r.d||'Mantenimiento')}</td><td class="r tnum">${fmt(r.tot)}</td></tr>`).join('');
-  const fuelRows=d.fuels.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.gasHa||0)}</td><td class="r tnum">${fmt(r.aceiteHa||0)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
+  const fuelRows=d.fuels.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${fmt(r.gasTot||0)}</td><td class="r tnum">${fmt(r.aceiteTot||0)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Dron de fumigación</div>
      <h2>Informe del dron</h2><div class="rh-sub">Periodo: ${periodo}</div></div>
@@ -1790,8 +1787,8 @@ function dronStatementHTML(){
        <tbody>${pilRows}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${d.haTot.toLocaleString('es-CO')}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td></tr></tbody></table></div></div>`:''}
      ${d.fuels.length?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Combustible y aceite<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Fecha</th><th class="r">Hectáreas</th><th class="r">Gasolina/ha</th><th class="r">Aceite/ha</th><th class="r">Total</th></tr></thead>
-       <tbody>${fuelRows}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td></td><td></td><td></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td></tr></tbody></table></div></div>`:''}
+       <thead><tr><th>Fecha</th><th class="r">Gasolina</th><th class="r">Aceite</th><th class="r">Total</th></tr></thead>
+       <tbody>${fuelRows}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>TOTAL</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td></tr></tbody></table></div></div>`:''}
      <div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg>Fumigaciones<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Fecha</th><th>Finca</th><th>Piloto</th><th class="r">Hectáreas</th><th class="r">Valor/ha</th><th class="r">Total</th></tr></thead>
