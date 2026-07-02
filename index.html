@@ -345,7 +345,9 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
   .report-sec,.card,.mini3,.rep-head,table,tr{break-inside:avoid}
   .rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .kpi.lead,.mcard.good,.mcard.bad,.catbar-fill,.chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  table{font-size:11px}
+  table{font-size:11px;width:100%!important;table-layout:auto}
+  .tablewrap{overflow:visible!important;border:none!important}
+  td,th{white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;vertical-align:top}
   th{background:#f0f3ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
@@ -1604,17 +1606,17 @@ function renderDron(){
      <button class="btn" onclick="ui.dronFrom='';ui.dronTo='';renderDron()">Todo</button>
      <button class="btn primary" onclick="printDron()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Informe</button></div>`;
   document.getElementById('content').innerHTML=`
-   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
      <div class="card kpi lead"><div class="lab">Ingresos del dron</div><div class="val tnum">${fmt(d.ingresos)}</div><div class="meta">${d.jobs.length} fumigación(es) · ${d.haTot.toLocaleString('es-CO')} ha</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Pago a pilotos</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.pilotos)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Combustible y aceite</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.combustible)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Mantenimiento</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.mant)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--green2)">Utilidad a repartir</div><div class="val tnum" style="font-size:20px;color:var(--green2)">${fmt(d.util)}</div></div>
    </div>
-   <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start;gap:16px">
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));align-items:start;gap:16px">
      <div class="card panel">
        <div class="ph"><div><h2>Registrar fumigación</h2><p>Crea el movimiento y lo suma a las cuentas del dron</p></div></div>
-       <div class="form-grid" style="grid-template-columns:1fr 1fr">
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
          <div class="field"><label>Finca fumigada</label><select class="input" id="dr_fi">${CFG.fincas.map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dr_f" value="${todayISO()}"></div>
          <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="dr_pu" placeholder="0" oninput="dronCalc()"></div>
@@ -1630,7 +1632,7 @@ function renderDron(){
      </div>
      <div class="card panel">
        <div class="ph"><div><h2>Mantenimiento</h2><p>Se descuenta de la utilidad según el % de cada socio</p></div></div>
-       <div class="form-grid" style="grid-template-columns:1fr 1fr">
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dm_f" value="${todayISO()}"></div>
          <div class="field"><label>Valor</label><input class="input tnum money" inputmode="numeric" id="dm_v" placeholder="0"></div>
          <div class="field full"><label>Descripción</label><input class="input" id="dm_d" placeholder="Cambio de hélices, batería, repuestos…"></div>
@@ -1640,7 +1642,7 @@ function renderDron(){
      </div>
      <div class="card panel">
        <div class="ph"><div><h2>Combustible y aceite</h2><p>Se descuenta de los ingresos del dron</p></div></div>
-       <div class="form-grid" style="grid-template-columns:1fr 1fr">
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="cb_f" value="${todayISO()}"></div>
          <div class="field"><label>Gasolina comprada ($)</label><input class="input tnum money" inputmode="numeric" id="cb_gas" placeholder="0" oninput="dronFuelCalc()"></div>
          <div class="field"><label>Aceite comprado ($)</label><input class="input tnum money" inputmode="numeric" id="cb_ace" placeholder="0" oninput="dronFuelCalc()"></div>
