@@ -347,7 +347,8 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
   .kpi.lead,.mcard.good,.mcard.bad,.catbar-fill,.chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   table{font-size:11px;width:100%!important;table-layout:auto}
   .tablewrap{overflow:visible!important;border:none!important}
-  td,th{white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;vertical-align:top}
+  td,th{white-space:nowrap;vertical-align:top}
+  td.wrap{white-space:normal!important;overflow-wrap:anywhere;word-break:break-word}
   th{background:#f0f3ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
@@ -1387,7 +1388,7 @@ function detailTable(movs,saldoLab,totLab,showFa){saldoLab=saldoLab||'Saldo (deb
     <tbody>${movs.map(m=>`<tr>
       <td class="tnum">${fmtFecha(m.f)}</td>
       <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
-      <td>${esc(m.d||m.c)||'—'}</td>
+      <td class="wrap">${esc(m.d||m.c)||'—'}</td>
       ${showFa?`<td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}</td>`:''}
       <td class="r tnum">${fmt(m.tot)}</td>
       <td class="r tnum" style="color:var(--green2)">${fmt(m.ab||0)}</td>
@@ -1400,7 +1401,7 @@ function clienteStatementHTML(d){
   const rows=d.pend.map(m=>`<tr>
      <td class="tnum">${fmtFecha(m.f)}</td>
      <td>${esc(m.fi)}</td>
-     <td>${esc(m.d||m.c)||'—'}</td>
+     <td class="wrap">${esc(m.d||m.c)||'—'}</td>
      <td>${esc(m.fa||'—')}</td>
      <td class="r tnum">${fmt(m.tot)}</td>
      <td class="r tnum">${fmt(m.ab||0)}</td>
@@ -1501,7 +1502,7 @@ function comerciosData(){
 }
 function comercioStatementHTML(d){
   const rows=d.pend.map(m=>`<tr>
-     <td class="tnum">${fmtFecha(m.f)}</td><td>${esc(m.fi)}</td><td>${esc(m.d||m.c)||'—'}</td><td>${esc(m.fa||'—')}</td>
+     <td class="tnum">${fmtFecha(m.f)}</td><td>${esc(m.fi)}</td><td class="wrap">${esc(m.d||m.c)||'—'}</td><td>${esc(m.fa||'—')}</td>
      <td class="r tnum">${fmt(m.tot)}</td><td class="r tnum">${fmt(m.ab||0)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Estado de cuenta</div>
@@ -1774,7 +1775,7 @@ function dronStatementHTML(){
   const pilRows=Object.keys(pilEarn).map(n=>`<tr><td>${esc(n)}</td><td class="r tnum">${(pilHa[n]||0).toLocaleString('es-CO')}</td><td class="r tnum"><b>${fmt(pilEarn[n])}</b></td></tr>`).join('');
   const socioRows=socios.map(s=>{const f=(+s.p||0)/100;return `<tr><td>${esc(s.n)}</td><td class="r tnum">${s.p}%</td><td class="r tnum">${fmt(d.ingresos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.pilotos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.combustible*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.mant*f)}</td><td class="r tnum"><b>${fmt(d.util*f)}</b></td></tr>`;}).join('');
   const jobRows=d.jobs.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td>${esc(r.fi)}</td><td>${esc(r.piloto||'—')}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.pu)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
-  const mantRows=d.mants.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td>${esc(r.d||'Mantenimiento')}</td><td class="r tnum">${fmt(r.tot)}</td></tr>`).join('');
+  const mantRows=d.mants.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="wrap">${esc(r.d||'Mantenimiento')}</td><td class="r tnum">${fmt(r.tot)}</td></tr>`).join('');
   const fuelRows=d.fuels.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${fmt(r.gasTot||0)}</td><td class="r tnum">${fmt(r.aceiteTot||0)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Dron de fumigación</div>
@@ -2011,11 +2012,11 @@ function renderInforme(){
      <div class="grid" style="grid-template-columns:1fr 1fr">
        <div class="card panel">
          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><b style="color:var(--blue)">Cuentas por cobrar</b><b class="tnum">${fmt(a.cobrar)}</b></div>
-         ${cobrar.length?`<div class="tablewrap" style="border:none"><table><tbody>${cobrar.slice(0,8).map(m=>`<tr><td class="tnum" style="color:var(--faint)">${fmtFecha(m.f)}</td><td>${esc(m.d||m.c)}${finca?'':' · '+esc(m.fi)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('')}</tbody></table></div>${cobrar.length>8?`<p style="font-size:12px;color:var(--faint);margin-top:8px">+ ${cobrar.length-8} cuenta(s) más</p>`:''}`:`<p style="color:var(--faint);font-size:13px">Sin cuentas pendientes de cobro.</p>`}
+         ${cobrar.length?`<div class="tablewrap" style="border:none"><table><tbody>${cobrar.slice(0,8).map(m=>`<tr><td class="tnum" style="color:var(--faint)">${fmtFecha(m.f)}</td><td class="wrap">${esc(m.d||m.c)}${finca?'':' · '+esc(m.fi)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('')}</tbody></table></div>${cobrar.length>8?`<p style="font-size:12px;color:var(--faint);margin-top:8px">+ ${cobrar.length-8} cuenta(s) más</p>`:''}`:`<p style="color:var(--faint);font-size:13px">Sin cuentas pendientes de cobro.</p>`}
        </div>
        <div class="card panel">
          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><b style="color:var(--amber)">Cuentas por pagar</b><b class="tnum">${fmt(a.pagar)}</b></div>
-         ${pagar.length?`<div class="tablewrap" style="border:none"><table><tbody>${pagar.slice(0,8).map(m=>`<tr><td class="tnum" style="color:var(--faint)">${fmtFecha(m.f)}</td><td>${esc(m.d||m.c)}${finca?'':' · '+esc(m.fi)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('')}</tbody></table></div>${pagar.length>8?`<p style="font-size:12px;color:var(--faint);margin-top:8px">+ ${pagar.length-8} cuenta(s) más</p>`:''}`:`<p style="color:var(--faint);font-size:13px">Sin cuentas pendientes de pago.</p>`}
+         ${pagar.length?`<div class="tablewrap" style="border:none"><table><tbody>${pagar.slice(0,8).map(m=>`<tr><td class="tnum" style="color:var(--faint)">${fmtFecha(m.f)}</td><td class="wrap">${esc(m.d||m.c)}${finca?'':' · '+esc(m.fi)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('')}</tbody></table></div>${pagar.length>8?`<p style="font-size:12px;color:var(--faint);margin-top:8px">+ ${pagar.length-8} cuenta(s) más</p>`:''}`:`<p style="color:var(--faint);font-size:13px">Sin cuentas pendientes de pago.</p>`}
        </div>
      </div>`)}
 
