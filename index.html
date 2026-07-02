@@ -546,7 +546,7 @@ let ui={view:'dash',
   mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
-  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frLines:[{cal:'',q:'',p:''}],
+  frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frLines:[{cal:'',q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:''
@@ -555,6 +555,8 @@ let ui={view:'dash',
 /* ===== helpers ===== */
 const fmt=n=>{n=Math.round(+n||0);const s=n<0?'-':'';return s+CFG.moneda+' '+Math.abs(n).toLocaleString('es-CO');};
 const fmtK=n=>{n=+n||0;const a=Math.abs(n);if(a>=1e9)return (n/1e9).toFixed(1)+'B';if(a>=1e6)return (n/1e6).toFixed(1)+'M';if(a>=1e3)return Math.round(n/1e3)+'k';return Math.round(n)+'';};
+const num=v=>{if(typeof v==='number')return v;return +String(v==null?'':v).replace(/[^\d,-]/g,'').replace(',','.')||0;};
+const fmn=v=>(v===''||v==null)?'':(+String(v).replace(/[^\d,-]/g,'').replace(',','.')||0).toLocaleString('es-CO');
 const pct=n=>(n*100).toFixed(1)+'%';
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const saldo=m=>Math.max((+m.tot||0)-(+m.ab||0),0);
@@ -813,28 +815,28 @@ function openMov(id){
       <div class="field"><label>Comercio / proveedor</label><input class="input" id="m_co" list="m_co_list" autocomplete="off" placeholder="Escribe para buscar…" value="${esc(tmp.co||'')}"><datalist id="m_co_list">${CFG.comercios.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div>
       <div class="field" id="m_clwrap" style="${tmp.t==='I'?'':'display:none'}"><label>Cliente</label><select class="input" id="m_cl"><option value="">—</option>${CFG.clientes.map(c=>`<option ${tmp.cl===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
       <div class="field"><label>Cantidad</label><input class="input tnum" type="number" step="any" id="m_q" value="${tmp.q}" oninput="window.__calc()"></div>
-      <div class="field"><label>Precio unitario</label><input class="input tnum" type="number" step="any" id="m_pu" value="${tmp.pu}" oninput="window.__calc()"></div>
+      <div class="field"><label>Precio unitario</label><input class="input tnum money" inputmode="numeric" id="m_pu" value="${fmn(tmp.pu)}" oninput="window.__calc()"></div>
       <div class="calc-total"><span>TOTAL</span><b id="m_total" class="tnum">${fmt((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)}</b></div>
       <div class="field"><label>Estado</label><select class="input" id="m_e" onchange="window.__estado(this.value)"><option value="P" ${tmp.e==='P'?'selected':''}>Pagado / Recibido</option><option value="X" ${tmp.e==='X'?'selected':''}>Pendiente</option></select></div>
       <div class="field"><label># Factura</label><input class="input" id="m_fa" value="${esc(tmp.fa)}"></div>
-      <div class="field" id="m_abwrap" style="${tmp.e==='X'?'':'display:none'}"><label>Abono / pago recibido</label><input class="input tnum" type="number" step="any" id="m_ab" value="${tmp.ab||0}" oninput="window.__saldo()"></div>
+      <div class="field" id="m_abwrap" style="${tmp.e==='X'?'':'display:none'}"><label>Abono / pago recibido</label><input class="input tnum money" inputmode="numeric" id="m_ab" value="${fmn(tmp.ab||0)}" oninput="window.__saldo()"></div>
       <div class="field" id="m_salwrap" style="${tmp.e==='X'?'':'display:none'}"><label id="m_sallab">Saldo pendiente</label><input class="input tnum" id="m_sal" value="${fmt(Math.max(((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)-(+tmp.ab||0),0))}" disabled></div>
     </div>`;
   showModal(isNew?'Nuevo movimiento':'Editar movimiento',body(),[
     {label:'Cancelar',cls:'btn',fn:closeModal},
     {label:isNew?'Guardar movimiento':'Guardar cambios',cls:'btn primary',fn:()=>saveMov(id)}
   ]);
-  window.__saldo=()=>{const tot=(+document.getElementById('m_q').value||0)*(+document.getElementById('m_pu').value||0);const ab=+document.getElementById('m_ab').value||0;const s=Math.max(tot-ab,0);const se=document.getElementById('m_sal');if(se)se.value=fmt(s);const lb=document.getElementById('m_sallab');if(lb)lb.textContent=document.getElementById('m_t').value==='I'?'Saldo (debe el cliente)':'Saldo por pagar';};
+  window.__saldo=()=>{const tot=(+document.getElementById('m_q').value||0)*num(document.getElementById('m_pu').value);const ab=num(document.getElementById('m_ab').value);const s=Math.max(tot-ab,0);const se=document.getElementById('m_sal');if(se)se.value=fmt(s);const lb=document.getElementById('m_sallab');if(lb)lb.textContent=document.getElementById('m_t').value==='I'?'Saldo (debe el cliente)':'Saldo por pagar';};
   window.__movType=v=>{document.getElementById('m_c').innerHTML=catOpts(v,'');document.getElementById('m_clwrap').style.display=v==='I'?'':'none';window.__saldo();};
   window.__estado=v=>{const sh=v==='X'?'':'none';document.getElementById('m_abwrap').style.display=sh;document.getElementById('m_salwrap').style.display=sh;window.__saldo();};
-  window.__calc=()=>{const q=+document.getElementById('m_q').value||0,p=+document.getElementById('m_pu').value||0;document.getElementById('m_total').textContent=fmt(q*p);window.__saldo();};
+  window.__calc=()=>{const q=+document.getElementById('m_q').value||0,p=num(document.getElementById('m_pu').value);document.getElementById('m_total').textContent=fmt(q*p);window.__saldo();};
 }
 function catOpts(t,sel){const arr=t==='I'?CFG.catIngresos:CFG.catEgresos;return arr.map(c=>`<option ${sel===c?'selected':''}>${esc(c)}</option>`).join('');}
 async function saveMov(id){
   const g=x=>document.getElementById(x).value;
-  const q=+g('m_q')||0,pu=+g('m_pu')||0;
+  const q=+g('m_q')||0,pu=num(g('m_pu'));
   const obj={f:g('m_f'),fi:g('m_fi'),t:g('m_t'),c:g('m_c'),d:g('m_d').trim(),u:g('m_u'),co:g('m_co'),
-    cl:g('m_t')==='I'?g('m_cl'):'',q,pu,tot:Math.round(q*pu),e:g('m_e'),ab:g('m_e')==='X'?(+g('m_ab')||0):0,fa:g('m_fa').trim()};
+    cl:g('m_t')==='I'?g('m_cl'):'',q,pu,tot:Math.round(q*pu),e:g('m_e'),ab:g('m_e')==='X'?num(g('m_ab')):0,fa:g('m_fa').trim()};
   if(!obj.f){toast('Indica la fecha');return;}
   if(id){const m=MOVS.find(x=>x.id===id);Object.assign(m,obj);}
   else{obj.id=seq++;MOVS.push(obj);}
@@ -855,7 +857,7 @@ function dupMov(id){
       ${esI
         ? `<div class="field"><label>Cliente</label><select class="input" id="d_cl"><option value="">—</option>${CFG.clientes.map(c=>`<option ${tmp.cl===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`
         : `<div class="field"><label>Comercio / proveedor</label><input class="input" id="d_co" list="d_co_list" autocomplete="off" placeholder="Escribe para buscar…" value="${esc(tmp.co||'')}"><datalist id="d_co_list">${CFG.comercios.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div>`}
-      <div class="field"><label>Valor total</label><input class="input tnum" type="number" step="any" id="d_val" value="${+tmp.tot||0}"></div>
+      <div class="field"><label>Valor total</label><input class="input tnum money" inputmode="numeric" id="d_val" value="${fmn(+tmp.tot||0)}"></div>
     </div>`;
   showModal('Duplicar movimiento',body,[
     {label:'Cancelar',cls:'btn',fn:closeModal},
@@ -865,7 +867,7 @@ function dupMov(id){
 async function saveDup(id){
   const m=MOVS.find(x=>x.id===id);if(!m)return;
   const g=x=>{const el=document.getElementById(x);return el?el.value:'';};
-  const val=+g('d_val')||0;const q=+m.q||0;
+  const val=num(g('d_val'));const q=+m.q||0;
   const nuevo={...m,id:seq++,fi:g('d_fi'),fa:(g('d_fa')||'').trim(),
     tot:Math.round(val), pu:q?Math.round(val/q):val,
     co:m.t==='I'?'':(g('d_co')||'').trim(), cl:m.t==='I'?g('d_cl'):'',
@@ -883,11 +885,11 @@ function openPago(id){const m=MOVS.find(x=>x.id===id);const sal=saldo(m);
    <div class="form-grid">
      <div class="field"><label>Total</label><input class="input tnum" value="${fmt(m.tot)}" disabled></div>
      <div class="field"><label>Saldo pendiente</label><input class="input tnum" value="${fmt(sal)}" disabled></div>
-     <div class="field full"><label>Abono a registrar</label><input class="input tnum" type="number" step="any" id="p_ab" value="${sal}"></div>
+     <div class="field full"><label>Abono a registrar</label><input class="input tnum money" inputmode="numeric" id="p_ab" value="${fmn(sal)}"></div>
    </div>
    <div class="note">Si el abono cubre todo el saldo, el movimiento pasa a <b>Pagado / Recibido</b>. Si es parcial, queda <b>Pendiente</b> con el saldo restante.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar pago',cls:'btn primary',fn:async()=>{
-     const ab=(+m.ab||0)+(+document.getElementById('p_ab').value||0);m.ab=ab;if(ab>=(+m.tot||0))m.e='P';
+     const ab=(+m.ab||0)+num(document.getElementById('p_ab').value);m.ab=ab;if(ab>=(+m.tot||0))m.e='P';
      await persistMovs();closeModal();render();toast('Pago registrado');}}]);
 }
 
@@ -956,7 +958,7 @@ function renderFicha(){
 function frutaPrecioOf(cal){const c=(CFG.frutaCalidades||[]).find(x=>x.n===cal);return c?(+c.p||0):0;}
 function renderFruta(){
   const L=ui.frLines;
-  const lineTotal=l=>(+l.q||0)*(+l.p||0);
+  const lineTotal=l=>(+l.q||0)*num(l.p);
   const total=L.reduce((a,l)=>a+lineTotal(l),0);
   const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
   const cals=CFG.frutaCalidades||[];
@@ -965,14 +967,15 @@ function renderFruta(){
    <div class="card panel" style="margin-bottom:16px">
      <div class="ph"><div><h2>Precios del día por calidad</h2><p>Fija el precio de cada calidad; las ventas de hoy (o hasta que lo cambies) usarán estos precios</p></div></div>
      <div class="cfg-grid">
-       ${cals.length?cals.map((c,i)=>`<div class="finca-ha-row"><input class="input" value="${esc(c.n)}" onchange="setFrutaCalNombre(${i},this.value)"><input class="input tnum" type="number" step="any" placeholder="Precio" value="${c.p||''}" onchange="setFrutaPrecio(${i},this.value)"><button class="iconbtn del" onclick="delFrutaCalidad(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`).join(''):'<div style="color:var(--muted);font-size:12.5px">Agrega calidades abajo.</div>'}
+       ${cals.length?cals.map((c,i)=>`<div class="finca-ha-row"><input class="input" value="${esc(c.n)}" onchange="setFrutaCalNombre(${i},this.value)"><input class="input tnum money" inputmode="numeric" placeholder="Precio" value="${fmn(c.p)}" onchange="setFrutaPrecio(${i},this.value)"><button class="iconbtn del" onclick="delFrutaCalidad(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`).join(''):'<div style="color:var(--muted);font-size:12.5px">Agrega calidades abajo.</div>'}
      </div>
-     <div class="addrow" style="margin-top:10px"><input class="input" id="fc_n" placeholder="Nueva calidad (ej. Extra)" style="flex:2"><input class="input tnum" id="fc_p" type="number" step="any" placeholder="Precio" style="flex:1"><button class="btn sm primary" onclick="addFrutaCalidad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+     <div class="addrow" style="margin-top:10px"><input class="input" id="fc_n" placeholder="Nueva calidad (ej. Extra)" style="flex:2"><input class="input tnum money" inputmode="numeric" id="fc_p" placeholder="Precio" style="flex:1"><button class="btn sm primary" onclick="addFrutaCalidad()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
    </div>
    <div class="grid" style="grid-template-columns:1.5fr 1fr">
     <div class="card panel">
       <div class="ph"><div><h2>Nueva venta de fruta</h2><p>Elige la calidad y la cantidad; el precio se toma del panel de arriba</p></div></div>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="field"><label>¿Qué se vendió?</label><select class="input" onchange="ui.frCat=this.value">${CFG.catIngresos.map(c=>`<option ${(ui.frCat||'')===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
         <div class="field"><label>Finca</label><select class="input" onchange="ui.frFinca=this.value;renderFruta()">${CFG.fincas.map(f=>`<option ${ui.frFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
         <div class="field"><label>Unidad</label><select class="input" onchange="ui.frUnit=this.value">${CFG.unidades.map(u=>`<option ${ui.frUnit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
         <div class="field"><label>Cliente</label><select class="input" onchange="ui.frCli=this.value;renderFruta()"><option value="">— Sin cliente —</option>${CFG.clientes.map(c=>`<option ${ui.frCli===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
@@ -982,7 +985,7 @@ function renderFruta(){
         ${L.map((l,i)=>`<div class="fruta-line" style="grid-template-columns:1.4fr .8fr 1fr 1fr 36px">
            <select class="input" onchange="setFrutaLineCal(${i},this.value)">${calOpts(l.cal)}</select>
            <input class="input tnum" type="number" step="any" placeholder="0" value="${l.q}" oninput="ui.frLines[${i}].q=this.value;renderFrutaTotals()">
-           <input class="input tnum" type="number" step="any" placeholder="0" value="${l.p}" oninput="ui.frLines[${i}].p=this.value;renderFrutaTotals()">
+           <input class="input tnum money" inputmode="numeric" placeholder="0" value="${fmn(l.p)}" oninput="ui.frLines[${i}].p=this.value;renderFrutaTotals()">
            <div class="ro" data-sub="${i}" style="text-align:right;align-self:center">${fmt(lineTotal(l))}</div>
            <button class="iconbtn del" onclick="ui.frLines.splice(${i},1);if(!ui.frLines.length)ui.frLines=[{cal:'',q:'',p:''}];renderFruta()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>`).join('')}
@@ -998,22 +1001,22 @@ function renderFruta(){
    </div>`;
 }
 function renderFrutaTotals(){
-  const L=ui.frLines;const lineTotal=l=>(+l.q||0)*(+l.p||0);
+  const L=ui.frLines;const lineTotal=l=>(+l.q||0)*num(l.p);
   L.forEach((l,i)=>{const el=document.querySelector(`[data-sub="${i}"]`);if(el)el.textContent=fmt(lineTotal(l));});
   const total=L.reduce((a,l)=>a+lineTotal(l),0);const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
   const t=document.getElementById('fr_total');if(t)t.textContent=fmt(total);
   const q=document.getElementById('fr_q');if(q)q.textContent=totalQ.toLocaleString('es-CO');
 }
 function setFrutaLineCal(i,cal){ui.frLines[i].cal=cal;ui.frLines[i].p=frutaPrecioOf(cal)||ui.frLines[i].p||'';renderFruta();}
-async function setFrutaPrecio(i,val){CFG.frutaCalidades[i].p=+val||0;await persistCfg();toast('Precio actualizado');}
+async function setFrutaPrecio(i,val){CFG.frutaCalidades[i].p=num(val);await persistCfg();toast('Precio actualizado');}
 async function setFrutaCalNombre(i,val){CFG.frutaCalidades[i].n=(val||'').trim();await persistCfg();renderFruta();}
-async function addFrutaCalidad(){const n=(document.getElementById('fc_n').value||'').trim();const p=+document.getElementById('fc_p').value||0;if(!n){toast('Escribe el nombre de la calidad');return;}if(!CFG.frutaCalidades)CFG.frutaCalidades=[];CFG.frutaCalidades.push({n,p});await persistCfg();renderFruta();toast('Calidad agregada');}
+async function addFrutaCalidad(){const n=(document.getElementById('fc_n').value||'').trim();const p=num(document.getElementById('fc_p').value);if(!n){toast('Escribe el nombre de la calidad');return;}if(!CFG.frutaCalidades)CFG.frutaCalidades=[];CFG.frutaCalidades.push({n,p});await persistCfg();renderFruta();toast('Calidad agregada');}
 async function delFrutaCalidad(i){CFG.frutaCalidades.splice(i,1);await persistCfg();renderFruta();}
 async function frutaToIngreso(){
-  const L=ui.frLines;const total=Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0));
+  const L=ui.frLines;const total=Math.round(L.reduce((a,l)=>a+(+l.q||0)*num(l.p),0));
   const totalQ=L.reduce((a,l)=>a+(+l.q||0),0);
   if(total<=0){toast('Agrega calidad, cantidad y precio primero');return;}
-  const cat=CFG.catIngresos[0]||'Otros Ingresos';
+  const cat=ui.frCat||CFG.catIngresos[0]||'Otros Ingresos';
   const detalle=L.filter(l=>(+l.q||0)>0).map(l=>`${l.cal||'Fruta'} ${(+l.q||0).toLocaleString('es-CO')}`).join(', ');
   MOVS.push({id:seq++,f:todayISO(),fi:ui.frFinca,t:'I',c:cat,cl:ui.frCli||'',d:'Venta de fruta'+(detalle?': '+detalle:''),u:ui.frUnit,q:totalQ,pu:totalQ?Math.round(total/totalQ):total,tot:total,e:'P',ab:0,fa:'',co:''});
   await persistMovs();ui.frLines=[{cal:'',q:'',p:''}];toast('Venta enviada a movimientos por '+fmt(total));renderFruta();
@@ -1138,7 +1141,7 @@ function empRow(nom,e,i){
           <select class="input sm" onchange="setDay(${nom.id},${i},${di},'fi',this.value)">${fOpts(d.fi)}</select>
         </div>`;}).join('')}</div>
       <div class="emp-foot">
-        <div class="field" style="max-width:200px"><label>Préstamo / anticipo (se descuenta del neto)</label><input class="input tnum" type="number" step="any" value="${e.prestamo||0}" onchange="setPrestamo(${nom.id},${i},this.value)"></div>
+        <div class="field" style="max-width:200px"><label>Préstamo / anticipo (se descuenta del neto)</label><input class="input tnum money" inputmode="numeric" value="${fmn(e.prestamo||0)}" onchange="setPrestamo(${nom.id},${i},this.value)"></div>
         <div class="emp-tot"><span>Bruto<b class="tnum">${fmt(bruto)}</b></span><span>Neto<b class="tnum">${fmt(neto)}</b></span></div>
         <button class="btn sm primary" onclick="printEmpleadoNomina(${nom.id},${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF de este empleado</button>
       </div></div>`:''}
@@ -1208,7 +1211,7 @@ function wheelNav(dir){
   wheelCtx.day=day;wheelCtx.mode=mode;renderWheelStep();
 }
 function closeWheel(){wheelCommit();wheelCtx=null;document.getElementById('overlay').classList.remove('show');renderNomina();}
-async function setPrestamo(id,i,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].prestamo=+v||0;await persistNom();renderNomina();}
+async function setPrestamo(id,i,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].prestamo=num(v);await persistNom();renderNomina();}
 async function applyTpl(id,i,mode){const nom=NOMINAS.find(x=>x.id===id);const j=document.getElementById('qf_j_'+i).value,f=document.getElementById('qf_f_'+i).value;
   nom.entries[i].dias.forEach((d,di)=>{const dn=dowOf(addDaysISO(nom.desde,di));if(mode==='week'&&dn===0){d.j='No Asistió';d.fi='';}else{d.j=j;d.fi=f;}});
   await persistNom();renderNomina();toast('Días aplicados');}
@@ -1584,7 +1587,7 @@ function renderDron(){
        <div class="form-grid" style="grid-template-columns:1fr 1fr">
          <div class="field"><label>Finca fumigada</label><select class="input" id="dr_fi">${CFG.fincas.map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dr_f" value="${todayISO()}"></div>
-         <div class="field"><label>Valor por hectárea</label><input class="input tnum" type="number" id="dr_pu" placeholder="0" oninput="dronCalc()"></div>
+         <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="dr_pu" placeholder="0" oninput="dronCalc()"></div>
          <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="dr_ha" placeholder="0" oninput="dronCalc()"></div>
          <div class="field full"><label>Piloto</label><select class="input" id="dr_pil" onchange="dronCalc()"><option value="">— Sin piloto —</option>${(CFG.dronPilotos||[]).map(p=>`<option>${esc(p.n)}</option>`).join('')}</select></div>
        </div>
@@ -1599,7 +1602,7 @@ function renderDron(){
        <div class="ph"><div><h2>Mantenimiento</h2><p>Se descuenta de la utilidad según el % de cada socio</p></div></div>
        <div class="form-grid" style="grid-template-columns:1fr 1fr">
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dm_f" value="${todayISO()}"></div>
-         <div class="field"><label>Valor</label><input class="input tnum" type="number" id="dm_v" placeholder="0"></div>
+         <div class="field"><label>Valor</label><input class="input tnum money" inputmode="numeric" id="dm_v" placeholder="0"></div>
          <div class="field full"><label>Descripción</label><input class="input" id="dm_d" placeholder="Cambio de hélices, batería, repuestos…"></div>
        </div>
        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronAddMant()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar mantenimiento</button>
@@ -1610,8 +1613,8 @@ function renderDron(){
        <div class="form-grid" style="grid-template-columns:1fr 1fr">
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="cb_f" value="${todayISO()}"></div>
          <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="cb_ha" placeholder="0" oninput="dronFuelCalc()"></div>
-         <div class="field"><label>Gasolina por hectárea</label><input class="input tnum" type="number" id="cb_gas" placeholder="0" oninput="dronFuelCalc()"></div>
-         <div class="field"><label>Aceite por hectárea</label><input class="input tnum" type="number" id="cb_ace" placeholder="0" oninput="dronFuelCalc()"></div>
+         <div class="field"><label>Gasolina por hectárea</label><input class="input tnum money" inputmode="numeric" id="cb_gas" placeholder="0" oninput="dronFuelCalc()"></div>
+         <div class="field"><label>Aceite por hectárea</label><input class="input tnum money" inputmode="numeric" id="cb_ace" placeholder="0" oninput="dronFuelCalc()"></div>
        </div>
        <div class="card kpi" style="margin-top:12px"><div class="lab">Total combustible y aceite</div><div class="val tnum" id="cb_total" style="font-size:20px;color:var(--red)">${fmt(0)}</div></div>
        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronAddFuel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar gasto</button>
@@ -1624,7 +1627,7 @@ function renderDron(){
   dronCalc();dronFuelCalc();
 }
 function dronCalc(){
-  const pu=+(document.getElementById('dr_pu')||{}).value||0;
+  const pu=num((document.getElementById('dr_pu')||{}).value);
   const ha=+(document.getElementById('dr_ha')||{}).value||0;
   const el=document.getElementById('dr_total');if(el)el.textContent=fmt(pu*ha);
   const psel=document.getElementById('dr_pil'),pel=document.getElementById('dr_pilpago');
@@ -1633,7 +1636,7 @@ function dronCalc(){
 async function dronSendJob(){
   const fi=document.getElementById('dr_fi').value;
   const f=document.getElementById('dr_f').value||todayISO();
-  const pu=+document.getElementById('dr_pu').value||0;
+  const pu=num(document.getElementById('dr_pu').value);
   const ha=+document.getElementById('dr_ha').value||0;
   if(!pu||!ha){toast('Indica valor por hectárea y número de hectáreas');return;}
   const tot=Math.round(pu*ha);
@@ -1658,36 +1661,36 @@ function dronPilotosPanel(d){
       <thead><tr><th>Piloto</th><th class="r" style="width:140px">Pago por ha</th><th class="r">Hectáreas (periodo)</th><th class="r">Ganancia (periodo)</th><th></th></tr></thead>
       <tbody>${pilotos.length?pilotos.map((p,i)=>`<tr>
         <td><input class="input" style="padding:6px 9px" value="${esc(p.n)}" onchange="dronSetPiloto(${i},'n',this.value)"></td>
-        <td class="r"><input class="input tnum" style="padding:6px 9px;width:120px;text-align:right" type="number" value="${p.pu}" onchange="dronSetPiloto(${i},'pu',this.value)"></td>
+        <td class="r"><input class="input tnum money" inputmode="numeric" style="padding:6px 9px;width:120px;text-align:right" value="${fmn(p.pu)}" onchange="dronSetPiloto(${i},'pu',this.value)"></td>
         <td class="r tnum">${(haByP[p.n]||0).toLocaleString('es-CO')}</td>
         <td class="r tnum"><b style="color:var(--green2)">${fmt(earn[p.n]||0)}</b></td>
         <td class="r"><button class="iconbtn del" onclick="dronDelPiloto(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="5" style="padding:18px;color:var(--muted)">Agrega pilotos y su pago por hectárea.</td></tr>`}
       </tbody></table></div>
-    <div class="addrow"><input class="input" id="dp_n" placeholder="Nombre del piloto" style="flex:2"><input class="input tnum" id="dp_pu" type="number" placeholder="Pago por hectárea" style="flex:1"><button class="btn sm primary" onclick="dronAddPiloto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+    <div class="addrow"><input class="input" id="dp_n" placeholder="Nombre del piloto" style="flex:2"><input class="input tnum money" inputmode="numeric" id="dp_pu" placeholder="Pago por hectárea" style="flex:1"><button class="btn sm primary" onclick="dronAddPiloto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
     <div class="note">El pago al piloto de cada fumigación = hectáreas × pago/ha del piloto, y se resta de los ingresos antes de repartir la utilidad entre los socios.</div>
   </div>`;
 }
-async function dronSetPiloto(i,field,val){if(!CFG.dronPilotos)CFG.dronPilotos=[];if(field==='pu')CFG.dronPilotos[i].pu=+val||0;else CFG.dronPilotos[i].n=(val||'').trim();await persistCfg();renderDron();}
-async function dronAddPiloto(){const n=document.getElementById('dp_n').value.trim();const pu=+document.getElementById('dp_pu').value||0;if(!n){toast('Escribe el nombre del piloto');return;}if(!CFG.dronPilotos)CFG.dronPilotos=[];CFG.dronPilotos.push({n,pu});await persistCfg();renderDron();toast('Piloto agregado');}
+async function dronSetPiloto(i,field,val){if(!CFG.dronPilotos)CFG.dronPilotos=[];if(field==='pu')CFG.dronPilotos[i].pu=num(val);else CFG.dronPilotos[i].n=(val||'').trim();await persistCfg();renderDron();}
+async function dronAddPiloto(){const n=document.getElementById('dp_n').value.trim();const pu=num(document.getElementById('dp_pu').value);if(!n){toast('Escribe el nombre del piloto');return;}if(!CFG.dronPilotos)CFG.dronPilotos=[];CFG.dronPilotos.push({n,pu});await persistCfg();renderDron();toast('Piloto agregado');}
 async function dronDelPiloto(i){CFG.dronPilotos.splice(i,1);await persistCfg();renderDron();}
 async function dronAddMant(){
   const f=document.getElementById('dm_f').value||todayISO();
-  const v=+document.getElementById('dm_v').value||0;
+  const v=num(document.getElementById('dm_v').value);
   const ds=document.getElementById('dm_d').value.trim();
   if(!v){toast('Indica el valor del mantenimiento');return;}
   DRON.push({id:dseq++,k:'mant',f,d:ds||'Mantenimiento',tot:Math.round(v)});
   await persistDron();toast('Mantenimiento agregado');renderDron();
 }
 function dronFuelCalc(){
-  const gas=+(document.getElementById('cb_gas')||{}).value||0;
-  const ace=+(document.getElementById('cb_ace')||{}).value||0;
+  const gas=num((document.getElementById('cb_gas')||{}).value);
+  const ace=num((document.getElementById('cb_ace')||{}).value);
   const ha=+(document.getElementById('cb_ha')||{}).value||0;
   const el=document.getElementById('cb_total');if(el)el.textContent=fmt((gas+ace)*ha);
 }
 async function dronAddFuel(){
   const f=document.getElementById('cb_f').value||todayISO();
-  const gas=+document.getElementById('cb_gas').value||0;
-  const ace=+document.getElementById('cb_ace').value||0;
+  const gas=num(document.getElementById('cb_gas').value);
+  const ace=num(document.getElementById('cb_ace').value);
   const ha=+document.getElementById('cb_ha').value||0;
   if(!ha||(!gas&&!ace)){toast('Indica las hectáreas y el gasto de gasolina o aceite por hectárea');return;}
   const gasTot=Math.round(gas*ha),aceiteTot=Math.round(ace*ha),tot=gasTot+aceiteTot;
@@ -2052,7 +2055,7 @@ function renderConfig(){
      <div class="ph"><div><h2>Tipos de jornada y valor</h2><p>Valor en pesos de cada jornada usada en la nómina</p></div></div>
      <div class="tablewrap" style="border:none"><table><thead><tr><th>Jornada</th><th class="r">Valor</th><th></th></tr></thead>
        <tbody>${CFG.jornadas.map((j,i)=>`<tr><td>${esc(j.l)}</td><td class="r tnum">${fmt(j.v)}</td><td class="r"><button class="iconbtn del" onclick="delJornada(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join('')}</tbody></table></div>
-     <div class="addrow"><input class="input" id="jn_l" placeholder="Nombre (ej. Festivo)" style="flex:2"><input class="input tnum" id="jn_v" type="number" placeholder="Valor" style="flex:1"><button class="btn sm primary" onclick="addJornada()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+     <div class="addrow"><input class="input" id="jn_l" placeholder="Nombre (ej. Festivo)" style="flex:2"><input class="input tnum money" inputmode="numeric" id="jn_v" placeholder="Valor" style="flex:1"><button class="btn sm primary" onclick="addJornada()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
    </div>
    <div class="card panel" style="margin-top:16px">
      <div class="ph"><div><h2>Sincronización en la nube</h2><p>Accede y edita desde varios dispositivos con los cambios actualizados en todos</p></div>
@@ -2109,7 +2112,7 @@ create policy "acceso" on app_data
 }
 async function addCfg(key){const inp=document.getElementById('add_'+key);const v=inp.value.trim();if(!v)return;if(!CFG[key].includes(v))CFG[key].push(v);await persistCfg();renderConfig();}
 async function delCfg(key,i){CFG[key].splice(i,1);await persistCfg();renderConfig();}
-async function addJornada(){const l=document.getElementById('jn_l').value.trim();const v=+document.getElementById('jn_v').value||0;if(!l){toast('Escribe el nombre de la jornada');return;}const ex=CFG.jornadas.find(j=>j.l===l);if(ex)ex.v=v;else CFG.jornadas.push({l,v});await persistCfg();renderConfig();toast('Jornada guardada');}
+async function addJornada(){const l=document.getElementById('jn_l').value.trim();const v=num(document.getElementById('jn_v').value);if(!l){toast('Escribe el nombre de la jornada');return;}const ex=CFG.jornadas.find(j=>j.l===l);if(ex)ex.v=v;else CFG.jornadas.push({l,v});await persistCfg();renderConfig();toast('Jornada guardada');}
 async function delJornada(i){CFG.jornadas.splice(i,1);await persistCfg();renderConfig();}
 async function setEmpPago(name,field,val){if(!CFG.empPago)CFG.empPago={};if(!CFG.empPago[name])CFG.empPago[name]={};CFG.empPago[name][field]=(val||'').trim();await persistCfg();}
 async function delEmpleado(name){CFG.empleados=CFG.empleados.filter(e=>e!==name);if(CFG.empPago)delete CFG.empPago[name];await persistCfg();renderConfig();toast('Empleado eliminado');}
@@ -2165,6 +2168,13 @@ let toastT;function toast(msg){const t=document.getElementById('toast');t.innerH
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
 window.addEventListener('afterprint',()=>{document.body.classList.remove('printing');const pa=document.getElementById('printArea');if(pa){pa.innerHTML='';if(pa._t){document.title=pa._t;pa._t=null;}}});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el||!el.classList||!el.classList.contains('money'))return;
+  const digits=el.value.replace(/[^\d]/g,'');
+  el.dataset.raw=digits;
+  el.value=digits?(+digits).toLocaleString('es-CO'):'';
+},true);
 init();
 </script>
 </body>
