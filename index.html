@@ -197,6 +197,9 @@ td.r,th.r{text-align:right}
 /* modal */
 .overlay{position:fixed;inset:0;background:rgba(45,65,55,.42);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
 .overlay.show{opacity:1;pointer-events:auto}
+.ifinca-opt{display:flex;align-items:center;gap:8px;padding:11px 13px;border-radius:14px;background:var(--surface2);color:var(--ink);font-size:13px;font-weight:600;box-shadow:var(--clay-in);transition:all .14s var(--ease);text-align:left;cursor:pointer}
+.ifinca-opt:active{transform:scale(.97)}
+.ifinca-opt.on{background:linear-gradient(160deg,#e9f7ef,#d9ede1);color:var(--green2);box-shadow:var(--clay-sm),0 0 0 2px var(--green-soft)}
 .modal{background:var(--surface);border:none;border-radius:26px;box-shadow:var(--shadow-lg);width:100%;max-width:580px;transform:translateY(14px) scale(.97);transition:transform .28s var(--ease)}
 .overlay.show .modal{transform:none}
 .modal-h{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
@@ -1977,24 +1980,27 @@ function rentStatementHTML(){
 
 /* ===== INFORME CONTABLE ===== */
 function informeFincasModal(){
-  const sel=new Set(ui.iFincas);
-  const body=`
-   <div class="field"><label>Elige las fincas a incluir en el informe</label>
-     <label style="display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;cursor:pointer;font-weight:600;background:var(--surface2)">
-       <input type="checkbox" id="if_all" ${sel.size===0?'checked':''} onchange="if(this.checked)document.querySelectorAll('.if_one').forEach(c=>c.checked=false)">
-       Todas las fincas (consolidado)</label>
-     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:300px;overflow:auto">
-       ${CFG.fincas.map(f=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer">
-         <input type="checkbox" class="if_one" value="${esc(f)}" ${sel.has(f)?'checked':''} onchange="if(this.checked)document.getElementById('if_all').checked=false">
-         <span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span></label>`).join('')}
-     </div></div>
-   <div class="note">Marca <b>2 o más fincas</b> para un informe consolidado solo de ellas, o deja «Todas» para incluirlas todas.</div>`;
-  showModal('Fincas del informe',body,[
-    {label:'Cancelar',cls:'btn',fn:closeModal},
-    {label:'Aplicar',cls:'btn primary',fn:()=>{
-      const chosen=[...document.querySelectorAll('.if_one')].filter(c=>c.checked).map(c=>c.value);
-      ui.iFincas=document.getElementById('if_all').checked?[]:chosen;closeModal();renderInforme();}}]);
+  window._iSel=Array.isArray(ui.iFincas)?ui.iFincas.filter(f=>CFG.fincas.includes(f)).slice():[];
+  showModal('Fincas del informe',
+    '<div class="field"><label>Elige las fincas a incluir en el informe</label><div id="iFincasBody"></div></div>'+
+    '<div class="note">Toca las fincas para incluirlas. Marca <b>2 o más</b> para un consolidado solo de ellas, o deja <b>«Todas»</b> para incluirlas todas.</div>',
+    [{label:'Cancelar',cls:'btn',fn:closeModal},
+     {label:'Aplicar',cls:'btn primary',fn:()=>{ui.iFincas=(window._iSel||[]).slice();closeModal();renderInforme();}}]);
+  _iFincasRender();
 }
+function _iFincasRender(){
+  const host=document.getElementById('iFincasBody');if(!host)return;
+  const sel=window._iSel||[];
+  const chk='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex:0 0 auto"><polyline points="20 6 9 17 4 12"/></svg>';
+  const allOn=sel.length===0;
+  let h='<button type="button" onclick="_iToggleAll()" class="ifinca-opt'+(allOn?' on':'')+'" style="width:100%;margin-bottom:9px"><span style="font-weight:700;flex:1">Todas las fincas (consolidado)</span>'+(allOn?chk:'')+'</button>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:320px;overflow:auto">';
+  h+=CFG.fincas.map((f,idx)=>'<button type="button" onclick="_iToggleFinca('+idx+')" class="ifinca-opt'+(sel.includes(f)?' on':'')+'"><span class="fdot" style="flex:1;color:inherit"><i style="background:'+fincaColor(f)+'"></i>'+esc(f)+'</span>'+(sel.includes(f)?chk:'')+'</button>').join('');
+  h+='</div>';
+  host.innerHTML=h;
+}
+function _iToggleAll(){window._iSel=[];_iFincasRender();}
+function _iToggleFinca(idx){const f=CFG.fincas[idx];if(!f)return;const s=window._iSel||[];const i=s.indexOf(f);if(i>=0)s.splice(i,1);else s.push(f);window._iSel=s;_iFincasRender();}
 function renderInforme(){
   const selFincas=Array.isArray(ui.iFincas)?ui.iFincas.filter(f=>CFG.fincas.includes(f)):[];
   const from=ui.iFrom, to=ui.iTo, desc=ui.iDesc;
