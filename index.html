@@ -392,6 +392,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="dron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg><span>Dron</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
+      <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
       <a data-view="resumen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg><span>Resumen por finca</span></a>
       <a data-view="rent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Rentabilidad/ha</span></a>
       <a data-view="ficha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg><span>Ficha por finca</span></a>
@@ -657,6 +658,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  nomina:['Nómina','Registro quincenal · jornadas, fincas y consolidado'],
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
+ detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
  rent:['Rentabilidad por hectárea','Comparación justa entre fincas y cultivos · $/ha'],
  ficha:['Ficha por finca','Estado financiero individual con descuento administrativo'],
@@ -665,7 +667,86 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,informe:renderInforme,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+}
+
+/* ===== DETALLE por categoría ===== */
+function detalleData(){
+  const fincas=Array.isArray(ui.dtFincas)?ui.dtFincas.filter(f=>CFG.fincas.includes(f)):[];
+  const from=ui.dtFrom||'',to=ui.dtTo||'';
+  const inR=m=>(fincas.length===0||fincas.includes(m.fi))&&(!from||m.f>=from)&&(!to||m.f<=to);
+  const movs=MOVS.filter(inR);
+  const group=arr=>{const g={};arr.forEach(m=>{const k=m.c||'Sin categoría';(g[k]=g[k]||[]).push(m);});
+    return Object.keys(g).sort((a,b)=>a.localeCompare(b,'es')).map(c=>({c,movs:g[c].slice().sort((x,y)=>x.f<y.f?-1:x.f>y.f?1:0),tot:g[c].reduce((s,m)=>s+(+m.tot||0),0),n:g[c].length}));};
+  const egr=movs.filter(m=>m.t==='E'),ing=movs.filter(m=>m.t==='I');
+  return{fincas,from,to,egrCats:group(egr),ingCats:group(ing),
+    egrTot:egr.reduce((s,m)=>s+(+m.tot||0),0),ingTot:ing.reduce((s,m)=>s+(+m.tot||0),0),egrN:egr.length,ingN:ing.length};
+}
+function detalleTable(cat){
+  return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 8px"><span style="font-weight:700;font-size:13.5px;color:var(--green2)">${esc(cat.c)}</span><span class="tnum" style="font-weight:700">${fmt(cat.tot)} · ${cat.n} mov.</span></div>
+   <div class="tablewrap"><table><thead><tr>
+     <th>Fecha</th><th>Finca</th><th>Descripción</th><th>Factura</th><th>Cliente / Comercio</th><th>Unidad</th><th class="r">Cant.</th><th class="r">P. unit</th><th class="r">Total</th><th>Estado</th>
+   </tr></thead><tbody>
+   ${cat.movs.map(m=>`<tr>
+     <td class="tnum">${fmtFecha(m.f)}</td>
+     <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
+     <td class="wrap">${esc(m.d||'—')}</td>
+     <td>${esc(m.fa||'—')}</td>
+     <td class="wrap">${esc(m.cl||m.co||'—')}</td>
+     <td>${esc(m.u||'—')}</td>
+     <td class="r tnum">${(+m.q||0).toLocaleString('es-CO')}</td>
+     <td class="r tnum">${fmt(m.pu)}</td>
+     <td class="r tnum"><b>${fmt(m.tot)}</b></td>
+     <td>${m.e==='P'?'<span class="chip pay">Pagado</span>':m.e==='X'?'<span class="chip pend">Pendiente</span>':'—'}</td>
+   </tr>`).join('')}
+   <tr style="border-top:2px solid var(--line)"><td colspan="8"><b>Subtotal ${esc(cat.c)}</b></td><td class="r tnum"><b>${fmt(cat.tot)}</b></td><td></td></tr>
+   </tbody></table></div>`;
+}
+function detalleBodyHTML(d){
+  const eg=d.egrCats.length?d.egrCats.map(detalleTable).join(''):'<div class="note">Sin egresos en el filtro seleccionado.</div>';
+  const ig=d.ingCats.length?d.ingCats.map(detalleTable).join(''):'<div class="note">Sin ingresos en el filtro seleccionado.</div>';
+  return `<div class="sec-title" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 19 19 12"/></svg>Egresos por categoría<span class="ln"></span><b class="tnum">${fmt(d.egrTot)}</b></div>${eg}
+   <div class="sec-title" style="margin-top:30px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Ingresos por categoría<span class="ln"></span><b class="tnum">${fmt(d.ingTot)}</b></div>${ig}`;
+}
+function renderDetalle(){
+  const d=detalleData();
+  const fincaBtn=d.fincas.length===0?'Todas las fincas':d.fincas.length===1?esc(d.fincas[0]):d.fincas.length+' fincas seleccionadas';
+  const bal=d.ingTot-d.egrTot;
+  document.getElementById('content').innerHTML=`
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+     <div class="card kpi lead"><div class="lab">Ingresos</div><div class="val tnum">${fmt(d.ingTot)}</div><div class="meta">${d.ingN} movimiento(s)</div></div>
+     <div class="card kpi"><div class="lab">Egresos</div><div class="val tnum neg">${fmt(d.egrTot)}</div><div class="meta">${d.egrN} movimiento(s)</div></div>
+     <div class="card kpi"><div class="lab">Balance</div><div class="val tnum ${bal>=0?'pos':'neg'}">${fmt(bal)}</div><div class="meta">Ingresos − Egresos</div></div>
+   </div>
+   <div class="card panel" style="margin-bottom:18px">
+     <div class="filters" style="margin-bottom:0">
+       <div class="field"><label>Fincas</label><button class="btn" style="height:44px" onclick="detalleFincasModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg> ${fincaBtn}</button></div>
+       <div class="field"><label>Desde</label><input class="input tnum" type="date" value="${ui.dtFrom||''}" onchange="ui.dtFrom=this.value;renderDetalle()"></div>
+       <div class="field"><label>Hasta</label><input class="input tnum" type="date" value="${ui.dtTo||''}" onchange="ui.dtTo=this.value;renderDetalle()"></div>
+       <button class="btn ghost" onclick="ui.dtFrom='';ui.dtTo='';renderDetalle()">Todo el periodo</button>
+       <div style="flex:1"></div>
+       <button class="btn primary" onclick="printDetalle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir PDF</button>
+     </div>
+   </div>
+   <div class="card panel">${detalleBodyHTML(d)}</div>`;
+}
+function detalleFincasModal(){
+  window._iSel=Array.isArray(ui.dtFincas)?ui.dtFincas.filter(f=>CFG.fincas.includes(f)).slice():[];
+  showModal('Fincas del detalle',
+    '<div class="field"><label>Elige las fincas a incluir (una o varias)</label><div id="iFincasBody"></div></div>'+
+    '<div class="note">Toca las fincas para incluirlas. Deja <b>«Todas»</b> para incluirlas todas.</div>',
+    [{label:'Cancelar',cls:'btn',fn:closeModal},
+     {label:'Aplicar',cls:'btn primary',fn:()=>{ui.dtFincas=(window._iSel||[]).slice();closeModal();renderDetalle();}}]);
+  _iFincasRender();
+}
+function printDetalle(){
+  const d=detalleData();
+  const range=(d.from||d.to)?((d.from?fmtFecha(d.from):'inicio')+'  —  '+(d.to?fmtFecha(d.to):'hoy')):'Todo el periodo';
+  const titulo=d.fincas.length===0?'Todas las fincas':d.fincas.length===1?d.fincas[0]:d.fincas.length+' fincas';
+  const bal=d.ingTot-d.egrTot;
+  const head=`<div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Detalle por categoría</div><h2>${esc(titulo)}</h2><div class="rh-sub">${range}</div></div>
+     <div class="rh-meta"><b>Balance ${fmt(bal)}</b><br>Ingresos ${fmt(d.ingTot)}<br>Egresos ${fmt(d.egrTot)}<br>Emitido ${fmtFecha(todayISO())}</div></div>`;
+  printIsolated(head+'<div class="report-sec">'+detalleBodyHTML(d)+'</div>','Detalle · '+titulo,'@page{size:A4 landscape;margin:8mm}');
 }
 
 /* ===== aggregations ===== */
@@ -1406,9 +1487,9 @@ tr[style*="border-top"] td{font-weight:700;background:#f4f8f4!important}
 }
 @media(max-width:600px){.payslip-weeks{grid-template-columns:1fr}.rep-head{flex-direction:column}.rh-meta{text-align:left}}
 `;
-function printIsolated(bodyHTML,title){
+function printIsolated(bodyHTML,title,extraCSS){
   title=title||'Documento · Fincas Martínez';
-  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+'</style></head><body>'
+  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+(extraCSS||'')+'</style></head><body>'
     +'<div class="toolbar no-print"><b>'+esc(title)+'</b><span class="sp"></span><button onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / Guardar PDF</button></div>'
     +'<div class="sheet">'+bodyHTML+'</div></body></html>';
   try{
