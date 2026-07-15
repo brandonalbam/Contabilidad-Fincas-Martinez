@@ -390,6 +390,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="comercios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><line x1="3" y1="9" x2="21" y2="9"/><path d="M9 20v-6h6v6"/></svg><span>Comercios</span></a>
       <a data-view="nomina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span>Nómina</span></a>
       <a data-view="dron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg><span>Dron</span></a>
+      <a data-view="quimicos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg><span>Preparación químicos</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
@@ -539,9 +540,10 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
+  normalizeNominaMonths();
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
 }
 let cloudTimer;
@@ -581,7 +583,8 @@ let ui={view:'dash',
   frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frEstado:'P',frFecha:'',frLines:[{cal:'',q:'',p:''}],
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
-  rentYear:'',rentFrom:'',rentTo:''
+  rentYear:'',rentFrom:'',rentTo:'',
+  mixHa:'',mixLxHa:200,mixTank:1000,mixLines:[{n:'',d:'',u:'ml'}]
 };
 
 /* ===== helpers ===== */
@@ -618,6 +621,7 @@ async function init(){
   MOVS.forEach(x=>{if(x.id>=seq)seq=x.id+1;});
   const nm2=await Store.get('nominas'); NOMINAS=nm2?JSON.parse(nm2):[];
   NOMINAS.forEach(x=>{if(x.id>=nseq)nseq=x.id+1;});
+  if(normalizeNominaMonths())await Store.set('nominas',JSON.stringify(NOMINAS));
   const dr2=await Store.get('dron'); DRON=dr2?JSON.parse(dr2):[];
   DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});
   if(!CFG.dronSocios){CFG.dronSocios=[];await Store.set('config',JSON.stringify(CFG));}
@@ -626,6 +630,7 @@ async function init(){
   if(!CFG.cultivos){CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
   ui.fDesc=CFG.descAdmin; ui.iDesc=CFG.descAdmin;
   await Cloud.load();
   bindNav(); render(); updateCloudBadge();
@@ -641,6 +646,7 @@ async function init(){
 }
 async function persistMovs(){await Store.set('movimientos',JSON.stringify(MOVS));Cloud.schedulePush();}
 async function persistCfg(){await Store.set('config',JSON.stringify(CFG));Cloud.schedulePush();}
+function normalizeNominaMonths(){let ch=false;NOMINAS.forEach(n=>{if(n&&n.hasta){const y=+n.hasta.slice(0,4),mo=+n.hasta.slice(5,7)-1;if(n.year!==y||n.mes!==mo){n.year=y;n.mes=mo;ch=true;}}});return ch;}
 
 function bindNav(){
   document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>{
@@ -657,6 +663,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  comercios:['Comercios','Cartera por proveedor · cuentas por pagar'],
  nomina:['Nómina','Registro quincenal · jornadas, fincas y consolidado'],
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
+ quimicos:['Preparación de químicos','Calculadora de mezcla por tanque · dosis por hectárea'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
@@ -667,7 +674,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
 }
 
 /* ===== DETALLE por categoría ===== */
@@ -1185,11 +1192,12 @@ function newQuincena(){
      <div class="field"><label>Número de quincena</label><select class="input" id="nq_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
      <div class="field"><label>Duración</label><input class="input" value="14 días (2 semanas)" disabled></div>
    </div>
-   <div class="note">La quincena abarca 14 días desde la fecha de inicio. Puedes registrar hasta 3 quincenas en un mismo mes si necesitas pagar un periodo extra. Luego agregas los empleados que trabajaron y registras su jornada y finca día por día.</div>`,
+   <div class="note">La quincena abarca 14 días desde la fecha de inicio. El mes en que se contabiliza se toma del <b>último día</b> de la quincena: si ese día cae el 31 de diciembre, cuenta en diciembre; si cae el 1 de enero, cuenta en enero. Puedes registrar hasta 3 quincenas en un mismo mes si necesitas pagar un periodo extra. Luego agregas los empleados que trabajaron y registras su jornada y finca día por día.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Crear quincena',cls:'btn primary',fn:async()=>{
      const d=document.getElementById('nq_d').value;if(!d){toast('Indica la fecha de inicio');return;}
      const q=+document.getElementById('nq_q').value;
-     const nom={id:nseq++,year:+d.slice(0,4),mes:+d.slice(5,7)-1,q,desde:d,hasta:addDaysISO(d,13),estado:'abierta',entries:[],movIds:[]};
+     const hasta=addDaysISO(d,13);
+     const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[]};
      NOMINAS.push(nom);await persistNom();ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();closeModal();renderNomina();toast('Quincena creada');
    }}]);
 }
@@ -1761,13 +1769,14 @@ function dronData(){
   const from=ui.dronFrom,to=ui.dronTo;
   const inR=r=>(!from||r.f>=from)&&(!to||r.f<=to);
   const recs=DRON.filter(inR).sort((a,b)=>(b.f||'').localeCompare(a.f||''));
-  const jobs=recs.filter(r=>r.k==='job'), mants=recs.filter(r=>r.k==='mant'), fuels=recs.filter(r=>r.k==='fuel');
+  const jobs=recs.filter(r=>r.k==='job'), mants=recs.filter(r=>r.k==='mant'), fuels=recs.filter(r=>r.k==='fuel'), extras=recs.filter(r=>r.k==='extra');
   const ingresos=jobs.reduce((a,r)=>a+(+r.tot||0),0);
   const mant=mants.reduce((a,r)=>a+(+r.tot||0),0);
   const pilotos=jobs.reduce((a,r)=>a+(+r.pilPago||0),0);
   const combustible=fuels.reduce((a,r)=>a+(+r.tot||0),0);
+  const extra=extras.reduce((a,r)=>a+(+r.tot||0),0);
   const haTot=jobs.reduce((a,r)=>a+(+r.ha||0),0);
-  return{recs,jobs,mants,fuels,ingresos,mant,pilotos,combustible,util:ingresos-mant-pilotos-combustible,haTot,from,to};
+  return{recs,jobs,mants,fuels,extras,ingresos,mant,pilotos,combustible,extra,util:ingresos-mant-pilotos-combustible-extra,haTot,from,to};
 }
 function renderDron(){
   const d=dronData();
@@ -1782,6 +1791,7 @@ function renderDron(){
      <div class="card kpi"><div class="lab" style="color:var(--red)">Pago a pilotos</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.pilotos)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Combustible y aceite</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.combustible)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Mantenimiento</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.mant)}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--red)">Gastos extras</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.extra)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--green2)">Utilidad a repartir</div><div class="val tnum" style="font-size:20px;color:var(--green2)">${fmt(d.util)}</div></div>
    </div>
    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));align-items:start;gap:16px">
@@ -1821,6 +1831,16 @@ function renderDron(){
        <div class="card kpi" style="margin-top:12px"><div class="lab">Total combustible y aceite</div><div class="val tnum" id="cb_total" style="font-size:20px;color:var(--red)">${fmt(0)}</div></div>
        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronAddFuel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar gasto</button>
        <div class="note">Total = gasolina + aceite. Se registra abajo en los movimientos del dron y reduce la utilidad.</div>
+     </div>
+     <div class="card panel">
+       <div class="ph"><div><h2>Gastos extras</h2><p>Otros gastos del dron · reducen la utilidad a repartir</p></div></div>
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+         <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dx_f" value="${todayISO()}"></div>
+         <div class="field"><label>Valor</label><input class="input tnum money" inputmode="numeric" id="dx_v" placeholder="0"></div>
+         <div class="field full"><label>Descripción del gasto</label><input class="input" id="dx_d" placeholder="Transporte, permisos, viáticos, arriendo…"></div>
+       </div>
+       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronAddExtra()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar gasto extra</button>
+       <div class="note">Los gastos extras se restan de la utilidad y, por tanto, de la ganancia de cada socio en proporción a su porcentaje.</div>
      </div>
    </div>
    ${dronPilotosPanel(d)}
@@ -1883,6 +1903,14 @@ async function dronAddMant(){
   DRON.push({id:dseq++,k:'mant',f,d:ds||'Mantenimiento',tot:Math.round(v)});
   await persistDron();toast('Mantenimiento agregado');renderDron();
 }
+async function dronAddExtra(){
+  const f=document.getElementById('dx_f').value||todayISO();
+  const v=num(document.getElementById('dx_v').value);
+  const ds=document.getElementById('dx_d').value.trim();
+  if(!v){toast('Indica el valor del gasto extra');return;}
+  DRON.push({id:dseq++,k:'extra',f,d:ds||'Gasto extra',tot:Math.round(v)});
+  await persistDron();toast('Gasto extra agregado');renderDron();
+}
 function dronFuelCalc(){
   const gas=num((document.getElementById('cb_gas')||{}).value);
   const ace=num((document.getElementById('cb_ace')||{}).value);
@@ -1903,14 +1931,15 @@ function dronSociosPanel(d){
     <div class="ph"><div><h2>Socios y reparto de utilidad</h2><p>Ajusta el % de cada socio. Ganancia neta = utilidad × %</p></div>
       <span class="chip ${pctT===100?'pay':'pend'}">Suma de %: ${pctT}%</span></div>
     <div class="tablewrap" style="border:none"><table>
-      <thead><tr><th>Socio</th><th class="r" style="width:110px">%</th><th class="r">Parte ingresos</th><th class="r">Parte mantenim.</th><th class="r">Ganancia neta</th><th></th></tr></thead>
+      <thead><tr><th>Socio</th><th class="r" style="width:110px">%</th><th class="r">Parte ingresos</th><th class="r">Parte mantenim.</th><th class="r">Parte extras</th><th class="r">Ganancia neta</th><th></th></tr></thead>
       <tbody>${socios.length?socios.map((s,i)=>{const f=(+s.p||0)/100;return `<tr>
         <td><input class="input" style="padding:6px 9px" value="${esc(s.n)}" onchange="dronSetSocio(${i},'n',this.value)"></td>
         <td class="r"><input class="input tnum" style="padding:6px 9px;width:90px;text-align:right" type="number" value="${s.p}" onchange="dronSetSocio(${i},'p',this.value)"></td>
         <td class="r tnum">${fmt(d.ingresos*f)}</td>
         <td class="r tnum" style="color:var(--red)">${fmt(d.mant*f)}</td>
+        <td class="r tnum" style="color:var(--red)">${fmt(d.extra*f)}</td>
         <td class="r tnum"><b style="color:var(--green2)">${fmt(d.util*f)}</b></td>
-        <td class="r"><button class="iconbtn del" onclick="dronDelSocio(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`;}).join(''):`<tr><td colspan="6" style="padding:18px;color:var(--muted)">Agrega socios para repartir la utilidad del dron.</td></tr>`}
+        <td class="r"><button class="iconbtn del" onclick="dronDelSocio(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`;}).join(''):`<tr><td colspan="7" style="padding:18px;color:var(--muted)">Agrega socios para repartir la utilidad del dron.</td></tr>`}
       </tbody></table></div>
     <div class="addrow"><input class="input" id="ds_n" placeholder="Nombre del socio" style="flex:2"><input class="input tnum" id="ds_p" type="number" placeholder="%" style="flex:1"><button class="btn sm primary" onclick="dronAddSocio()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
     ${pctT!==100&&socios.length?`<div class="note">La suma de porcentajes es ${pctT}% (lo normal es que sea 100%).</div>`:''}
@@ -1926,8 +1955,8 @@ function dronRecordsList(d){
       <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th class="r">Hectáreas</th><th class="r">Valor</th><th></th></tr></thead>
       <tbody>${d.recs.length?d.recs.map(r=>`<tr>
         <td class="tnum">${fmtFecha(r.f)}</td>
-        <td>${r.k==='job'?'<span class="chip pay">Fumigación</span>':r.k==='fuel'?'<span class="chip pend">Combustible</span>':'<span class="chip pend">Mantenim.</span>'}</td>
-        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||'Mantenimiento')}</td>
+        <td>${r.k==='job'?'<span class="chip pay">Fumigación</span>':r.k==='fuel'?'<span class="chip pend">Combustible</span>':r.k==='extra'?'<span class="chip pend">Gasto extra</span>':'<span class="chip pend">Mantenim.</span>'}</td>
+        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||(r.k==='extra'?'Gasto extra':'Mantenimiento'))}</td>
         <td class="r tnum">${r.k==='job'?(+r.ha).toLocaleString('es-CO'):'—'}</td>
         <td class="r tnum ${r.k!=='job'?'neg':''}">${r.k!=='job'?'− ':''}${fmt(r.tot)}</td>
         <td class="r"><button class="iconbtn del" onclick="dronDelRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="6">${emptyRow('Sin movimientos del dron en el periodo')}</td></tr>`}
@@ -1943,27 +1972,29 @@ function dronStatementHTML(){
   const periodo=(d.from||d.to)?`${d.from?fmtFecha(d.from):'inicio'} — ${d.to?fmtFecha(d.to):fmtFecha(todayISO())}`:'Todo el histórico';
   const pilEarn={},pilHa={};d.jobs.forEach(r=>{if(r.piloto){pilEarn[r.piloto]=(pilEarn[r.piloto]||0)+(+r.pilPago||0);pilHa[r.piloto]=(pilHa[r.piloto]||0)+(+r.ha||0);}});
   const pilRows=Object.keys(pilEarn).map(n=>`<tr><td>${esc(n)}</td><td class="r tnum">${(pilHa[n]||0).toLocaleString('es-CO')}</td><td class="r tnum"><b>${fmt(pilEarn[n])}</b></td></tr>`).join('');
-  const socioRows=socios.map(s=>{const f=(+s.p||0)/100;return `<tr><td>${esc(s.n)}</td><td class="r tnum">${s.p}%</td><td class="r tnum">${fmt(d.ingresos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.pilotos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.combustible*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.mant*f)}</td><td class="r tnum"><b>${fmt(d.util*f)}</b></td></tr>`;}).join('');
+  const socioRows=socios.map(s=>{const f=(+s.p||0)/100;return `<tr><td>${esc(s.n)}</td><td class="r tnum">${s.p}%</td><td class="r tnum">${fmt(d.ingresos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.pilotos*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.combustible*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.mant*f)}</td><td class="r tnum" style="color:var(--red)">${fmt(d.extra*f)}</td><td class="r tnum"><b>${fmt(d.util*f)}</b></td></tr>`;}).join('');
   const jobRows=d.jobs.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td>${esc(r.fi)}</td><td>${esc(r.piloto||'—')}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.pu)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
   const mantRows=d.mants.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="wrap">${esc(r.d||'Mantenimiento')}</td><td class="r tnum">${fmt(r.tot)}</td></tr>`).join('');
+  const extraRows=d.extras.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="wrap">${esc(r.d||'Gasto extra')}</td><td class="r tnum">${fmt(r.tot)}</td></tr>`).join('');
   const fuelRows=d.fuels.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${fmt(r.gasTot||0)}</td><td class="r tnum">${fmt(r.aceiteTot||0)}</td><td class="r tnum"><b>${fmt(r.tot)}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">Fincas Martínez · Dron de fumigación</div>
      <h2>Informe del dron</h2><div class="rh-sub">Periodo: ${periodo}</div></div>
      <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
    <div class="report-sec">
-     <div class="grid kpis" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px">
+     <div class="grid kpis" style="grid-template-columns:repeat(7,1fr);margin-bottom:16px">
        <div class="card kpi lead"><div class="lab">Ingresos</div><div class="val tnum" style="font-size:17px">${fmt(d.ingresos)}</div></div>
        <div class="card kpi"><div class="lab">Pago a pilotos</div><div class="val tnum" style="font-size:16px">${fmt(d.pilotos)}</div></div>
        <div class="card kpi"><div class="lab">Combustible/aceite</div><div class="val tnum" style="font-size:16px">${fmt(d.combustible)}</div></div>
        <div class="card kpi"><div class="lab">Mantenimiento</div><div class="val tnum" style="font-size:16px">${fmt(d.mant)}</div></div>
+       <div class="card kpi"><div class="lab">Gastos extras</div><div class="val tnum" style="font-size:16px">${fmt(d.extra)}</div></div>
        <div class="card kpi"><div class="lab">Utilidad</div><div class="val tnum" style="font-size:16px">${fmt(d.util)}</div></div>
        <div class="card kpi"><div class="lab">Hectáreas</div><div class="val tnum" style="font-size:16px">${d.haTot.toLocaleString('es-CO')}</div></div>
      </div>
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Reparto por socio<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Socio</th><th class="r">%</th><th class="r">Parte ingresos</th><th class="r">Parte pilotos</th><th class="r">Parte combust.</th><th class="r">Parte mantenim.</th><th class="r">Ganancia neta</th></tr></thead>
-       <tbody>${socioRows||'<tr><td colspan="7" style="padding:16px;color:var(--muted)">Sin socios registrados.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${dronPctTotal()}%</b></td><td class="r tnum"><b>${fmt(d.ingresos)}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td><td class="r tnum"><b>${fmt(d.mant)}</b></td><td class="r tnum"><b>${fmt(d.util)}</b></td></tr></tbody></table></div></div>
+       <thead><tr><th>Socio</th><th class="r">%</th><th class="r">Parte ingresos</th><th class="r">Parte pilotos</th><th class="r">Parte combust.</th><th class="r">Parte mantenim.</th><th class="r">Parte extras</th><th class="r">Ganancia neta</th></tr></thead>
+       <tbody>${socioRows||'<tr><td colspan="8" style="padding:16px;color:var(--muted)">Sin socios registrados.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${dronPctTotal()}%</b></td><td class="r tnum"><b>${fmt(d.ingresos)}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td><td class="r tnum"><b>${fmt(d.mant)}</b></td><td class="r tnum"><b>${fmt(d.extra)}</b></td><td class="r tnum"><b>${fmt(d.util)}</b></td></tr></tbody></table></div></div>
      ${pilRows?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>Pago a pilotos<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Piloto</th><th class="r">Hectáreas</th><th class="r">Ganancia</th></tr></thead>
@@ -1980,10 +2011,105 @@ function dronStatementHTML(){
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Fecha</th><th>Descripción</th><th class="r">Valor</th></tr></thead>
        <tbody>${mantRows}<tr style="border-top:2px solid var(--line)"><td colspan="2"><b>TOTAL</b></td><td class="r tnum"><b>${fmt(d.mant)}</b></td></tr></tbody></table></div></div>`:''}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). La ganancia neta de cada socio es la utilidad del dron (ingresos − pago a pilotos − combustible y aceite − mantenimiento) multiplicada por su porcentaje.</div>
+     ${d.extras.length?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Gastos extras<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Fecha</th><th>Descripción</th><th class="r">Valor</th></tr></thead>
+       <tbody>${extraRows}<tr style="border-top:2px solid var(--line)"><td colspan="2"><b>TOTAL</b></td><td class="r tnum"><b>${fmt(d.extra)}</b></td></tr></tbody></table></div></div>`:''}
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). La ganancia neta de cada socio es la utilidad del dron (ingresos − pago a pilotos − combustible y aceite − mantenimiento − gastos extras) multiplicada por su porcentaje.</div>
    </div>`;
 }
 function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
+
+/* ===== PREPARACIÓN DE QUÍMICOS ===== */
+function quimCatalog(){return CFG.quimicos||[];}
+function qFmt(v,u){v=+v||0;const n=x=>x.toLocaleString('es-CO',{maximumFractionDigits:2});if(u==='g'){return v>=1000?n(v/1000)+' kg':n(v)+' g';}return v>=1000?n(v/1000)+' L':n(v)+' ml';}
+function quimTanks(totalVol,cap){const t=[];if(!(cap>0))cap=1000;let rem=totalVol,guard=0;while(rem>0.0001&&guard<10000){const v=Math.min(cap,rem);t.push(v);rem-=v;guard++;}return t;}
+function renderQuimicos(){
+  document.getElementById('topctl').innerHTML='';
+  const cat=quimCatalog();
+  document.getElementById('content').innerHTML=`
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start;gap:16px">
+     <div class="card panel">
+       <div class="ph"><div><h2>Datos del lote</h2><p>Hectáreas a fumigar y mezcla por hectárea</p></div></div>
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+         <div class="field"><label>Hectáreas del lote</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixHa)}" placeholder="0" oninput="ui.mixHa=this.value;quimCalc()"></div>
+         <div class="field"><label>Litros de mezcla por ha</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixLxHa)}" placeholder="200" oninput="ui.mixLxHa=this.value;quimCalc()"></div>
+         <div class="field"><label>Capacidad del tanque (L)</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixTank)}" placeholder="1000" oninput="ui.mixTank=this.value;quimCalc()"></div>
+       </div>
+       <div class="note">Volumen total de mezcla = hectáreas × litros por hectárea. Se reparte en tanques de la capacidad indicada (1.000 L por defecto); el último tanque lleva solo el excedente que falte.</div>
+     </div>
+     <div class="card panel">
+       <div class="ph"><div><h2>Químicos de la mezcla</h2><p>Elige el químico y su dosis por hectárea</p></div></div>
+       <div id="qm_lines"></div>
+       <button class="btn sm" style="margin-top:10px" onclick="quimAddLine()">${ic('plus')}Agregar químico</button>
+       ${cat.length?'':'<div class="note">Aún no tienes químicos en el catálogo. Agrégalos abajo para que aparezcan en el menú desplegable.</div>'}
+     </div>
+   </div>
+   <div id="qm_results" style="margin-top:16px"></div>
+   ${quimCatalogPanel()}`;
+  quimRenderLines();quimCalc();
+}
+function quimRenderLines(){
+  const box=document.getElementById('qm_lines');if(!box)return;
+  const cat=quimCatalog();
+  if(!ui.mixLines||!ui.mixLines.length)ui.mixLines=[{n:'',d:'',u:'ml'}];
+  box.innerHTML=ui.mixLines.map((l,i)=>`<div class="addrow" style="align-items:center;margin-top:${i?'8':'0'}px">
+     <select class="input" style="flex:2" onchange="quimSetLineChem(${i},this.value)">
+       <option value="">— Elegir químico —</option>
+       ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
+     </select>
+     <input class="input tnum" type="number" step="any" style="flex:1;text-align:right" value="${esc(l.d)}" placeholder="dosis/ha" oninput="quimSetLineDose(${i},this.value)">
+     <select class="input" style="width:82px" onchange="quimSetLineUnit(${i},this.value)"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
+     <button class="iconbtn del" onclick="quimDelLine(${i})">${ic('trash')}</button>
+   </div>`).join('');
+}
+function quimAddLine(){ui.mixLines.push({n:'',d:'',u:'ml'});quimRenderLines();quimCalc();}
+function quimDelLine(i){ui.mixLines.splice(i,1);if(!ui.mixLines.length)ui.mixLines=[{n:'',d:'',u:'ml'}];quimRenderLines();quimCalc();}
+function quimSetLineChem(i,val){const c=quimCatalog().find(x=>x.n===val);ui.mixLines[i].n=val;if(c){ui.mixLines[i].d=c.d;ui.mixLines[i].u=c.u||'ml';}quimRenderLines();quimCalc();}
+function quimSetLineDose(i,val){ui.mixLines[i].d=val;quimCalc();}
+function quimSetLineUnit(i,val){ui.mixLines[i].u=val;quimCalc();}
+function quimCalc(){
+  const el=document.getElementById('qm_results');if(!el)return;
+  const ha=+ui.mixHa||0, lxha=+ui.mixLxHa||0, cap=(+ui.mixTank>0)?+ui.mixTank:1000;
+  const lines=(ui.mixLines||[]).filter(l=>l.n&&(+l.d>0));
+  if(!ha||!lxha){el.innerHTML=`<div class="card panel"><div class="empty" style="padding:26px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/></svg><span>Indica las hectáreas del lote y los litros de mezcla por hectárea para calcular.</span></div></div>`;return;}
+  const totalVol=ha*lxha, tanks=quimTanks(totalVol,cap);
+  const tankCards=tanks.map((vt,ti)=>{
+    const haTank=lxha?vt/lxha:0;
+    const rows=lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="r tnum"><b>${qFmt((+l.d||0)*haTank,l.u)}</b></td></tr>`).join('');
+    return `<div class="card" style="margin-top:12px"><div style="padding:14px 16px 0;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2 style="font-family:var(--display);font-size:15px">Tanque ${ti+1} — ${vt.toLocaleString('es-CO',{maximumFractionDigits:0})} L de mezcla</h2><span class="chip pay">Cubre ${haTank.toLocaleString('es-CO',{maximumFractionDigits:2})} ha</span></div>
+      <div class="tablewrap"><table><thead><tr><th>Químico</th><th class="r">Cantidad en este tanque</th></tr></thead><tbody>${rows||'<tr><td colspan="2" style="padding:14px;color:var(--muted)">Agrega químicos con dosis a la mezcla.</td></tr>'}</tbody></table></div></div>`;
+  }).join('');
+  const totRows=lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum"><b>${qFmt((+l.d||0)*ha,l.u)}</b></td></tr>`).join('');
+  el.innerHTML=`
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+     <div class="card kpi lead"><div class="lab">Hectáreas</div><div class="val tnum">${ha.toLocaleString('es-CO',{maximumFractionDigits:2})}</div></div>
+     <div class="card kpi"><div class="lab">Mezcla total</div><div class="val tnum" style="font-size:20px">${totalVol.toLocaleString('es-CO',{maximumFractionDigits:0})} L</div></div>
+     <div class="card kpi"><div class="lab">Tanques necesarios</div><div class="val tnum" style="font-size:20px">${tanks.length}</div></div>
+   </div>
+   ${lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Producto total para todo el lote</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Cantidad total de cada químico = dosis/ha × hectáreas</p></div>
+     <div class="tablewrap"><table><thead><tr><th>Químico</th><th class="r">Dosis/ha</th><th class="r">Total</th></tr></thead><tbody>${totRows}</tbody></table></div></div>`:''}
+   ${tankCards}`;
+}
+function quimCatalogPanel(){
+  const cat=quimCatalog();
+  return `<div class="card panel" style="margin-top:16px">
+    <div class="ph"><div><h2>Catálogo de químicos</h2><p>Define cada químico con su dosis por hectárea. Aparecerán en el menú desplegable de la mezcla.</p></div></div>
+    <div class="tablewrap" style="border:none"><table>
+      <thead><tr><th>Químico</th><th class="r" style="width:150px">Dosis por ha</th><th style="width:110px">Unidad</th><th></th></tr></thead>
+      <tbody>${cat.length?cat.map((c,i)=>`<tr>
+        <td><input class="input" style="padding:6px 9px" value="${esc(c.n)}" onchange="quimSetCat(${i},'n',this.value)"></td>
+        <td class="r"><input class="input tnum" type="number" step="any" style="padding:6px 9px;width:120px;text-align:right" value="${esc(c.d)}" onchange="quimSetCat(${i},'d',this.value)"></td>
+        <td><select class="input" style="padding:6px 9px" onchange="quimSetCat(${i},'u',this.value)"><option value="ml" ${c.u==='ml'?'selected':''}>ml</option><option value="g" ${c.u==='g'?'selected':''}>g</option></select></td>
+        <td class="r"><button class="iconbtn del" onclick="quimDelCat(${i})">${ic('trash')}</button></td></tr>`).join(''):`<tr><td colspan="4" style="padding:18px;color:var(--muted)">Agrega tu primer químico al catálogo.</td></tr>`}
+      </tbody></table></div>
+    <div class="addrow"><input class="input" id="qc_n" placeholder="Nombre del químico" style="flex:2"><input class="input tnum" id="qc_d" type="number" step="any" placeholder="Dosis/ha" style="flex:1"><select class="input" id="qc_u" style="width:80px"><option value="ml">ml</option><option value="g">g</option></select><button class="btn sm primary" onclick="quimAddCat()">${ic('plus')}</button></div>
+    <div class="note">La dosis/ha del catálogo se usa como valor inicial al elegir el químico en la mezcla; puedes ajustarla en cada preparación sin cambiar el catálogo.</div>
+  </div>`;
+}
+async function quimAddCat(){const n=(document.getElementById('qc_n').value||'').trim();const d=num(document.getElementById('qc_d').value);const u=document.getElementById('qc_u').value||'ml';if(!n){toast('Escribe el nombre del químico');return;}if(!CFG.quimicos)CFG.quimicos=[];CFG.quimicos.push({n,d,u});await persistCfg();renderQuimicos();toast('Químico agregado');}
+async function quimSetCat(i,field,val){if(!CFG.quimicos)CFG.quimicos=[];if(field==='d')CFG.quimicos[i].d=num(val);else if(field==='u')CFG.quimicos[i].u=val;else CFG.quimicos[i].n=(val||'').trim();await persistCfg();renderQuimicos();}
+async function quimDelCat(i){CFG.quimicos.splice(i,1);await persistCfg();renderQuimicos();}
 
 /* ===== RENTABILIDAD POR HECTÁREA ===== */
 function rentData(){
@@ -2347,7 +2473,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
