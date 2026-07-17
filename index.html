@@ -193,6 +193,17 @@ td.r,th.r{text-align:right}
 .tag button svg{width:15px;height:15px}
 .addrow{display:flex;gap:7px;margin-top:10px}
 .addrow input{flex:1}
+/* Preparación de químicos */
+.mixline{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;align-items:center}
+.mixline .mix-chem{flex:2 1 200px;min-width:0}
+.mixline .mix-dose{flex:1 1 90px;min-width:0;text-align:right}
+.mixline .mix-unit{flex:0 0 auto;width:86px}
+.mixline .mixdel{flex:0 0 auto}
+td.qname{white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-width:130px}
+@media(max-width:640px){
+  .mixline .mix-chem{flex:1 1 100%}
+  .mixline .mix-dose{flex:1 1 auto}
+}
 
 /* modal */
 .overlay{position:fixed;inset:0;background:rgba(45,65,55,.42);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
@@ -2053,14 +2064,14 @@ function quimRenderLines(){
   const box=document.getElementById('qm_lines');if(!box)return;
   const cat=quimCatalog();
   if(!ui.mixLines||!ui.mixLines.length)ui.mixLines=[{n:'',d:'',u:'ml'}];
-  box.innerHTML=ui.mixLines.map((l,i)=>`<div class="addrow" style="align-items:center;margin-top:${i?'8':'0'}px">
-     <select class="input" style="flex:2" onchange="quimSetLineChem(${i},this.value)">
+  box.innerHTML=ui.mixLines.map((l,i)=>`<div class="mixline">
+     <select class="input mix-chem" onchange="quimSetLineChem(${i},this.value)">
        <option value="">— Elegir químico —</option>
        ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
      </select>
-     <input class="input tnum" type="number" step="any" style="flex:1;text-align:right" value="${esc(l.d)}" placeholder="dosis/ha" oninput="quimSetLineDose(${i},this.value)">
-     <select class="input" style="width:82px" onchange="quimSetLineUnit(${i},this.value)"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
-     <button class="iconbtn del" onclick="quimDelLine(${i})">${ic('trash')}</button>
+     <input class="input tnum mix-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="quimSetLineDose(${i},this.value)">
+     <select class="input mix-unit" onchange="quimSetLineUnit(${i},this.value)"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
+     <button class="iconbtn del mixdel" onclick="quimDelLine(${i})">${ic('trash')}</button>
    </div>`).join('');
 }
 function quimAddLine(){ui.mixLines.push({n:'',d:'',u:'ml'});quimRenderLines();quimCalc();}
@@ -2076,11 +2087,11 @@ function quimCalc(){
   const totalVol=ha*lxha, tanks=quimTanks(totalVol,cap);
   const tankCards=tanks.map((vt,ti)=>{
     const haTank=lxha?vt/lxha:0;
-    const rows=lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="r tnum"><b>${qFmt((+l.d||0)*haTank,l.u)}</b></td></tr>`).join('');
+    const rows=lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum"><b>${qFmt((+l.d||0)*haTank,l.u)}</b></td></tr>`).join('');
     return `<div class="card" style="margin-top:12px"><div style="padding:14px 16px 0;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2 style="font-family:var(--display);font-size:15px">Tanque ${ti+1} — ${vt.toLocaleString('es-CO',{maximumFractionDigits:0})} L de mezcla</h2><span class="chip pay">Cubre ${haTank.toLocaleString('es-CO',{maximumFractionDigits:2})} ha</span></div>
       <div class="tablewrap"><table><thead><tr><th>Químico</th><th class="r">Cantidad en este tanque</th></tr></thead><tbody>${rows||'<tr><td colspan="2" style="padding:14px;color:var(--muted)">Agrega químicos con dosis a la mezcla.</td></tr>'}</tbody></table></div></div>`;
   }).join('');
-  const totRows=lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum"><b>${qFmt((+l.d||0)*ha,l.u)}</b></td></tr>`).join('');
+  const totRows=lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum"><b>${qFmt((+l.d||0)*ha,l.u)}</b></td></tr>`).join('');
   el.innerHTML=`
    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
      <div class="card kpi lead"><div class="lab">Hectáreas</div><div class="val tnum">${ha.toLocaleString('es-CO',{maximumFractionDigits:2})}</div></div>
