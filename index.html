@@ -2353,7 +2353,7 @@ function cronoCard(r){
     ${(r.hist&&r.hist.length)?`<div style="font-size:12px;color:var(--muted);margin-top:8px"><b>Aplicaciones realizadas (${r.hist.length}):</b> ${cronoHist(r).slice(0,6).map(h=>fmtFecha(h.f)).join(' · ')}${r.hist.length>6?` · +${r.hist.length-6}`:''}</div>`:''}
     <div class="crono-act">
       <div class="diasbox">Repetir cada <input class="input tnum" type="number" min="1" value="${esc(r.dias||'')}" placeholder="—" onchange="cronoSetDias(${r.id},this.value)"> días</div>
-      <button class="btn sm primary" onclick="cronoReapply(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Registrar nueva aplicación</button>
+      <button class="btn sm primary" onclick="cronoApply(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Aplicar</button>
     </div>
   </div>`;
 }
