@@ -204,6 +204,29 @@ td.qname{white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-wid
   .mixline .mix-chem{flex:1 1 100%}
   .mixline .mix-dose{flex:1 1 auto}
 }
+/* Cronograma */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.cal-title{font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize}
+.cal-nav{display:flex;gap:6px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--faint);text-align:center;padding:2px 0}
+.cal-cell{min-height:78px;border-radius:13px;background:var(--surface2);box-shadow:var(--clay-in);padding:6px 7px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.cal-cell.empty{background:transparent;box-shadow:none}
+.cal-cell.today{box-shadow:var(--clay-in),0 0 0 2px var(--green)}
+.cal-cell.over{background:var(--red-soft)}
+.cal-dn{font-size:11.5px;font-weight:700;color:var(--muted);flex:0 0 auto}
+.cal-cell.today .cal-dn{color:var(--green2)}
+.cal-badge{font-size:9.5px;font-weight:700;border-radius:6px;padding:2px 5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;cursor:pointer}
+.cal-more{font-size:9px;color:var(--muted);font-weight:600}
+.crono-card{padding:15px 17px;margin-top:12px}
+.crono-top{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.crono-top .cf{font-family:var(--display);font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.crono-meta{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.6}
+.crono-chems{font-size:12.5px;color:var(--ink);margin-top:8px;background:var(--surface2);border-radius:10px;padding:9px 11px;line-height:1.6}
+.crono-act{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.crono-act .diasbox{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.crono-act .diasbox input{width:74px;text-align:center}
+@media(max-width:640px){.cal-cell{min-height:58px;border-radius:10px;padding:4px 5px}.cal-badge{font-size:8.5px;padding:1px 4px}.cal-dn{font-size:10.5px}}
 
 /* modal */
 .overlay{position:fixed;inset:0;background:rgba(45,65,55,.42);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
@@ -402,6 +425,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="nomina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span>Nómina</span></a>
       <a data-view="dron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg><span>Dron</span></a>
       <a data-view="quimicos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg><span>Preparación químicos</span></a>
+      <a data-view="crono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><span>Cronograma</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
@@ -541,7 +565,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -553,6 +577,7 @@ function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
   if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
+  CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});Store.set('crono',JSON.stringify(CRONO));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   normalizeNominaMonths();
@@ -585,6 +610,7 @@ async function cloudDown(){
 let CFG=null, MOVS=[], seq=1;
 let NOMINAS=[], nseq=1;
 let DRON=[], dseq=1;
+let CRONO=[], cseq=1;
 const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 let ui={view:'dash',
@@ -596,7 +622,8 @@ let ui={view:'dash',
   nomView:'list',nomId:null,nomExp:new Set(),nomYear:null,nomQ:'',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:'',
-  mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixLines:[{n:'',d:'',u:'ml'}]
+  mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixLines:[{n:'',d:'',u:'ml'}],
+  cronoMonth:''
 };
 
 /* ===== helpers ===== */
@@ -636,6 +663,8 @@ async function init(){
   if(normalizeNominaMonths())await Store.set('nominas',JSON.stringify(NOMINAS));
   const dr2=await Store.get('dron'); DRON=dr2?JSON.parse(dr2):[];
   DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});
+  const cr2=await Store.get('crono'); CRONO=cr2?JSON.parse(cr2):[];
+  CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   if(!CFG.dronSocios){CFG.dronSocios=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
@@ -677,6 +706,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  nomina:['Nómina','Registro quincenal · jornadas, fincas y consolidado'],
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
  quimicos:['Preparación de químicos','Calculadora de mezcla por tanque · dosis por hectárea'],
+ crono:['Cronograma','Control de fumigaciones · próximas aplicaciones por finca'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
@@ -687,7 +717,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCrono,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
 }
 
 /* ===== DETALLE por categoría ===== */
@@ -2052,9 +2082,10 @@ function newMix(){
   });
 }
 function renderQuimicos(){
-  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px">
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
      <button class="btn" onclick="newMix()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva mezcla</button>
-     <button class="btn primary" onclick="printMix()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Crear PDF</button></div>`;
+     <button class="btn" onclick="printMix()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Crear PDF</button>
+     <button class="btn primary" onclick="sendMixToCrono()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg>Enviar al cronograma</button></div>`;
   const cat=quimCatalog();
   document.getElementById('content').innerHTML=`
    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start;gap:16px">
@@ -2163,6 +2194,153 @@ function quimCatalogPanel(){
 async function quimAddCat(){const n=(document.getElementById('qc_n').value||'').trim();const d=num(document.getElementById('qc_d').value);const u=document.getElementById('qc_u').value||'ml';if(!n){toast('Escribe el nombre del químico');return;}if(!CFG.quimicos)CFG.quimicos=[];CFG.quimicos.push({n,d,u});await persistCfg();renderQuimicos();toast('Químico agregado');}
 async function quimSetCat(i,field,val){if(!CFG.quimicos)CFG.quimicos=[];if(field==='d')CFG.quimicos[i].d=num(val);else if(field==='u')CFG.quimicos[i].u=val;else CFG.quimicos[i].n=(val||'').trim();await persistCfg();renderQuimicos();}
 async function quimDelCat(i){CFG.quimicos.splice(i,1);await persistCfg();renderQuimicos();}
+
+/* ===== CRONOGRAMA (control de fumigaciones) ===== */
+async function persistCrono(){await Store.set('crono',JSON.stringify(CRONO));Cloud.schedulePush();}
+function cronoNext(r){return (r.dias&&r.f)?addDaysISO(r.f,+r.dias):null;}
+function cronoDaysTo(iso){return Math.round((new Date(iso+'T00:00:00')-new Date(todayISO()+'T00:00:00'))/86400000);}
+function cronoLinesText(r){return (r.lines||[]).filter(l=>l.n).map(l=>`${esc(l.n)} — ${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha`).join(' · ')||'—';}
+function sendMixToCrono(){
+  const m=mixCompute();
+  if(!m.finca){toast('Elige la finca de la preparación');return;}
+  if(!m.ha||!m.lxha){toast('Completa hectáreas y litros por hectárea');return;}
+  showModal('Enviar al cronograma',`
+   <div class="form-grid">
+     <div class="field full"><label>Finca</label><input class="input" value="${esc(m.finca)}" disabled></div>
+     <div class="field"><label>Fecha de aplicación</label><input class="input tnum" type="date" id="cx_f" value="${todayISO()}"></div>
+     <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cx_d" placeholder="Ej: 15" min="1"></div>
+   </div>
+   <div class="note">Se registrará esta preparación (${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${m.lxha.toLocaleString('es-CO')} L/ha · ${m.lines.length} químico(s)) en el cronograma de <b>${esc(m.finca)}</b>. Si indicas cada cuántos días repetir, el calendario mostrará automáticamente la próxima aplicación. Puedes cambiar los días luego en el Cronograma.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar al cronograma',cls:'btn primary',fn:async()=>{
+     const f=document.getElementById('cx_f').value||todayISO();
+     const dias=+document.getElementById('cx_d').value||0;
+     CRONO.push({id:cseq++,finca:m.finca,f,lxha:m.lxha,ha:m.ha,lines:JSON.parse(JSON.stringify(m.lines)),dias});
+     await persistCrono();closeModal();toast('Fumigación enviada al cronograma');
+     ui.view='crono';ui.cronoMonth=(f||todayISO()).slice(0,7);
+     document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='crono'));render();
+   }}]);
+}
+function renderCrono(){
+  const today=todayISO();
+  if(!ui.cronoMonth)ui.cronoMonth=today.slice(0,7);
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
+     <button class="btn" onclick="ui.view='quimicos';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='quimicos'));render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva preparación</button>
+     ${CRONO.length?`<button class="btn primary" onclick="printCrono()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF</button>`:''}</div>`;
+  const C=document.getElementById('content');
+  if(!CRONO.length){C.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><b>Aún no hay fumigaciones en el cronograma</b>Desde «Preparación de químicos» arma la mezcla, elige la finca y usa «Enviar al cronograma» para empezar a llevar el control de las aplicaciones.</div></div>`;return;}
+  const prog=CRONO.map(cronoNext).filter(Boolean);
+  const overdue=prog.filter(n=>n<today).length;
+  const soon=prog.filter(n=>n>=today&&cronoDaysTo(n)<=7).length;
+  const sorted=CRONO.slice().sort((a,b)=>{const na=cronoNext(a),nb=cronoNext(b);if(!na&&!nb)return (b.f||'').localeCompare(a.f||'');if(!na)return 1;if(!nb)return -1;return na.localeCompare(nb);});
+  C.innerHTML=`
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+     <div class="card kpi lead"><div class="lab">Aplicaciones programadas</div><div class="val tnum">${prog.length}</div><div class="meta">${CRONO.length} registro(s) en total</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--red)">Vencidas</div><div class="val tnum" style="font-size:22px;color:var(--red)">${overdue}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--amber)">Próximos 7 días</div><div class="val tnum" style="font-size:22px">${soon}</div></div>
+   </div>
+   <div class="card panel" style="margin-top:16px">${cronoCalendarHTML(ui.cronoMonth)}</div>
+   <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 2px 4px;flex-wrap:wrap;gap:8px"><h2 style="font-family:var(--display);font-size:16px">Próximas aplicaciones por finca</h2></div>
+   ${sorted.map(cronoCard).join('')}`;
+}
+function cronoCalendarHTML(ym){
+  const today=todayISO();
+  const [y,mo]=ym.split('-').map(Number);
+  const first=new Date(y,mo-1,1);
+  const startDow=(first.getDay()+6)%7;
+  const dim=new Date(y,mo,0).getDate();
+  const map={};
+  CRONO.forEach(r=>{const nx=cronoNext(r);if(nx&&nx.slice(0,7)===ym){(map[nx]=map[nx]||[]).push(r);}});
+  const DOWk=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  let cells='';
+  for(let i=0;i<startDow;i++)cells+=`<div class="cal-cell empty"></div>`;
+  for(let day=1;day<=dim;day++){
+    const iso=`${y}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const recs=map[iso]||[];
+    const over=recs.length&&iso<today;
+    const badges=recs.slice(0,3).map(r=>`<span class="cal-badge" style="background:${over?'var(--red)':fincaColor(r.finca)}" title="${esc(r.finca)} · próxima aplicación">${esc(r.finca)}</span>`).join('');
+    const more=recs.length>3?`<span class="cal-more">+${recs.length-3} más</span>`:'';
+    cells+=`<div class="cal-cell${iso===today?' today':''}${over?' over':''}"><span class="cal-dn">${day}</span>${badges}${more}</div>`;
+  }
+  return `
+   <div class="cal-head">
+     <div class="cal-title">${MES_FULL[mo-1]} ${y}</div>
+     <div class="cal-nav">
+       <button class="btn sm" onclick="cronoMonthShift(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+       <button class="btn sm" onclick="cronoToday()">Hoy</button>
+       <button class="btn sm" onclick="cronoMonthShift(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+     </div>
+   </div>
+   <div class="cal-grid">${DOWk.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
+   <div class="note">Cada recuadro de color marca el día en que toca la próxima aplicación de esa finca. En rojo, aplicaciones ya vencidas. Ajusta los días de repetición en las tarjetas de abajo.</div>`;
+}
+function cronoCard(r){
+  const nx=cronoNext(r);
+  let chip;
+  if(!r.dias||!nx)chip=`<span class="chip pay">Sin programar</span>`;
+  else{const dt=cronoDaysTo(nx);
+    if(dt<0)chip=`<span class="chip e">Vencida hace ${-dt} día${-dt===1?'':'s'}</span>`;
+    else if(dt===0)chip=`<span class="chip pend">¡Aplicar hoy!</span>`;
+    else chip=`<span class="chip i">En ${dt} día${dt===1?'':'s'}</span>`;}
+  const over=nx&&nx<todayISO();
+  return `<div class="card crono-card">
+    <div class="crono-top">
+      <span class="cf"><i style="width:11px;height:11px;border-radius:50%;background:${fincaColor(r.finca)};display:inline-block;flex:0 0 auto"></i>${esc(r.finca)}</span>
+      ${chip}
+      <div style="flex:1"></div>
+      <button class="iconbtn del" title="Eliminar" onclick="cronoDel(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+    </div>
+    <div class="crono-meta">Última aplicación: <b>${fmtFecha(r.f)}</b>${nx?` · Próxima: <b style="color:${over?'var(--red)':'var(--green2)'}">${fmtFecha(nx)}</b>`:''} · ${(+r.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+r.lxha||0).toLocaleString('es-CO')} L/ha</div>
+    <div class="crono-chems"><b>Químicos:</b> ${cronoLinesText(r)}</div>
+    <div class="crono-act">
+      <div class="diasbox">Repetir cada <input class="input tnum" type="number" min="1" value="${esc(r.dias||'')}" placeholder="—" onchange="cronoSetDias(${r.id},this.value)"> días</div>
+      <button class="btn sm primary" onclick="cronoReapply(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Registrar nueva aplicación</button>
+    </div>
+  </div>`;
+}
+function cronoMonthShift(delta){const [y,mo]=ui.cronoMonth.split('-').map(Number);const dt=new Date(y,mo-1+delta,1);ui.cronoMonth=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderCrono();}
+function cronoToday(){ui.cronoMonth=todayISO().slice(0,7);renderCrono();}
+async function cronoSetDias(id,val){const r=CRONO.find(x=>x.id===id);if(!r)return;r.dias=+val||0;await persistCrono();renderCrono();}
+function cronoReapply(id){
+  const r=CRONO.find(x=>x.id===id);if(!r)return;
+  showModal('Registrar nueva aplicación',`
+   <div class="form-grid">
+     <div class="field full"><label>Finca</label><input class="input" value="${esc(r.finca)}" disabled></div>
+     <div class="field"><label>Fecha de esta aplicación</label><input class="input tnum" type="date" id="cr_f" value="${todayISO()}"></div>
+     <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cr_d" min="1" value="${esc(r.dias||'')}"></div>
+   </div>
+   <div class="note">Se actualizará la fecha de la última aplicación de <b>${esc(r.finca)}</b> y el calendario recalculará automáticamente la próxima.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
+     r.f=document.getElementById('cr_f').value||todayISO();
+     r.dias=+document.getElementById('cr_d').value||0;
+     await persistCrono();closeModal();ui.cronoMonth=(cronoNext(r)||r.f).slice(0,7);renderCrono();toast('Aplicación registrada');
+   }}]);
+}
+function cronoDel(id){const r=CRONO.find(x=>x.id===id);
+  confirmModal('Eliminar del cronograma',`Se quitará la programación de fumigación de ${r?esc(r.finca):'esta finca'}.`,async()=>{
+    CRONO=CRONO.filter(x=>x.id!==id);await persistCrono();closeModal();renderCrono();toast('Eliminado del cronograma');});
+}
+function printCrono(){printIsolated(cronoStatementHTML(),'Cronograma de fumigaciones');}
+function cronoStatementHTML(){
+  const today=todayISO();
+  const sorted=CRONO.slice().sort((a,b)=>{const na=cronoNext(a),nb=cronoNext(b);if(!na&&!nb)return (b.f||'').localeCompare(a.f||'');if(!na)return 1;if(!nb)return -1;return na.localeCompare(nb);});
+  const rows=sorted.map(r=>{const nx=cronoNext(r);let est='Sin programar';if(nx){const dt=cronoDaysTo(nx);est=dt<0?('Vencida hace '+(-dt)+' d'):dt===0?'Hoy':('En '+dt+' d');}
+    return `<tr><td>${esc(r.finca)}</td><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${r.dias?r.dias+' d':'—'}</td><td class="tnum">${nx?fmtFecha(nx):'—'}</td><td>${est}</td><td class="wrap">${(+r.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+r.lxha||0).toLocaleString('es-CO')} L/ha · ${cronoLinesText(r)}</td></tr>`;}).join('');
+  const prog=CRONO.map(cronoNext).filter(Boolean);
+  return `
+   <div class="rep-head"><div><div class="rh-brand">Fincas Martínez</div><h2>Cronograma de fumigaciones</h2><div class="rh-sub">Control de aplicaciones por finca</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(today)}</b></div></div>
+   <div class="report-sec">
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+       <div class="card kpi lead"><div class="lab">Programadas</div><div class="val tnum">${prog.length}</div></div>
+       <div class="card kpi"><div class="lab">Vencidas</div><div class="val tnum" style="font-size:20px">${prog.filter(n=>n<today).length}</div></div>
+       <div class="card kpi"><div class="lab">Próx. 7 días</div><div class="val tnum" style="font-size:20px">${prog.filter(n=>n>=today&&cronoDaysTo(n)<=7).length}</div></div>
+     </div>
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Aplicaciones por finca<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Finca</th><th>Última aplicación</th><th class="r">Cada</th><th>Próxima</th><th>Estado</th><th>Preparación</th></tr></thead>
+       <tbody>${rows||'<tr><td colspan="6" style="padding:16px;color:var(--muted)">Sin registros.</td></tr>'}</tbody></table></div></div>
+     <div class="note">Documento generado el ${fmtFecha(today)}. La próxima aplicación se calcula como la fecha de la última aplicación más los días de repetición indicados para cada finca.</div>
+   </div>`;
+}
 
 /* ===== RENTABILIDAD POR HECTÁREA ===== */
 function rentData(){
