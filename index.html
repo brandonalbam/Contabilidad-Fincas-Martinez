@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fincas Martínez — Contabilidad</title>
 <meta name="theme-color" content="#1E5631">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fincas Martínez">
@@ -382,6 +382,12 @@ table.mini td.r{text-align:right}
 table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 @media(max-width:560px){.payslip-weeks{grid-template-columns:1fr}}
 #printArea{display:none}
+/* Vista previa de documentos (PDF) */
+#pvWrap{position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;background:#eef1ee}
+#pvWrap .pv-bar{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--surface);box-shadow:0 2px 10px rgba(20,40,28,.10);flex-wrap:wrap}
+#pvWrap .pv-bar b{font-family:var(--display);font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pvWrap iframe{flex:1;width:100%;border:0;background:#eef1ee}
+@media print{#pvWrap .pv-bar{display:none!important}}
 @media print{
   body.printing>*{display:none!important}
   body.printing>#printArea{display:block!important}
@@ -1560,21 +1566,31 @@ tr[style*="border-top"] td{font-weight:700;background:#f4f8f4!important}
 }
 @media(max-width:600px){.payslip-weeks{grid-template-columns:1fr}.rep-head{flex-direction:column}.rh-meta{text-align:left}}
 `;
+function closePreview(){const w=document.getElementById('pvWrap');if(w)w.remove();document.body.style.overflow='';}
 function printIsolated(bodyHTML,title,extraCSS){
   title=title||'Documento · Fincas Martínez';
-  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+(extraCSS||'')+'</style></head><body>'
-    +'<div class="toolbar no-print"><b>'+esc(title)+'</b><span class="sp"></span><button onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / Guardar PDF</button></div>'
-    +'<div class="sheet">'+bodyHTML+'</div></body></html>';
-  try{
-    const w=window.open('','_blank');
-    if(w&&w.document){w.document.open();w.document.write(doc);w.document.close();w.focus();return;}
-  }catch(e){}
-  try{
-    const url=URL.createObjectURL(new Blob([doc],{type:'text/html'}));
-    const w2=window.open(url,'_blank');
-    if(!w2)toast('Permite las ventanas emergentes para ver el documento en una pestaña nueva');
-    setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},60000);
-  }catch(e){toast('No se pudo abrir el documento');}
+  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+(extraCSS||'')+'</style></head><body><div class="sheet">'+bodyHTML+'</div></body></html>';
+  closePreview();
+  const w=document.createElement('div');w.id='pvWrap';
+  w.innerHTML='<div class="pv-bar"><b>'+esc(title)+'</b><span style="flex:1"></span>'
+    +'<button class="btn primary" id="pvPrint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Guardar PDF</button>'
+    +'<button class="btn" id="pvClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cerrar</button></div>'
+    +'<iframe id="pvFrame" title="Vista previa"></iframe>';
+  document.body.appendChild(w);
+  document.body.style.overflow='hidden';
+  const fr=document.getElementById('pvFrame');
+  try{fr.srcdoc=doc;}catch(e){try{const d=fr.contentWindow.document;d.open();d.write(doc);d.close();}catch(e2){}}
+  document.getElementById('pvClose').onclick=closePreview;
+  document.getElementById('pvPrint').onclick=()=>{
+    try{fr.contentWindow.focus();fr.contentWindow.print();return;}catch(e){}
+    try{
+      const url=URL.createObjectURL(new Blob([doc],{type:'text/html'}));
+      const a=document.createElement('a');a.href=url;a.download=title.replace(/[^\wáéíóúñÁÉÍÓÚÑ .-]+/g,'').trim().replace(/\s+/g,'_')+'.html';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},60000);
+      toast('Se descargó el documento; ábrelo para imprimirlo o guardarlo como PDF');
+    }catch(e){toast('No se pudo generar el documento');}
+  };
 }
 function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(!nom.entries.length){toast('La quincena no tiene empleados');return;}
   printIsolated(nominaStatementHTML(nom),'Nómina '+MES_FULL[nom.mes]+' '+nom.year+' Q'+nom.q);}
