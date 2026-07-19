@@ -302,6 +302,9 @@ td.qname{white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-wid
 /* ===== Clientes ===== */
 .cli-card{margin-bottom:10px;overflow:hidden}
 .cli-head{display:flex;align-items:center;gap:13px;padding:14px 18px;cursor:pointer;transition:.12s;flex-wrap:wrap}
+.cli-paghead{display:flex;align-items:center;gap:8px;padding:11px 18px;cursor:pointer;border-top:1px solid var(--line);background:var(--surface2);font-size:13px;color:var(--green2)}
+.cli-paghead svg{width:15px;height:15px;flex:0 0 auto}
+.cli-paghead:hover{background:var(--surface3)}
 .cli-head:hover{background:var(--surface2)}
 .cli-head .av{width:34px;height:34px;border-radius:9px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;font-family:var(--display)}
 .cli-head .nmb{flex:1 0 auto;min-width:0}
@@ -637,7 +640,7 @@ const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV'
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 let ui={view:'dash',
   dashFrom:'2026-01-01',dashTo:'2026-12-31',
-  mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mPage:1,
+  mFinca:'',mTipo:'',mEstado:'',mQ:'',mPeriodo:'',mQuien:'',mPage:1,
   rYear:2026, fFinca:'FRUTEXCOL',fFrom:'2026-01-01',fTo:'2026-12-31',fDesc:0.15,
   iFinca:'',iFincas:[],iFrom:'2026-01-01',iTo:'2026-12-31',iDesc:0.15,
   frFinca:'FRUTEXCOL',frUnit:'CANASTILLA',frCli:'',frCat:'',frEstado:'P',frFecha:'',frLines:[{cal:'',q:'',p:''}],
@@ -913,7 +916,8 @@ function filteredMovs(){
     if(ui.mTipo&&m.t!==ui.mTipo)return false;
     if(ui.mEstado&&m.e!==ui.mEstado)return false;
     if(ui.mPeriodo&&!(m.f||'').startsWith(ui.mPeriodo))return false;
-    if(ui.mQ){const q=ui.mQ.toLowerCase();if(!((m.d||'')+(m.c||'')+(m.co||'')+(m.fa||'')).toLowerCase().includes(q))return false;}
+    if(ui.mQuien&&m.cl!==ui.mQuien&&m.co!==ui.mQuien)return false;
+    if(ui.mQ){const q=ui.mQ.toLowerCase();if(!((m.d||'')+(m.c||'')+(m.co||'')+(m.cl||'')+(m.fa||'')).toLowerCase().includes(q))return false;}
     return true;
   });
   const hoy=todayISO();
@@ -945,6 +949,9 @@ function renderMovs(){
     <div class="field"><label>Finca</label><select class="input" onchange="ui.mFinca=this.value;ui.mPage=1;renderMovs()"><option value="">Todas</option>${CFG.fincas.map(f=>`<option ${ui.mFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
     <div class="field"><label>Tipo</label><select class="input" onchange="ui.mTipo=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option><option value="I" ${ui.mTipo==='I'?'selected':''}>Ingreso</option><option value="E" ${ui.mTipo==='E'?'selected':''}>Egreso</option></select></div>
     <div class="field"><label>Estado</label><select class="input" onchange="ui.mEstado=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option><option value="P" ${ui.mEstado==='P'?'selected':''}>Pagado/Recibido</option><option value="X" ${ui.mEstado==='X'?'selected':''}>Pendiente</option></select></div>
+    <div class="field"><label>Cliente / Comercio</label><select class="input" onchange="ui.mQuien=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option>
+      <optgroup label="Clientes">${[...new Set([...CFG.clientes,...MOVS.filter(m=>m.cl).map(m=>m.cl)])].sort((a,b)=>a.localeCompare(b)).map(c=>`<option ${ui.mQuien===c?'selected':''}>${esc(c)}</option>`).join('')}</optgroup>
+      <optgroup label="Comercios">${[...new Set([...CFG.comercios,...MOVS.filter(m=>m.co).map(m=>m.co)])].sort((a,b)=>a.localeCompare(b)).map(c=>`<option ${ui.mQuien===c?'selected':''}>${esc(c)}</option>`).join('')}</optgroup></select></div>
     <div class="field"><label>Periodo</label><select class="input" onchange="ui.mPeriodo=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option>${periodos.map(p=>`<option ${ui.mPeriodo===p?'selected':''} value="${p}">${MES_ABV[+p.slice(5)-1]} ${p.slice(0,4)}</option>`).join('')}</select></div>
   </div>
   <div id="movtable"></div>`;
@@ -955,7 +962,7 @@ function drawMovTable(slice,total,pages,per){
   const el=document.getElementById('movtable');if(!el)return;
   if(!total){el.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><b>No hay movimientos</b>Ajusta los filtros o registra uno nuevo.</div></div>`;return;}
   el.innerHTML=`<div class="tablewrap"><table><thead><tr>
-    <th>Fecha</th><th>Finca</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Factura</th>
+    <th>Fecha</th><th>Finca</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Cliente / Comercio</th><th>Factura</th>
     <th class="r">Cant.</th><th class="r">P. unit.</th><th class="r">Total</th><th>Estado</th><th class="r">Saldo</th><th>Antigüedad</th><th></th>
   </tr></thead><tbody>${slice.map(rowHTML).join('')}</tbody></table></div>
   <div class="pager"><span>${total.toLocaleString('es-CO')} movimiento(s) · página ${ui.mPage} de ${pages}</span>
@@ -973,7 +980,8 @@ function rowHTML(m){
     <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
     <td><span class="chip ${m.t==='I'?'i':'e'}">${m.t==='I'?'Ingreso':'Egreso'}</span></td>
     <td>${esc(m.c)}</td>
-    <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis" title="${esc(m.d)}${m.cl?' · Cliente: '+esc(m.cl):''}">${esc(m.d)||'—'}${m.t==='I'&&m.cl?` <span style="color:var(--blue);font-size:11px">· ${esc(m.cl)}</span>`:''}</td>
+    <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis" title="${esc(m.d)}">${esc(m.d)||'—'}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${m.t==='I'?(m.cl?`<span style="color:var(--blue)">${esc(m.cl)}</span>`:'—'):(m.co?esc(m.co):'—')}</td>
     <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}</td>
     <td class="r tnum">${m.q?(+m.q).toLocaleString('es-CO'):'—'}${m.u?' <span style="color:var(--faint);font-size:11px">'+esc(m.u)+'</span>':''}</td>
     <td class="r tnum">${m.pu?fmt(m.pu):'—'}</td>
@@ -1028,7 +1036,7 @@ async function saveMov(id){
     cl:g('m_t')==='I'?g('m_cl'):'',q,pu,tot:Math.round(q*pu),e:g('m_e'),ab:g('m_e')==='X'?num(g('m_ab')):0,fa:g('m_fa').trim()};
   if(!obj.f){toast('Indica la fecha');return;}
   if(id){const m=MOVS.find(x=>x.id===id);Object.assign(m,obj);}
-  else{obj.id=seq++;MOVS.push(obj);}
+  else{obj.id=seq++;if(obj.ab>0)obj.abs=[{f:obj.f,v:Math.round(obj.ab)}];MOVS.push(obj);}
   await persistMovs();closeModal();render();toast(id?'Movimiento actualizado':'Movimiento registrado');
 }
 function dupMov(id){
@@ -1074,15 +1082,43 @@ function openPago(id){const m=MOVS.find(x=>x.id===id);const sal=saldo(m);
    <div class="form-grid">
      <div class="field"><label>Total factura</label><input class="input tnum" value="${fmt(m.tot)}" disabled></div>
      <div class="field"><label>Saldo pendiente</label><input class="input tnum" value="${fmt(sal)}" disabled></div>
-     <div class="field full"><label>Abono a registrar (parcial o total)</label><input class="input tnum money" inputmode="numeric" id="p_ab" value="" placeholder="0"></div>
+     <div class="field"><label>Fecha del abono</label><input class="input tnum" type="date" id="p_f" value="${todayISO()}"></div>
+     <div class="field"><label>Abono a registrar (parcial o total)</label><input class="input tnum money" inputmode="numeric" id="p_ab" value="" placeholder="0"></div>
    </div>
    <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('p_ab');e.value='${fmn(sal)}';e.dataset.raw='${Math.round(sal)}'">Abonar todo el saldo (${fmt(sal)})</button></div>
-   <div class="note">Escribe el monto del abono. Si cubre todo el saldo, la factura pasa a <b>Pagada / Recibida</b>; si es parcial, queda <b>Pendiente</b> con el saldo restante.</div>`,
+   <div class="note">Cada abono queda guardado con su fecha en el historial de la factura. Si cubre todo el saldo, la factura pasa a <b>Pagada / Recibida</b>; si es parcial, queda <b>Pendiente</b> con el saldo restante.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar abono',cls:'btn primary',fn:async()=>{
      const abono=num(document.getElementById('p_ab').value);
+     const pf=document.getElementById('p_f').value||todayISO();
      if(abono<=0){toast('Escribe el monto del abono');return;}
+     m.abs=Array.isArray(m.abs)?m.abs:[];m.abs.push({f:pf,v:Math.round(abono)});m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
      const ab=(+m.ab||0)+abono;m.ab=ab;if(ab>=(+m.tot||0))m.e='P';
      await persistMovs();closeModal();render();toast('Abono de '+fmt(abono)+' registrado');}}]);
+}
+function verAbonos(id){
+  const m=MOVS.find(x=>x.id===id);if(!m)return;
+  const tot=+m.tot||0;const abs=(Array.isArray(m.abs)?m.abs:[]).slice().sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+  let acum=0;
+  const rows=abs.map((a,i)=>{acum+=(+a.v||0);return `<tr><td class="tnum">${i+1}</td><td class="tnum">${fmtFecha(a.f)}</td><td class="r tnum" style="color:var(--green2)"><b>${fmt(a.v)}</b></td><td class="r tnum">${fmt(acum)}</td><td class="r tnum" style="color:${Math.max(tot-acum,0)>0?'var(--amber)':'var(--green2)'}">${fmt(Math.max(tot-acum,0))}</td></tr>`;}).join('');
+  const regTot=abs.reduce((a,x)=>a+(+x.v||0),0);
+  const sinHist=(+m.ab||0)-regTot;
+  const pagada=m.e==='P';
+  const body=`
+   <p style="color:var(--muted);margin-bottom:12px">${esc(m.fi)} · ${esc(m.d||m.c)}${m.fa?' · Factura '+esc(m.fa):''} · ${fmtFecha(m.f)}</p>
+   <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px">
+     <div class="card kpi"><div class="lab">Total factura</div><div class="val tnum" style="font-size:16px">${fmt(tot)}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--green2)">Abonado</div><div class="val tnum" style="font-size:16px;color:var(--green2)">${fmt(m.ab||0)}</div></div>
+     <div class="card kpi"><div class="lab" style="color:${saldo(m)>0?'var(--amber)':'var(--green2)'}">Saldo</div><div class="val tnum" style="font-size:16px;color:${saldo(m)>0?'var(--amber)':'var(--green2)'}">${fmt(saldo(m))}</div></div>
+   </div>
+   ${pagada?`<div class="chip i" style="margin-bottom:12px">✓ Factura pagada${abs.length?' con '+abs.length+' abono(s)':''}</div>`:`<div class="chip pend" style="margin-bottom:12px">Pendiente · ${abs.length} abono(s) hasta ahora</div>`}
+   ${abs.length?`<div class="tablewrap"><table>
+     <thead><tr><th>#</th><th>Fecha</th><th class="r">Abono</th><th class="r">Acumulado</th><th class="r">Saldo restante</th></tr></thead>
+     <tbody>${rows}</tbody></table></div>`
+    :`<div class="note" style="margin:0">${pagada?'Esta factura se registró como pagada de contado (sin abonos parciales).':'Aún no se han registrado abonos a esta factura.'}</div>`}
+   ${sinHist>0?`<div class="note" style="margin-top:10px">Además hay ${fmt(sinHist)} abonados antes de que existiera el historial de abonos (sin fecha registrada).</div>`:''}`;
+  const btns=[{label:'Cerrar',cls:'btn',fn:closeModal}];
+  if(m.e==='X'&&saldo(m)>0)btns.unshift({label:'Registrar abono',cls:'btn primary',fn:()=>{closeModal();openPago(m.id);}});
+  showModal('Abonos de la factura',body,btns);
 }
 
 /* ===== RESUMEN POR FINCA ===== */
@@ -1631,7 +1667,8 @@ function clientesData(){
   const data=[...set].map(cl=>{
     const movs=MOVS.filter(m=>m.t==='I'&&m.cl===cl);
     const pend=movs.filter(m=>m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
-    return{cl,movs,pend,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
+    const pagadas=movs.filter(m=>m.e==='P').sort((x,y)=>(y.f||'').localeCompare(x.f||''));
+    return{cl,movs,pend,pagadas,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
   }).sort((a,b)=>b.deuda-a.deuda||a.cl.localeCompare(b.cl));
   const sinCl=MOVS.filter(m=>m.t==='I'&&!m.cl&&m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
   return{data,sinCl,sinDeuda:sinCl.reduce((a,m)=>a+saldo(m),0)};
@@ -1647,7 +1684,7 @@ function detailTable(movs,saldoLab,totLab,showFa){saldoLab=saldoLab||'Saldo (deb
       <td class="r tnum">${fmt(m.tot)}</td>
       <td class="r tnum" style="color:var(--green2)">${fmt(m.ab||0)}</td>
       <td class="r tnum"><b style="color:var(--amber)">${fmt(saldo(m))}</b></td>
-      <td class="r"><button class="btn sm" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Abonar</button></td></tr>`).join('')}
+      <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end">${(m.ab>0||(m.abs&&m.abs.length))?`<button class="iconbtn" title="Ver abonos" onclick="verAbonos(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>`:''}<button class="btn sm" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Abonar</button></div></td></tr>`).join('')}
       <tr style="border-top:2px solid var(--line)"><td colspan="${showFa?6:5}"><b>${totLab}</b></td><td class="r tnum"><b style="color:var(--amber)">${fmt(movs.reduce((a,m)=>a+saldo(m),0))}</b></td><td></td></tr>
     </tbody></table></div>`;
 }
@@ -1736,6 +1773,25 @@ function cliCard(d,i){
     <div class="cli-detail" id="cli_${i}" style="display:none">
       <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
       ${d.pend.length?detailTable(d.pend):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin deudas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
+      ${d.pagadas.length?`
+      <div class="cli-paghead" onclick="const x=document.getElementById('pag_${i}');const c=document.getElementById('pagchev_${i}');const o=x.style.display==='none';x.style.display=o?'':'none';if(c)c.classList.toggle('open',o)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <b>Facturas pagadas (${d.pagadas.length})</b><span style="color:var(--muted);font-size:12px">· ${fmt(d.pagadas.reduce((a,m)=>a+(+m.tot||0),0))} cobrados</span>
+        <span style="flex:1"></span><span class="chev" id="pagchev_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div id="pag_${i}" style="display:none">
+        <div class="tablewrap" style="border:none;border-radius:0"><table><thead><tr>
+          <th>Fecha</th><th>Finca</th><th>Descripción</th><th>Factura</th><th class="r">Total</th><th>Pago</th><th></th></tr></thead>
+          <tbody>${d.pagadas.map(m=>{const nAb=(m.abs&&m.abs.length)||0;return `<tr>
+            <td class="tnum">${fmtFecha(m.f)}</td>
+            <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
+            <td class="wrap">${esc(m.d||m.c)||'—'}</td>
+            <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}</td>
+            <td class="r tnum"><b>${fmt(m.tot)}</b></td>
+            <td>${nAb?`<span class="chip i">${nAb} abono${nAb===1?'':'s'}</span>`:(m.ab>0?'<span class="chip i">Con abonos</span>':'<span class="chip pay">De contado</span>')}</td>
+            <td class="r"><button class="btn sm" onclick="verAbonos(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>Ver abonos</button></td></tr>`;}).join('')}
+          </tbody></table></div>
+      </div>`:''}
     </div></div>`;
 }
 function toggleCli(i){const d=document.getElementById('cli_'+i),c=document.getElementById('chev_'+i);if(!d)return;const open=d.style.display==='none';d.style.display=open?'':'none';if(c)c.classList.toggle('open',open);}
