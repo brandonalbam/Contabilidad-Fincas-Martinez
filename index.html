@@ -1441,7 +1441,7 @@ function renderWheelStep(){
          </div>
          <button class="wheel-arrow" onclick="wheelNav(1)" title="${mode==='j'?'Ir a la finca':(last?'Terminar':'Siguiente día')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
        </div>
-       <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:8px">‹ atrás &nbsp;·&nbsp; gira y avanza ›<span class="kb-hint"><br>Teclado: ↑↓ elegir · escribe la inicial para saltar · Enter/→ siguiente · ← atrás · Esc cerrar</span></div>
+       <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:8px">‹ atrás &nbsp;·&nbsp; gira y avanza ›<span class="kb-hint"><br>Teclado: ↑↓ elegir · números = Extra (25 → Extra 2.5) · letras = iniciales · Enter/→ siguiente · ← atrás · Esc cerrar</span></div>
      </div>
      <div class="modal-f"><button class="btn" onclick="closeWheel()">Cerrar</button><button class="btn primary" onclick="wheelNav(1)">${last?'Terminar':(mode==='j'?'Finca ›':'Siguiente día ›')}</button></div>
    </div>`;
@@ -1491,6 +1491,15 @@ function wheelKeyHandler(e){
     const now=Date.now();
     let buf=(now-(wheelCtx._kt||0)<900)?(wheelCtx._kb||''):'';
     buf+=ch;wheelCtx._kt=now;
+    if(wheelCtx.mode==='j'&&/^\d+$/.test(buf)){
+      const lbls=opts.map(o=>norm(o.label));
+      const findExtra=b=>{const w=b.length===1?b:(b[0]+'.'+b.slice(1));let t=lbls.findIndex(l=>l==='extra '+w);if(t<0)t=lbls.findIndex(l=>l.startsWith('extra '+w));return t;};
+      let t=findExtra(buf);
+      if(t<0&&buf.length>1){const b2=buf.slice(-1);const t2=findExtra(b2);if(t2>=0){buf=b2;t=t2;}}
+      wheelCtx._kb=buf;
+      if(t>=0)go(t);
+      return;
+    }
     const startsW=p=>opts.map((o,i2)=>({i:i2,l:norm(o.label)})).filter(x=>x.l.startsWith(p)).map(x=>x.i);
     let target=-1;
     let cand=startsW(buf);
