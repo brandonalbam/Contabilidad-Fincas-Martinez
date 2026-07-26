@@ -2180,9 +2180,72 @@ function dronRecordsList(d){
         <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||(r.k==='extra'?'Gasto extra':'Mantenimiento'))}</td>
         <td class="r tnum">${r.k==='job'?(+r.ha).toLocaleString('es-CO'):'—'}</td>
         <td class="r tnum ${r.k!=='job'?'neg':''}">${r.k!=='job'?'− ':''}${fmt(r.tot)}</td>
-        <td class="r"><button class="iconbtn del" onclick="dronDelRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="6">${emptyRow('Sin movimientos del dron en el periodo')}</td></tr>`}
+        <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Editar" onclick="dronEditRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="dronDelRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`).join(''):`<tr><td colspan="6">${emptyRow('Sin movimientos del dron en el periodo')}</td></tr>`}
       </tbody></table></div>
   </div>`;
+}
+function dronEditRec(id){
+  const r=DRON.find(x=>x.id===id);if(!r)return;
+  if(r.k==='job'){
+    const pilOpts=`<option value="">— Sin piloto —</option>`+(CFG.dronPilotos||[]).map(p=>`<option ${r.piloto===p.n?'selected':''}>${esc(p.n)}</option>`).join('');
+    showModal('Editar fumigación',`
+     <div class="form-grid">
+       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="e_f" value="${r.f||todayISO()}"></div>
+       <div class="field"><label>Finca fumigada</label><select class="input" id="e_fi">${CFG.fincas.map(f=>`<option ${r.fi===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+       <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="e_pu" value="${fmn(r.pu)}"></div>
+       <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="e_ha" value="${r.ha}"></div>
+       <div class="field full"><label>Piloto</label><select class="input" id="e_pil">${pilOpts}</select></div>
+     </div>
+     <div class="note">Se recalcularán el total de la fumigación y el pago al piloto. El movimiento en «Movimientos» ligado a esta fumigación se actualizará con los nuevos datos${(r.movId&&MOVS.find(m=>m.id===r.movId&&m.e==='X'))?'; si tenía abonos, se conservan':''}.</div>`,
+     [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn primary',fn:async()=>{
+       const f=document.getElementById('e_f').value||todayISO();
+       const fi=document.getElementById('e_fi').value;
+       const pu=num(document.getElementById('e_pu').value);
+       const ha=+document.getElementById('e_ha').value||0;
+       if(!pu||!ha){toast('Indica valor por hectárea y número de hectáreas');return;}
+       const pilN=document.getElementById('e_pil').value;
+       const pil=(CFG.dronPilotos||[]).find(x=>x.n===pilN);
+       const pilPu=pil?+pil.pu||0:0, pilPago=Math.round(pilPu*ha), tot=Math.round(pu*ha);
+       Object.assign(r,{f,fi,pu,ha,tot,piloto:pilN||'',pilPu,pilPago});
+       const mv=r.movId?MOVS.find(m=>m.id===r.movId):null;
+       if(mv){mv.f=f;mv.fi=fi;mv.q=ha;mv.pu=pu;mv.tot=tot;mv.u='HECTÁREA';mv.d=`Fumigación con dron · ${ha} ha × ${fmt(pu)}/ha`;if((+mv.ab||0)>=tot)mv.e='P';}
+       await persistDron();await persistMovs();closeModal();renderDron();toast('Fumigación actualizada');
+     }}]);
+    return;
+  }
+  if(r.k==='fuel'){
+    showModal('Editar combustible y aceite',`
+     <div class="form-grid">
+       <div class="field full"><label>Fecha</label><input class="input tnum" type="date" id="e_f" value="${r.f||todayISO()}"></div>
+       <div class="field"><label>Gasolina</label><input class="input tnum money" inputmode="numeric" id="e_gas" value="${fmn(r.gasTot)}"></div>
+       <div class="field"><label>Aceite</label><input class="input tnum money" inputmode="numeric" id="e_ace" value="${fmn(r.aceiteTot)}"></div>
+     </div>`,
+     [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn primary',fn:async()=>{
+       const f=document.getElementById('e_f').value||todayISO();
+       const gasTot=Math.round(num(document.getElementById('e_gas').value));
+       const aceiteTot=Math.round(num(document.getElementById('e_ace').value));
+       if(!gasTot&&!aceiteTot){toast('Indica el valor de gasolina o aceite');return;}
+       Object.assign(r,{f,gasTot,aceiteTot,tot:gasTot+aceiteTot});
+       await persistDron();closeModal();renderDron();toast('Combustible actualizado');
+     }}]);
+    return;
+  }
+  // mant / extra
+  const titulo=r.k==='extra'?'Editar gasto extra':'Editar mantenimiento';
+  showModal(titulo,`
+   <div class="form-grid">
+     <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="e_f" value="${r.f||todayISO()}"></div>
+     <div class="field"><label>Valor</label><input class="input tnum money" inputmode="numeric" id="e_v" value="${fmn(r.tot)}"></div>
+     <div class="field full"><label>Descripción</label><input class="input" id="e_d" value="${esc(r.d||'')}"></div>
+   </div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn primary',fn:async()=>{
+     const f=document.getElementById('e_f').value||todayISO();
+     const v=num(document.getElementById('e_v').value);
+     const ds=document.getElementById('e_d').value.trim();
+     if(!v){toast('Indica el valor');return;}
+     Object.assign(r,{f,tot:Math.round(v),d:ds||(r.k==='extra'?'Gasto extra':'Mantenimiento')});
+     await persistDron();closeModal();renderDron();toast('Registro actualizado');
+   }}]);
 }
 function dronDelRec(id){const r=DRON.find(x=>x.id===id);
   confirmModal('Eliminar registro',`Se eliminará este registro del dron.${r&&r.k==='job'&&r.movId?' El movimiento ya enviado a Movimientos NO se elimina automáticamente.':''}`,async()=>{
