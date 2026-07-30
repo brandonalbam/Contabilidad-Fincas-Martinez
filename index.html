@@ -590,7 +590,7 @@ const Cloud={
       this.setStatus('ok');this.pulling=false;return false;
     }catch(e){this.setStatus('err');this.pulling=false;return false;}
   },
-  schedulePush(){if(!this.cfg.enabled)return;this.dirty=true;clearTimeout(this.pushT);this.pushT=setTimeout(()=>this.push(),1200);},
+  schedulePush(){if(!this.cfg.enabled)return;this.dirty=true;clearTimeout(this.pushT);this.pushT=setTimeout(()=>this.push(),800);},
   flush(){if(this.pushT){clearTimeout(this.pushT);this.pushT=null;}if(this.cfg.enabled&&this.dirty&&!this.pushing)this.push();},
   async push(){
     if(!this.cfg.enabled)return false;
@@ -719,11 +719,16 @@ async function init(){
   await Cloud.load();
   bindNav(); render(); updateCloudBadge();
   if(Cloud.cfg.enabled){
-    if(MOVS.length||NOMINAS.length)Cloud.localTs=Date.now();
-    Cloud.pull(false,true); startCloudTimer();
+    // Al iniciar en cualquier dispositivo: lo primero es descargar la última versión de la nube.
+    Cloud.localTs=0;                 // permitir que la nube prevalezca en el arranque
+    Cloud.setStatus('sync');
+    let ok=false;
+    try{ok=await Cloud.pull(true,true);}catch(e){ok=false;}   // force-download
+    if(!ok&&Cloud.status==='err'){toast('Sin conexión con la nube: se muestran los datos guardados en este dispositivo');}
+    startCloudTimer();
     document.addEventListener('visibilitychange',()=>{if(document.hidden){Cloud.flush();}else if(Cloud.cfg.enabled){Cloud.pull();}});
     window.addEventListener('focus',()=>{if(Cloud.cfg.enabled&&!Cloud.pushing)Cloud.pull();});
-    window.addEventListener('online',()=>{if(Cloud.cfg.enabled){Cloud.flush();setTimeout(()=>Cloud.pull(),1200);}});
+    window.addEventListener('online',()=>{if(Cloud.cfg.enabled){Cloud.flush();setTimeout(()=>Cloud.pull(),1000);}});
     window.addEventListener('pagehide',()=>Cloud.flush());
     window.addEventListener('beforeunload',()=>Cloud.flush());
   }
