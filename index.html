@@ -468,7 +468,8 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="nomina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span>Nómina</span></a>
       <a data-view="dron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg><span>Dron</span></a>
       <a data-view="quimicos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg><span>Preparación químicos</span></a>
-      <a data-view="crono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><span>Cronograma</span></a>
+      <a data-view="crono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><span>Cronograma Fumigadas</span></a>
+      <a data-view="cronoab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2.5"/></svg><span>Cronograma Abonadas</span></a>
       <a data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Pedidos</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
@@ -609,7 +610,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,pedidos:PEDIDOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -621,7 +622,9 @@ function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
   if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
-  CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});cronoMigrate();Store.set('crono',JSON.stringify(CRONO));
+  CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
+  CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
+  cronoMigrate();Store.set('crono',JSON.stringify(CRONO));Store.set('cronoab',JSON.stringify(CRONOA));
   PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
@@ -657,6 +660,7 @@ let CFG=null, MOVS=[], seq=1;
 let NOMINAS=[], nseq=1;
 let DRON=[], dseq=1;
 let CRONO=[], cseq=1;
+let CRONOA=[], caseq=1;
 let PEDIDOS=[], pseq=1;
 const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -670,7 +674,7 @@ let ui={view:'dash',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:'',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixLines:[{n:'',d:'',u:'ml'}],
-  cronoMonth:'',cronoFinca:'',
+  cronoMonthK:{fum:'',ab:''},cronoFincaK:{fum:'',ab:''},cronoKind:'fum',
   pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}]
 };
 
@@ -713,7 +717,9 @@ async function init(){
   DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});
   const cr2=await Store.get('crono'); CRONO=cr2?JSON.parse(cr2):[];
   CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
-  if(cronoMigrate())await Store.set('crono',JSON.stringify(CRONO));
+  const cra=await Store.get('cronoab'); CRONOA=cra?JSON.parse(cra):[];
+  CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
+  if(cronoMigrate()){await Store.set('crono',JSON.stringify(CRONO));await Store.set('cronoab',JSON.stringify(CRONOA));}
   if(!CFG.dronSocios){CFG.dronSocios=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
@@ -771,6 +777,7 @@ function migrateFincaNames(){
   MOVS.forEach(m=>{if(m.fi&&map[m.fi])m.fi=map[m.fi];});
   NOMINAS.forEach(nm=>(nm.entries||[]).forEach(e=>(e.dias||[]).forEach(d=>{if(d.fi&&map[d.fi])d.fi=map[d.fi];})));
   CRONO.forEach(r=>{if(r.finca&&map[r.finca])r.finca=map[r.finca];});
+  CRONOA.forEach(r=>{if(r.finca&&map[r.finca])r.finca=map[r.finca];});
   DRON.forEach(r=>{if(r.fi&&map[r.fi])r.fi=map[r.fi];});
   if(ui.mixFinca&&map[ui.mixFinca])ui.mixFinca=map[ui.mixFinca];
   return true;
@@ -792,7 +799,8 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  nomina:['Nómina','Registro quincenal · jornadas, fincas y consolidado'],
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
  quimicos:['Preparación de químicos','Calculadora de mezcla por tanque · dosis por hectárea'],
- crono:['Cronograma','Control de fumigaciones · próximas aplicaciones por finca'],
+ crono:['Cronograma Fumigadas','Control de fumigaciones · próximas aplicaciones por finca'],
+ cronoab:['Cronograma Abonadas','Control de abonadas · próximas aplicaciones por finca'],
  pedidos:['Pedidos','Productos a pedir por finca · según hectáreas y bodega'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
@@ -804,7 +812,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCrono,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
 }
 
 /* ===== DETALLE por categoría ===== */
@@ -2559,27 +2567,43 @@ async function quimAddCat(){const n=(document.getElementById('qc_n').value||'').
 async function quimSetCat(i,field,val){if(!CFG.quimicos)CFG.quimicos=[];if(field==='d')CFG.quimicos[i].d=num(val);else if(field==='u')CFG.quimicos[i].u=val;else CFG.quimicos[i].n=(val||'').trim();await persistCfg();renderQuimicos();}
 async function quimDelCat(i){CFG.quimicos.splice(i,1);await persistCfg();renderQuimicos();}
 
-/* ===== CRONOGRAMA (control de fumigaciones) ===== */
-async function persistCrono(){await Store.set('crono',JSON.stringify(CRONO));Cloud.schedulePush();}
+/* ===== CRONOGRAMA (Fumigadas / Abonadas) ===== */
+function cronoKindCfg(k){return k==='ab'
+  ? {k:'ab',view:'cronoab',L:'Abonadas',verbo:'abonada',verboPl:'abonadas',prod:'Productos',store:'cronoab'}
+  : {k:'fum',view:'crono',L:'Fumigadas',verbo:'fumigación',verboPl:'fumigaciones',prod:'Químicos',store:'crono'};}
+function cronoArr(k){return k==='ab'?CRONOA:CRONO;}
+function cronoSetArr(k,v){if(k==='ab')CRONOA=v;else CRONO=v;}
+function cronoNewId(k){return k==='ab'?caseq++:cseq++;}
+function cronoMonthGet(k){return (ui.cronoMonthK&&ui.cronoMonthK[k])||'';}
+function cronoMonthSet(k,v){if(!ui.cronoMonthK)ui.cronoMonthK={fum:'',ab:''};ui.cronoMonthK[k]=v;}
+function cronoFincaGet(k){return (ui.cronoFincaK&&ui.cronoFincaK[k])||'';}
+function cronoFincaSet(k,v){if(!ui.cronoFincaK)ui.cronoFincaK={fum:'',ab:''};ui.cronoFincaK[k]=v;}
+async function persistCrono(k){const cfg=cronoKindCfg(k);await Store.set(cfg.store,JSON.stringify(cronoArr(k)));Cloud.schedulePush();}
 function cronoNext(r){if(r.prox)return r.prox;return (r.dias&&r.f)?addDaysISO(r.f,+r.dias):null;}
 function cronoDaysTo(iso){return Math.round((new Date(iso+'T00:00:00')-new Date(todayISO()+'T00:00:00'))/86400000);}
 function cronoLinesText(r){return (r.lines||[]).filter(l=>l.n).map(l=>`${esc(l.n)} — ${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha`).join(' · ')||'—';}
-function cronoMigrate(){let ch=false;CRONO.forEach(r=>{if(!Array.isArray(r.hist)){r.hist=r.f?[{f:r.f,lxha:r.lxha,ha:r.ha,lines:r.lines||[]}]:[];ch=true;}});return ch;}
+function cronoMigrate(){let ch=false;[CRONO,CRONOA].forEach(arr=>{(arr||[]).forEach(r=>{if(!Array.isArray(r.hist)){r.hist=r.f?[{f:r.f,lxha:r.lxha,ha:r.ha,lines:r.lines||[]}]:[];ch=true;}});});return ch;}
 function cronoHist(r){return (r.hist||[]).slice().sort((a,b)=>(b.f||'').localeCompare(a.f||''));}
-function cronoAllHist(fFilter){const arr=[];CRONO.forEach(r=>{if(fFilter&&r.finca!==fFilter)return;(r.hist||[]).forEach((h,hi)=>arr.push({finca:r.finca,f:h.f,ha:h.ha,lxha:h.lxha,lines:h.lines,rid:r.id,hi}));});arr.sort((a,b)=>(b.f||'').localeCompare(a.f||''));return arr;}
+function cronoAllHist(k,fFilter){const arr=[];cronoArr(k).forEach(r=>{if(fFilter&&r.finca!==fFilter)return;(r.hist||[]).forEach((h,hi)=>arr.push({finca:r.finca,f:h.f,ha:h.ha,lxha:h.lxha,lines:h.lines,rid:r.id,hi}));});arr.sort((a,b)=>(b.f||'').localeCompare(a.f||''));return arr;}
+
 function sendMixToCrono(){
   const m=mixCompute();
   if(!m.finca){toast('Elige la finca de la preparación');return;}
   if(!m.ha||!m.lxha){toast('Completa hectáreas y litros por hectárea');return;}
-  const existing=CRONO.find(x=>x.finca===m.finca);
-  showModal(existing?'Registrar fumigación':'Enviar al cronograma',`
+  const kSel=ui.cronoKind==='ab'?'ab':'fum';
+  showModal('Enviar al cronograma',`
    <div class="form-grid">
+     <div class="field full"><label>Cronograma destino</label><select class="input" id="cx_k"><option value="fum" ${kSel==='fum'?'selected':''}>Cronograma Fumigadas</option><option value="ab" ${kSel==='ab'?'selected':''}>Cronograma Abonadas</option></select></div>
      <div class="field full"><label>Finca</label><input class="input" value="${esc(m.finca)}" disabled></div>
      <div class="field"><label>Fecha de aplicación</label><input class="input tnum" type="date" id="cx_f" value="${todayISO()}"></div>
-     <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cx_d" placeholder="Ej: 15" min="1" value="${existing&&existing.dias?existing.dias:''}"></div>
+     <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cx_d" placeholder="Ej: 15" min="1"></div>
    </div>
-   <div class="note">${existing?`<b>${esc(m.finca)}</b> ya está en el cronograma. Se marcará esta fecha como <b>fumigación realizada</b>, se guardará en el historial y se programará automáticamente la próxima aplicación.`:`Se registrará la primera fumigación de <b>${esc(m.finca)}</b> (${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${m.lxha.toLocaleString('es-CO')} L/ha · ${m.lines.length} químico(s)). Si indicas cada cuántos días repetir, el calendario mostrará automáticamente la próxima aplicación.`}</div>`,
-   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:existing?'Registrar fumigación':'Enviar al cronograma',cls:'btn primary',fn:async()=>{
+   <div class="note">Se registrará la aplicación de <b>${esc(m.finca)}</b> (${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${m.lines.length} producto(s)) en el cronograma elegido. Si esa finca ya está en ese cronograma, se marca como realizada, se guarda en el historial y se reprograma la siguiente. Cada cronograma es independiente.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar al cronograma',cls:'btn primary',fn:async()=>{
+     const kind=document.getElementById('cx_k').value==='ab'?'ab':'fum';
+     ui.cronoKind=kind;
+     const arr=cronoArr(kind);
+     const existing=arr.find(x=>x.finca===m.finca);
      const f=document.getElementById('cx_f').value||todayISO();
      const dias=+document.getElementById('cx_d').value||0;
      const copy=JSON.parse(JSON.stringify(m.lines));
@@ -2588,60 +2612,67 @@ function sendMixToCrono(){
        existing.hist=existing.hist||[];existing.hist.push(app);existing.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
        existing.f=f;existing.lxha=m.lxha;existing.ha=m.ha;existing.lines=copy;existing.dias=dias;delete existing.prox;
      }else{
-       CRONO.push({id:cseq++,finca:m.finca,f,lxha:m.lxha,ha:m.ha,lines:copy,dias,hist:[app]});
+       arr.push({id:cronoNewId(kind),finca:m.finca,f,lxha:m.lxha,ha:m.ha,lines:copy,dias,hist:[app]});
      }
-     await persistCrono();closeModal();toast('Fumigación registrada en el cronograma');
-     ui.view='crono';ui.cronoMonth=f.slice(0,7);
-     document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='crono'));render();
+     await persistCrono(kind);closeModal();
+     const cfg=cronoKindCfg(kind);
+     toast('Registrado en Cronograma '+cfg.L);
+     ui.view=cfg.view;cronoMonthSet(kind,f.slice(0,7));
+     document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===cfg.view));render();
    }}]);
 }
-function cronoApply(id){
-  const r=CRONO.find(x=>x.id===id);if(!r)return;
+function cronoApply(k,id){
+  const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
+  ui.cronoKind=k;
   ui.mixFinca=r.finca;ui.mixHa=r.ha;ui.mixLxHa=r.lxha;
   ui.mixLines=(r.lines&&r.lines.length)?JSON.parse(JSON.stringify(r.lines)):[{n:'',d:'',u:'ml'}];
   persistMix();closeModal();
   ui.view='quimicos';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='quimicos'));render();
   toast('Revisa la preparación y envíala al cronograma');
 }
-function renderCrono(){
+function renderCronoFum(){renderCrono('fum');}
+function renderCronoAb(){renderCrono('ab');}
+function renderCrono(k){
+  const cfg=cronoKindCfg(k);ui.cronoKind=k;
   const today=todayISO();
-  if(!ui.cronoMonth)ui.cronoMonth=today.slice(0,7);
+  if(!cronoMonthGet(k))cronoMonthSet(k,today.slice(0,7));
+  const arr=cronoArr(k);
   document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
      <button class="btn" onclick="ui.view='quimicos';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='quimicos'));render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva preparación</button>
-     ${CRONO.length?`<button class="btn primary" onclick="printCrono()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF</button>`:''}</div>`;
+     ${arr.length?`<button class="btn primary" onclick="printCrono('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF</button>`:''}</div>`;
   const C=document.getElementById('content');
-  if(!CRONO.length){C.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><b>Aún no hay fumigaciones en el cronograma</b>Desde «Preparación de químicos» arma la mezcla, elige la finca y usa «Enviar al cronograma» para empezar a llevar el control de las aplicaciones.</div></div>`;return;}
-  const fincasCr=[...new Set(CRONO.map(r=>r.finca))].sort((a,b)=>a.localeCompare(b));
-  if(ui.cronoFinca&&!fincasCr.includes(ui.cronoFinca))ui.cronoFinca='';
-  const ff=ui.cronoFinca;
-  const recs=ff?CRONO.filter(r=>r.finca===ff):CRONO;
+  if(!arr.length){C.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><b>Aún no hay ${cfg.verboPl} en este cronograma</b>Desde «Preparación de químicos» arma la mezcla, elige la finca y usa «Enviar al cronograma» eligiendo <b>Cronograma ${cfg.L}</b>.</div></div>`;return;}
+  const fincasCr=[...new Set(arr.map(r=>r.finca))].sort((a,b)=>a.localeCompare(b));
+  if(cronoFincaGet(k)&&!fincasCr.includes(cronoFincaGet(k)))cronoFincaSet(k,'');
+  const ff=cronoFincaGet(k);
+  const recs=ff?arr.filter(r=>r.finca===ff):arr;
   const prog=recs.map(cronoNext).filter(Boolean);
   const overdue=prog.filter(n=>n<today).length;
   const soon=prog.filter(n=>n>=today&&cronoDaysTo(n)<=7).length;
   const sorted=recs.slice().sort((a,b)=>{const na=cronoNext(a),nb=cronoNext(b);if(!na&&!nb)return (b.f||'').localeCompare(a.f||'');if(!na)return 1;if(!nb)return -1;return na.localeCompare(nb);});
   C.innerHTML=`
-   <div class="card panel" style="padding:12px 14px;margin-bottom:14px"><div class="field" style="margin:0"><label>Filtrar por finca</label><select class="input" onchange="ui.cronoFinca=this.value;renderCrono()"><option value="">Todas las fincas (${CRONO.length})</option>${fincasCr.map(f=>`<option ${ff===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>
+   <div class="card panel" style="padding:12px 14px;margin-bottom:14px"><div class="field" style="margin:0"><label>Filtrar por finca</label><select class="input" onchange="cronoFincaSet('${k}',this.value);renderCrono('${k}')"><option value="">Todas las fincas (${arr.length})</option>${fincasCr.map(f=>`<option ${ff===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>
    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
-     <div class="card kpi lead"><div class="lab">Aplicaciones programadas</div><div class="val tnum">${prog.length}</div><div class="meta">${ff?('Finca: '+esc(ff)):(CRONO.length+' registro(s) en total')}</div></div>
+     <div class="card kpi lead"><div class="lab">Aplicaciones programadas</div><div class="val tnum">${prog.length}</div><div class="meta">${ff?('Finca: '+esc(ff)):(arr.length+' registro(s) en total')}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Vencidas</div><div class="val tnum" style="font-size:22px;color:var(--red)">${overdue}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--amber)">Próximos 7 días</div><div class="val tnum" style="font-size:22px">${soon}</div></div>
    </div>
-   <div class="card panel" style="margin-top:16px">${cronoCalendarHTML(ui.cronoMonth,ff)}</div>
+   <div class="card panel" style="margin-top:16px">${cronoCalendarHTML(k,cronoMonthGet(k),ff)}</div>
    <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 2px 4px;flex-wrap:wrap;gap:8px"><h2 style="font-family:var(--display);font-size:16px">Próximas aplicaciones${ff?' · '+esc(ff):' por finca'}</h2></div>
-   ${sorted.length?sorted.map(cronoCard).join(''):`<div class="card"><div style="padding:18px;color:var(--muted);font-size:13px">No hay aplicaciones para esta finca.</div></div>`}
-   ${(()=>{const H=cronoAllHist(ff);return `<div class="card" style="margin-top:22px">
-     <div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Historial de fumigaciones${ff?' · '+esc(ff):''}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">${H.length} aplicación(es) registrada(s)</p></div>
+   ${sorted.length?sorted.map(r=>cronoCard(k,r)).join(''):`<div class="card"><div style="padding:18px;color:var(--muted);font-size:13px">No hay aplicaciones para esta finca.</div></div>`}
+   ${(()=>{const H=cronoAllHist(k,ff);return `<div class="card" style="margin-top:22px">
+     <div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Historial de ${cfg.verboPl}${ff?' · '+esc(ff):''}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">${H.length} aplicación(es) registrada(s)</p></div>
      <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th class="r">Ha</th><th>Preparación</th><th></th></tr></thead>
-     <tbody>${H.length?H.map(h=>`<tr><td class="tnum">${fmtFecha(h.f)}</td><td><span class="fdot"><i style="background:${fincaColor(h.finca)}"></i>${esc(h.finca)}</span></td><td class="r tnum">${(+h.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})}</td><td class="qname">${(+h.lxha||0).toLocaleString('es-CO')} L/ha · ${cronoLinesText({lines:h.lines})}</td><td class="r"><button class="iconbtn del" title="Eliminar esta fumigación" onclick="cronoDelHist(${h.rid},${h.hi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="5">${emptyRow('Aún no hay fumigaciones registradas')}</td></tr>`}</tbody></table></div></div>`;})()}`;
+     <tbody>${H.length?H.map(h=>`<tr><td class="tnum">${fmtFecha(h.f)}</td><td><span class="fdot"><i style="background:${fincaColor(h.finca)}"></i>${esc(h.finca)}</span></td><td class="r tnum">${(+h.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})}</td><td class="qname">${(+h.lxha||0).toLocaleString('es-CO')} L/ha · ${cronoLinesText({lines:h.lines})}</td><td class="r"><button class="iconbtn del" title="Eliminar esta aplicación" onclick="cronoDelHist('${k}',${h.rid},${h.hi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="5">${emptyRow('Aún no hay aplicaciones registradas')}</td></tr>`}</tbody></table></div></div>`;})()}`;
 }
-function cronoCalendarHTML(ym,fFilter){
+function cronoCalendarHTML(k,ym,fFilter){
   const today=todayISO();
   const [y,mo]=ym.split('-').map(Number);
   const first=new Date(y,mo-1,1);
   const startDow=(first.getDay()+6)%7;
   const dim=new Date(y,mo,0).getDate();
   const pendMap={},doneMap={};
-  CRONO.forEach(r=>{
+  cronoArr(k).forEach(r=>{
     if(fFilter&&r.finca!==fFilter)return;
     const nx=cronoNext(r);if(nx&&nx.slice(0,7)===ym){(pendMap[nx]=pendMap[nx]||[]).push(r);}
     (r.hist||[]).forEach(h=>{if(h.f&&h.f.slice(0,7)===ym){(doneMap[h.f]=doneMap[h.f]||[]).push(r.finca);}});
@@ -2655,52 +2686,54 @@ function cronoCalendarHTML(ym,fFilter){
     const over=pend.length&&iso<today;
     const items=[];
     pend.forEach(r=>items.push(`<span class="cal-badge" style="background:${iso<today?'var(--red)':fincaColor(r.finca)}" title="${esc(r.finca)} · próxima aplicación">${esc(r.finca)}</span>`));
-    done.forEach(fn=>items.push(`<span class="cal-badge done" title="${esc(fn)} · fumigación realizada">✓ ${esc(fn)}</span>`));
+    done.forEach(fn=>items.push(`<span class="cal-badge done" title="${esc(fn)} · realizada">✓ ${esc(fn)}</span>`));
     const shown=items.slice(0,3).join('');
     const more=items.length>3?`<span class="cal-more">+${items.length-3} más</span>`:'';
     const has=(pend.length||done.length);
-    cells+=`<div class="cal-cell${iso===today?' today':''}${over?' over':''}${has?' has':''}" ${has?`onclick="cronoOpenDay('${iso}')"`:''}><span class="cal-dn">${day}</span>${shown}${more}</div>`;
+    cells+=`<div class="cal-cell${iso===today?' today':''}${over?' over':''}${has?' has':''}" ${has?`onclick="cronoOpenDay('${k}','${iso}')"`:''}><span class="cal-dn">${day}</span>${shown}${more}</div>`;
   }
   return `
    <div class="cal-head">
      <div class="cal-title">${MES_FULL[mo-1]} ${y}</div>
      <div class="cal-nav">
-       <button class="btn sm" onclick="cronoMonthShift(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-       <button class="btn sm" onclick="cronoToday()">Hoy</button>
-       <button class="btn sm" onclick="cronoMonthShift(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+       <button class="btn sm" onclick="cronoMonthShift('${k}',-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+       <button class="btn sm" onclick="cronoToday('${k}')">Hoy</button>
+       <button class="btn sm" onclick="cronoMonthShift('${k}',1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
      </div>
    </div>
    <div class="cal-grid">${DOWk.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
-   <div class="note">Toca un día para ver el detalle. En color de finca, la próxima aplicación programada; en rojo, las vencidas; en verde con ✓, las fumigaciones ya realizadas. Entra al día programado y pulsa «Aplicar» para preparar la mezcla.</div>`;
+   <div class="note">Toca un día para ver el detalle. En color de finca, la próxima aplicación programada; en rojo, las vencidas; en verde con ✓, las ya realizadas. Entra al día programado y pulsa «Aplicar» para preparar la mezcla.</div>`;
 }
-function cronoOpenDay(iso){
+function cronoOpenDay(k,iso){
   const pend=[],done=[];
-  CRONO.forEach(r=>{if(cronoNext(r)===iso)pend.push(r);(r.hist||[]).forEach((h,hi)=>{if(h.f===iso)done.push({r,h,hi});});});
+  cronoArr(k).forEach(r=>{if(cronoNext(r)===iso)pend.push(r);(r.hist||[]).forEach((h,hi)=>{if(h.f===iso)done.push({r,h,hi});});});
   if(!pend.length&&!done.length)return;
+  const cfg=cronoKindCfg(k);
   let body='';
   if(pend.length){
     body+=`<div style="font-family:var(--display);font-weight:700;font-size:13px;margin-bottom:8px">Programado para este día</div>`;
     body+=pend.map(r=>{const over=iso<todayISO();return `<div class="card" style="padding:13px 15px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="cf" style="font-family:var(--display);font-weight:700;display:flex;align-items:center;gap:7px"><i style="width:10px;height:10px;border-radius:50%;background:${fincaColor(r.finca)};display:inline-block"></i>${esc(r.finca)}</span>${over?'<span class="chip e">Vencida</span>':'<span class="chip i">Programada</span>'}${r.prox?'<span class="chip pay">Fecha manual</span>':''}</div>
       <div style="font-size:12.5px;color:var(--muted);margin-top:7px">${(+r.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+r.lxha||0).toLocaleString('es-CO')} L/ha</div>
-      <div style="font-size:12.5px;margin-top:6px"><b>Químicos:</b> ${cronoLinesText(r)}</div>
+      <div style="font-size:12.5px;margin-top:6px"><b>${cfg.prod}:</b> ${cronoLinesText(r)}</div>
       <div style="display:flex;gap:8px;margin-top:11px">
-        <button class="btn" style="flex:1;justify-content:center" onclick="cronoEditNext(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cambiar fecha</button>
-        <button class="btn primary" style="flex:1;justify-content:center" onclick="cronoApply(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Aplicar</button>
+        <button class="btn" style="flex:1;justify-content:center" onclick="cronoEditNext('${k}',${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cambiar fecha</button>
+        <button class="btn primary" style="flex:1;justify-content:center" onclick="cronoApply('${k}',${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Aplicar</button>
       </div>
     </div>`;}).join('');
   }
   if(done.length){
-    body+=`<div style="font-family:var(--display);font-weight:700;font-size:13px;margin:${pend.length?'14':'0'}px 0 8px">Fumigaciones realizadas</div>`;
+    body+=`<div style="font-family:var(--display);font-weight:700;font-size:13px;margin:${pend.length?'14':'0'}px 0 8px">Aplicaciones realizadas</div>`;
     body+=done.map(({r,h,hi})=>`<div class="card" style="padding:13px 15px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="cf" style="font-family:var(--display);font-weight:700;display:flex;align-items:center;gap:7px"><i style="width:10px;height:10px;border-radius:50%;background:${fincaColor(r.finca)};display:inline-block"></i>${esc(r.finca)}</span><span class="chip pay" style="color:var(--green2)">✓ Realizada</span><span style="flex:1"></span><button class="iconbtn del" title="Eliminar esta fumigación" onclick="cronoDelHist(${r.id},${hi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="cf" style="font-family:var(--display);font-weight:700;display:flex;align-items:center;gap:7px"><i style="width:10px;height:10px;border-radius:50%;background:${fincaColor(r.finca)};display:inline-block"></i>${esc(r.finca)}</span><span class="chip pay" style="color:var(--green2)">✓ Realizada</span><span style="flex:1"></span><button class="iconbtn del" title="Eliminar esta aplicación" onclick="cronoDelHist('${k}',${r.id},${hi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>
       <div style="font-size:12.5px;color:var(--muted);margin-top:7px">${(+h.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+h.lxha||0).toLocaleString('es-CO')} L/ha</div>
-      <div style="font-size:12.5px;margin-top:6px"><b>Químicos:</b> ${cronoLinesText({lines:h.lines})}</div>
+      <div style="font-size:12.5px;margin-top:6px"><b>${cfg.prod}:</b> ${cronoLinesText({lines:h.lines})}</div>
     </div>`).join('');
   }
   showModal(fmtFecha(iso),body,[{label:'Cerrar',cls:'btn',fn:closeModal}]);
 }
-function cronoCard(r){
+function cronoCard(k,r){
+  const cfg=cronoKindCfg(k);
   const nx=cronoNext(r);
   let chip;
   if(!r.dias||!nx)chip=`<span class="chip pay">Sin programar</span>`;
@@ -2714,77 +2747,78 @@ function cronoCard(r){
       <span class="cf"><i style="width:11px;height:11px;border-radius:50%;background:${fincaColor(r.finca)};display:inline-block;flex:0 0 auto"></i>${esc(r.finca)}</span>
       ${chip}
       <div style="flex:1"></div>
-      <button class="iconbtn del" title="Eliminar" onclick="cronoDel(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      <button class="iconbtn del" title="Eliminar" onclick="cronoDel('${k}',${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
     </div>
     <div class="crono-meta">Última aplicación: <b>${fmtFecha(r.f)}</b>${nx?` · Próxima: <b style="color:${over?'var(--red)':'var(--green2)'}">${fmtFecha(nx)}</b>${r.prox?' <span style="font-size:11px;color:var(--muted)">(fecha manual)</span>':''}`:''} · ${(+r.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+r.lxha||0).toLocaleString('es-CO')} L/ha</div>
-    <div class="crono-chems"><b>Químicos:</b> ${cronoLinesText(r)}</div>
+    <div class="crono-chems"><b>${cfg.prod}:</b> ${cronoLinesText(r)}</div>
     ${(r.hist&&r.hist.length)?`<div style="font-size:12px;color:var(--muted);margin-top:8px"><b>Aplicaciones realizadas (${r.hist.length}):</b> ${cronoHist(r).slice(0,6).map(h=>fmtFecha(h.f)).join(' · ')}${r.hist.length>6?` · +${r.hist.length-6}`:''}</div>`:''}
     <div class="crono-act">
-      <div class="diasbox">Repetir cada <input class="input tnum" type="number" min="1" value="${esc(r.dias||'')}" placeholder="—" onchange="cronoSetDias(${r.id},this.value)"> días</div>
-      <button class="btn sm" onclick="cronoEditNext(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cambiar fecha</button>
-      <button class="btn sm primary" onclick="cronoApply(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Aplicar</button>
+      <div class="diasbox">Repetir cada <input class="input tnum" type="number" min="1" value="${esc(r.dias||'')}" placeholder="—" onchange="cronoSetDias('${k}',${r.id},this.value)"> días</div>
+      <button class="btn sm" onclick="cronoEditNext('${k}',${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cambiar fecha</button>
+      <button class="btn sm primary" onclick="cronoApply('${k}',${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Aplicar</button>
     </div>
   </div>`;
 }
-function cronoMonthShift(delta){const [y,mo]=ui.cronoMonth.split('-').map(Number);const dt=new Date(y,mo-1+delta,1);ui.cronoMonth=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');renderCrono();}
-function cronoToday(){ui.cronoMonth=todayISO().slice(0,7);renderCrono();}
-async function cronoSetDias(id,val){const r=CRONO.find(x=>x.id===id);if(!r)return;r.dias=+val||0;delete r.prox;await persistCrono();renderCrono();}
-function cronoReapply(id){
-  const r=CRONO.find(x=>x.id===id);if(!r)return;
+function cronoMonthShift(k,delta){const [y,mo]=cronoMonthGet(k).split('-').map(Number);const dt=new Date(y,mo-1+delta,1);cronoMonthSet(k,dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'));renderCrono(k);}
+function cronoToday(k){cronoMonthSet(k,todayISO().slice(0,7));renderCrono(k);}
+async function cronoSetDias(k,id,val){const r=cronoArr(k).find(x=>x.id===id);if(!r)return;r.dias=+val||0;delete r.prox;await persistCrono(k);renderCrono(k);}
+function cronoReapply(k,id){
+  const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
   showModal('Registrar nueva aplicación',`
    <div class="form-grid">
      <div class="field full"><label>Finca</label><input class="input" value="${esc(r.finca)}" disabled></div>
      <div class="field"><label>Fecha de esta aplicación</label><input class="input tnum" type="date" id="cr_f" value="${todayISO()}"></div>
      <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cr_d" min="1" value="${esc(r.dias||'')}"></div>
    </div>
-   <div class="note">Se guardará esta fecha en el <b>historial</b> de <b>${esc(r.finca)}</b> como fumigación realizada y el calendario recalculará automáticamente la próxima aplicación.</div>`,
+   <div class="note">Se guardará esta fecha en el <b>historial</b> de <b>${esc(r.finca)}</b> y el calendario recalculará automáticamente la próxima aplicación.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
      const nf=document.getElementById('cr_f').value||todayISO();
      r.f=nf;r.dias=+document.getElementById('cr_d').value||0;delete r.prox;
      r.hist=r.hist||[];r.hist.push({f:nf,lxha:r.lxha,ha:r.ha,lines:JSON.parse(JSON.stringify(r.lines||[]))});r.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
-     await persistCrono();closeModal();ui.cronoMonth=(cronoNext(r)||r.f).slice(0,7);renderCrono();toast('Aplicación registrada');
+     await persistCrono(k);closeModal();cronoMonthSet(k,(cronoNext(r)||r.f).slice(0,7));renderCrono(k);toast('Aplicación registrada');
    }}]);
 }
-function cronoDel(id){const r=CRONO.find(x=>x.id===id);
-  confirmModal('Eliminar del cronograma',`Se quitará la programación de fumigación de ${r?esc(r.finca):'esta finca'} junto con todo su historial.`,async()=>{
-    CRONO=CRONO.filter(x=>x.id!==id);await persistCrono();closeModal();renderCrono();toast('Eliminado del cronograma');});
+function cronoDel(k,id){const r=cronoArr(k).find(x=>x.id===id);
+  confirmModal('Eliminar del cronograma',`Se quitará la programación de ${r?esc(r.finca):'esta finca'} junto con todo su historial en este cronograma.`,async()=>{
+    cronoSetArr(k,cronoArr(k).filter(x=>x.id!==id));await persistCrono(k);closeModal();renderCrono(k);toast('Eliminado del cronograma');});
 }
-function cronoDelHist(rid,hi){
-  const r=CRONO.find(x=>x.id===rid);if(!r||!r.hist||!r.hist[hi])return;
+function cronoDelHist(k,rid,hi){
+  const r=cronoArr(k).find(x=>x.id===rid);if(!r||!r.hist||!r.hist[hi])return;
   const h=r.hist[hi];
-  confirmModal('Eliminar fumigación',`Se eliminará solo la fumigación de <b>${esc(r.finca)}</b> del <b>${fmtFecha(h.f)}</b>. Las demás fumigaciones de esta finca y su programación se conservan.`,async()=>{
+  confirmModal('Eliminar aplicación',`Se eliminará solo la aplicación de <b>${esc(r.finca)}</b> del <b>${fmtFecha(h.f)}</b>. Las demás y su programación se conservan.`,async()=>{
     r.hist.splice(hi,1);
     if(r.f===h.f){r.f=r.hist.length?r.hist[r.hist.length-1].f:'';}
-    await persistCrono();closeModal();renderCrono();toast('Fumigación eliminada');});
+    await persistCrono(k);closeModal();renderCrono(k);toast('Aplicación eliminada');});
 }
-function cronoEditNext(id){
-  const r=CRONO.find(x=>x.id===id);if(!r)return;
+function cronoEditNext(k,id){
+  const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
   const nx=cronoNext(r);
   showModal('Editar fecha programada',`
    <div class="form-grid">
      <div class="field full"><label>Finca</label><input class="input" value="${esc(r.finca)}" disabled></div>
      <div class="field full"><label>Fecha de la próxima aplicación</label><input class="input tnum" type="date" id="ce_f" value="${nx||todayISO()}"></div>
    </div>
-   <div class="note">La fecha quedará fijada manualmente en el calendario${r.dias?` (en lugar de la automática: última aplicación + ${r.dias} días)`:''}. Cuando registres la próxima fumigación, la programación vuelve a calcularse sola${r.prox?'. También puedes volver ahora a la fecha automática':''}.</div>`,
+   <div class="note">La fecha quedará fijada manualmente en el calendario${r.dias?` (en lugar de la automática: última aplicación + ${r.dias} días)`:''}. Cuando registres la próxima aplicación, la programación vuelve a calcularse sola${r.prox?'. También puedes volver ahora a la fecha automática':''}.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},
-    ...(r.prox&&r.dias?[{label:'Usar fecha automática',cls:'btn',fn:async()=>{delete r.prox;await persistCrono();closeModal();ui.cronoMonth=(cronoNext(r)||todayISO()).slice(0,7);renderCrono();toast('Fecha automática restablecida');}}]:[]),
+    ...(r.prox&&r.dias?[{label:'Usar fecha automática',cls:'btn',fn:async()=>{delete r.prox;await persistCrono(k);closeModal();cronoMonthSet(k,(cronoNext(r)||todayISO()).slice(0,7));renderCrono(k);toast('Fecha automática restablecida');}}]:[]),
     {label:'Guardar fecha',cls:'btn primary',fn:async()=>{
       const f=document.getElementById('ce_f').value;
       if(!f){toast('Elige la fecha');return;}
-      r.prox=f;await persistCrono();closeModal();ui.cronoMonth=f.slice(0,7);renderCrono();toast('Fecha de aplicación actualizada');
+      r.prox=f;await persistCrono(k);closeModal();cronoMonthSet(k,f.slice(0,7));renderCrono(k);toast('Fecha de aplicación actualizada');
     }}]);
 }
-function printCrono(){printIsolated(cronoStatementHTML(),'Cronograma de fumigaciones');}
-function cronoStatementHTML(){
+function printCrono(k){const cfg=cronoKindCfg(k);printIsolated(cronoStatementHTML(k),'Cronograma '+cfg.L);}
+function cronoStatementHTML(k){
+  const cfg=cronoKindCfg(k);
   const today=todayISO();
-  const ff=ui.cronoFinca||'';
-  const base=ff?CRONO.filter(r=>r.finca===ff):CRONO;
+  const ff=cronoFincaGet(k);
+  const base=ff?cronoArr(k).filter(r=>r.finca===ff):cronoArr(k);
   const sorted=base.slice().sort((a,b)=>{const na=cronoNext(a),nb=cronoNext(b);if(!na&&!nb)return (b.f||'').localeCompare(a.f||'');if(!na)return 1;if(!nb)return -1;return na.localeCompare(nb);});
   const rows=sorted.map(r=>{const nx=cronoNext(r);let est='Sin programar';if(nx){const dt=cronoDaysTo(nx);est=dt<0?('Vencida hace '+(-dt)+' d'):dt===0?'Hoy':('En '+dt+' d');}
     return `<tr><td>${esc(r.finca)}</td><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${r.dias?r.dias+' d':'—'}</td><td class="tnum">${nx?fmtFecha(nx):'—'}</td><td>${est}</td><td class="wrap">${(+r.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${(+r.lxha||0).toLocaleString('es-CO')} L/ha · ${cronoLinesText(r)}</td></tr>`;}).join('');
   const prog=base.map(cronoNext).filter(Boolean);
   return `
-   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella</div><h2>Cronograma de fumigaciones</h2><div class="rh-sub">${ff?('Finca: '+esc(ff)):'Control de aplicaciones por finca'}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(today)}</b></div></div>
+   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella</div><h2>Cronograma ${cfg.L}</h2><div class="rh-sub">${ff?('Finca: '+esc(ff)):'Control de aplicaciones por finca'}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(today)}</b></div></div>
    <div class="report-sec">
      <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
        <div class="card kpi lead"><div class="lab">Programadas</div><div class="val tnum">${prog.length}</div></div>
@@ -2795,11 +2829,11 @@ function cronoStatementHTML(){
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Finca</th><th>Última aplicación</th><th class="r">Cada</th><th>Próxima</th><th>Estado</th><th>Preparación</th></tr></thead>
        <tbody>${rows||'<tr><td colspan="6" style="padding:16px;color:var(--muted)">Sin registros.</td></tr>'}</tbody></table></div></div>
-     ${(()=>{const H=cronoAllHist(ff);return `<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>Historial de fumigaciones<span class="ln"></span></div>
+     ${(()=>{const H=cronoAllHist(k,ff);return `<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>Historial de ${cfg.verboPl}<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Fecha</th><th>Finca</th><th class="r">Ha</th><th class="r">L/ha</th><th>Químicos</th></tr></thead>
-       <tbody>${H.length?H.map(h=>`<tr><td class="tnum">${fmtFecha(h.f)}</td><td>${esc(h.finca)}</td><td class="r tnum">${(+h.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})}</td><td class="r tnum">${(+h.lxha||0).toLocaleString('es-CO')}</td><td class="wrap">${cronoLinesText({lines:h.lines})}</td></tr>`).join(''):'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin fumigaciones registradas.</td></tr>'}</tbody></table></div></div>`;})()}
-     <div class="note">Documento generado el ${fmtFecha(today)}. La próxima aplicación se calcula como la fecha de la última aplicación más los días de repetición indicados para cada finca. El historial guarda todas las fumigaciones registradas por finca.</div>
+       <thead><tr><th>Fecha</th><th>Finca</th><th class="r">Ha</th><th class="r">L/ha</th><th>${cfg.prod}</th></tr></thead>
+       <tbody>${H.length?H.map(h=>`<tr><td class="tnum">${fmtFecha(h.f)}</td><td>${esc(h.finca)}</td><td class="r tnum">${(+h.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})}</td><td class="r tnum">${(+h.lxha||0).toLocaleString('es-CO')}</td><td class="wrap">${cronoLinesText({lines:h.lines})}</td></tr>`).join(''):'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin aplicaciones registradas.</td></tr>'}</tbody></table></div></div>`;})()}
+     <div class="note">Documento generado el ${fmtFecha(today)}. La próxima aplicación se calcula como la fecha de la última aplicación más los días de repetición indicados para cada finca. El historial guarda todas las aplicaciones registradas por finca.</div>
    </div>`;
 }
 
