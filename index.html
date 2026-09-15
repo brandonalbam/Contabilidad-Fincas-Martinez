@@ -219,6 +219,15 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
   .mixline .mix-chem{flex:1 1 100%}
   .mixline .mix-dose{flex:1 1 auto}
 }
+/* Pedidos */
+.pedline{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;align-items:center}
+.pedline .ped-prod{flex:2 1 100%;min-width:0}
+.pedline .ped-sub{display:flex;gap:7px;flex:1 1 100%;align-items:center}
+.pedline .ped-dose{flex:1 1 80px;min-width:0;text-align:right}
+.pedline .ped-unit{flex:0 0 auto;width:82px}
+.pedline .ped-stock{flex:1 1 80px;min-width:0;text-align:right}
+.pedline .ped-del{flex:0 0 auto}
+@media(min-width:760px){.pedline .ped-prod{flex:2 1 200px}.pedline .ped-sub{flex:3 1 auto}}
 /* Cronograma */
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .cal-title{font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize}
@@ -457,6 +466,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="dron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg><span>Dron</span></a>
       <a data-view="quimicos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L5.2 17.4A2 2 0 0 0 7 20.4h10a2 2 0 0 0 1.8-3L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/></svg><span>Preparación químicos</span></a>
       <a data-view="crono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><span>Cronograma</span></a>
+      <a data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Pedidos</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
@@ -596,7 +606,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,pedidos:PEDIDOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,lines:ui.mixLines}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -606,9 +616,10 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});cronoMigrate();Store.set('crono',JSON.stringify(CRONO));
+  PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   normalizeNominaMonths();
@@ -643,6 +654,7 @@ let CFG=null, MOVS=[], seq=1;
 let NOMINAS=[], nseq=1;
 let DRON=[], dseq=1;
 let CRONO=[], cseq=1;
+let PEDIDOS=[], pseq=1;
 const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 let ui={view:'dash',
@@ -655,7 +667,8 @@ let ui={view:'dash',
   dronFrom:'',dronTo:'',
   rentYear:'',rentFrom:'',rentTo:'',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixLines:[{n:'',d:'',u:'ml'}],
-  cronoMonth:'',cronoFinca:''
+  cronoMonth:'',cronoFinca:'',
+  pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',stock:''}]
 };
 
 /* ===== helpers ===== */
@@ -705,6 +718,10 @@ async function init(){
   if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
+  const pd2=await Store.get('pedidos'); PEDIDOS=pd2?JSON.parse(pd2):[];
+  PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
+  const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',stock:''}];}}catch(e){}}
   const mx=await Store.get('mixdraft'); if(mx){try{const j=JSON.parse(mx);if(j){ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];}}catch(e){}}
   if(migrateFincaNames()){
     await Store.set('config',JSON.stringify(CFG));
@@ -745,6 +762,7 @@ function migrateFincaNames(){
   (CFG.fincas||[]).forEach(f=>{const n=map[f]||f;if(!seen.has(n)){seen.add(n);nf.push(n);}});
   CFG.fincas=nf;
   if(CFG.fincaHa){const nh={};Object.entries(CFG.fincaHa).forEach(([k,v])=>{const n=map[k]||k;nh[n]=Object.assign(nh[n]||{},v);});CFG.fincaHa=nh;}
+  if(CFG.fincaHaTot){const nt={};Object.entries(CFG.fincaHaTot).forEach(([k,v])=>{nt[map[k]||k]=v;});CFG.fincaHaTot=nt;}
   MOVS.forEach(m=>{if(m.fi&&map[m.fi])m.fi=map[m.fi];});
   NOMINAS.forEach(nm=>(nm.entries||[]).forEach(e=>(e.dias||[]).forEach(d=>{if(d.fi&&map[d.fi])d.fi=map[d.fi];})));
   CRONO.forEach(r=>{if(r.finca&&map[r.finca])r.finca=map[r.finca];});
@@ -770,6 +788,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  dron:['Dron','Contabilidad del dron de fumigación · socios y reparto'],
  quimicos:['Preparación de químicos','Calculadora de mezcla por tanque · dosis por hectárea'],
  crono:['Cronograma','Control de fumigaciones · próximas aplicaciones por finca'],
+ pedidos:['Pedidos','Productos a pedir por finca · según hectáreas y bodega'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
@@ -780,7 +799,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
 function render(){
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCrono,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCrono,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
 }
 
 /* ===== DETALLE por categoría ===== */
@@ -2118,10 +2137,10 @@ function renderDron(){
      <div class="card panel">
        <div class="ph"><div><h2>Registrar fumigación</h2><p>Crea el movimiento y lo suma a las cuentas del dron</p></div></div>
        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-         <div class="field"><label>Finca fumigada</label><select class="input" id="dr_fi">${CFG.fincas.map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
+         <div class="field"><label>Finca fumigada</label><select class="input" id="dr_fi" onchange="const h=fincaHaDefault(this.value);if(h){document.getElementById('dr_ha').value=h;dronCalc();}">${CFG.fincas.map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dr_f" value="${todayISO()}"></div>
          <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="dr_pu" placeholder="0" oninput="dronCalc()"></div>
-         <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="dr_ha" placeholder="0" oninput="dronCalc()"></div>
+         <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="dr_ha" value="${fincaHaDefault(CFG.fincas[0])||''}" placeholder="0" oninput="dronCalc()"></div>
          <div class="field full"><label>Piloto</label><select class="input" id="dr_pil" onchange="dronCalc()"><option value="">— Sin piloto —</option>${(CFG.dronPilotos||[]).map(p=>`<option>${esc(p.n)}</option>`).join('')}</select></div>
        </div>
        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
@@ -2432,7 +2451,7 @@ function renderQuimicos(){
      <div class="card panel">
        <div class="ph"><div><h2>Datos del lote</h2><p>Finca, hectáreas a fumigar y mezcla por hectárea</p></div></div>
        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-         <div class="field full"><label>Finca de esta preparación</label><select class="input" onchange="ui.mixFinca=this.value;persistMix()"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${ui.mixFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+         <div class="field full"><label>Finca de esta preparación</label><select class="input" onchange="ui.mixFinca=this.value;const h=fincaHaDefault(this.value);if(h)ui.mixHa=h;renderQuimicos();persistMix()"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${ui.mixFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
          <div class="field"><label>Hectáreas del lote</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixHa)}" placeholder="0" oninput="ui.mixHa=this.value;quimCalc();persistMix()"></div>
          <div class="field"><label>Litros de mezcla por ha</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixLxHa)}" placeholder="200" oninput="ui.mixLxHa=this.value;quimCalc();persistMix()"></div>
          <div class="field"><label>Capacidad del tanque (L)</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixTank)}" placeholder="1000" oninput="ui.mixTank=this.value;quimCalc();persistMix()"></div>
@@ -2778,6 +2797,127 @@ function cronoStatementHTML(){
      <div class="note">Documento generado el ${fmtFecha(today)}. La próxima aplicación se calcula como la fecha de la última aplicación más los días de repetición indicados para cada finca. El historial guarda todas las fumigaciones registradas por finca.</div>
    </div>`;
 }
+
+/* ===== PEDIDOS ===== */
+function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
+function pedCatalog(){return CFG.quimicos||[];}
+async function persistPedidos(){await Store.set('pedidos',JSON.stringify(PEDIDOS));Cloud.schedulePush();}
+async function persistPedDraft(){await Store.set('peddraft',JSON.stringify({finca:ui.pedFinca,ha:ui.pedHa,fecha:ui.pedFecha,lines:ui.pedLines}));Cloud.schedulePush();}
+function pedCompute(){
+  const finca=ui.pedFinca||'';
+  const ha=+ui.pedHa||0;
+  const lines=(ui.pedLines||[]).filter(l=>l.n).map(l=>{
+    const d=+l.d||0, stock=+l.stock||0, need=d*ha, order=Math.max(need-stock,0);
+    return {n:l.n,d,u:l.u||'ml',stock,need,order};
+  });
+  return {finca,ha,fecha:ui.pedFecha||todayISO(),lines};
+}
+function renderPedidos(){
+  const cat=pedCatalog();
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
+     <button class="btn" onclick="pedNuevo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo pedido</button>
+     <button class="btn" onclick="pedPrint()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Crear PDF</button>
+     <button class="btn primary" onclick="pedGuardar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar pedido</button></div>`;
+  document.getElementById('content').innerHTML=`
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start;gap:16px">
+     <div class="card panel">
+       <div class="ph"><div><h2>Datos del pedido</h2><p>Finca, hectáreas y fecha</p></div></div>
+       <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+         <div class="field full"><label>Finca</label><select class="input" onchange="ui.pedFinca=this.value;const h=fincaHaDefault(this.value);if(h)ui.pedHa=h;renderPedidos();persistPedDraft()"><option value="">— Elegir finca —</option>${CFG.fincas.map(f=>`<option ${ui.pedFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+         <div class="field"><label>Hectáreas</label><input class="input tnum" type="number" step="any" value="${esc(ui.pedHa)}" placeholder="0" oninput="ui.pedHa=this.value;pedCalc();persistPedDraft()"></div>
+         <div class="field"><label>Fecha del pedido</label><input class="input tnum" type="date" value="${esc(ui.pedFecha||todayISO())}" oninput="ui.pedFecha=this.value;persistPedDraft()"></div>
+       </div>
+       <div class="note">Al elegir la finca se cargan sus hectáreas automáticamente (puedes ajustarlas). La cantidad necesaria de cada producto = dosis por hectárea × hectáreas.</div>
+     </div>
+     <div class="card panel">
+       <div class="ph"><div><h2>Productos a pedir</h2><p>Elige del catálogo de químicos e indica lo que hay en bodega</p></div></div>
+       <div id="ped_lines"></div>
+       <button class="btn sm" style="margin-top:10px" onclick="pedAddLine()">${ic('plus')}Agregar producto</button>
+       ${cat.length?'':'<div class="note">No hay productos en el catálogo. Agrégalos en «Preparación de químicos» (con su dosis por hectárea) y aparecerán aquí.</div>'}
+     </div>
+   </div>
+   <div id="ped_results" style="margin-top:16px"></div>
+   ${pedSavedList()}`;
+  pedRenderLines();pedCalc();
+}
+function pedRenderLines(){
+  const box=document.getElementById('ped_lines');if(!box)return;
+  const cat=pedCatalog();
+  if(!ui.pedLines||!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];
+  box.innerHTML=ui.pedLines.map((l,i)=>`<div class="pedline">
+     <select class="input ped-prod" onchange="pedSetProd(${i},this.value)">
+       <option value="">— Elegir producto —</option>
+       ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
+     </select>
+     <div class="ped-sub">
+       <input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
+       <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
+       <input class="input tnum ped-stock" inputmode="decimal" value="${esc(l.stock)}" placeholder="bodega" oninput="ui.pedLines[${i}].stock=this.value;pedCalc();persistPedDraft()" title="Cantidad que hay en bodega (en la misma unidad)">
+       <button class="iconbtn del ped-del" onclick="pedDelLine(${i})">${ic('trash')}</button>
+     </div>
+   </div>`).join('');
+}
+function pedAddLine(){ui.pedLines.push({n:'',d:'',u:'ml',stock:''});pedRenderLines();pedCalc();persistPedDraft();}
+function pedDelLine(i){ui.pedLines.splice(i,1);if(!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];pedRenderLines();pedCalc();persistPedDraft();}
+function pedSetProd(i,val){const c=pedCatalog().find(x=>x.n===val);ui.pedLines[i].n=val;if(c){if(!ui.pedLines[i].d)ui.pedLines[i].d=c.d;ui.pedLines[i].u=c.u||'ml';}pedRenderLines();pedCalc();persistPedDraft();}
+function pedCalc(){
+  const el=document.getElementById('ped_results');if(!el)return;
+  const m=pedCompute();
+  if(!m.finca||!m.ha){el.innerHTML=`<div class="card panel"><div class="empty" style="padding:26px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Elige la finca y confirma las hectáreas para calcular el pedido.</span></div></div>`;return;}
+  const rows=m.lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${l.d.toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${l.stock?qFmt(l.stock,l.u):'—'}</td><td class="r tnum"><b style="color:${l.order>0?'var(--green2)':'var(--muted)'}">${l.order>0?qFmt(l.order,l.u):'Suficiente'}</b></td></tr>`).join('');
+  el.innerHTML=`
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+     <div class="card kpi lead"><div class="lab">Finca</div><div class="val" style="font-size:16px">${esc(m.finca)}</div><div class="meta">${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha</div></div>
+     <div class="card kpi"><div class="lab">Productos</div><div class="val tnum" style="font-size:22px">${m.lines.length}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--green2)">A pedir</div><div class="val tnum" style="font-size:22px;color:var(--green2)">${m.lines.filter(l=>l.order>0).length}</div></div>
+   </div>
+   ${m.lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedido para ${esc(m.finca)}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Necesario = dosis/ha × ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · A pedir = necesario − bodega</p></div>
+     <div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">En bodega</th><th class="r">A pedir</th></tr></thead><tbody>${rows}</tbody></table></div></div>`:'<div class="card" style="margin-top:16px"><div style="padding:18px;color:var(--muted);font-size:13px">Agrega productos para calcular el pedido.</div></div>'}`;
+}
+function pedNuevo(){
+  confirmModal('Nuevo pedido','Se borrarán los datos del pedido actual (finca, hectáreas y productos). ¿Continuar?',async()=>{
+    ui.pedFinca='';ui.pedHa='';ui.pedFecha='';ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];
+    await persistPedDraft();closeModal();renderPedidos();toast('Listo para un nuevo pedido');
+  });
+}
+async function pedGuardar(){
+  const m=pedCompute();
+  if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}
+  if(!m.lines.length){toast('Agrega al menos un producto');return;}
+  PEDIDOS.push({id:pseq++,finca:m.finca,ha:m.ha,f:m.fecha,lines:m.lines.map(l=>({n:l.n,d:l.d,u:l.u,stock:l.stock,need:l.need,order:l.order}))});
+  await persistPedidos();renderPedidos();toast('Pedido guardado');
+}
+function pedSavedList(){
+  if(!PEDIDOS.length)return '';
+  const list=PEDIDOS.slice().sort((a,b)=>(b.f||'').localeCompare(a.f||'')||((b.id||0)-(a.id||0)));
+  return `<div class="card" style="margin-top:22px">
+    <div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedidos guardados</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">${PEDIDOS.length} pedido(s)</p></div>
+    <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th class="r">Ha</th><th class="r">Productos</th><th class="r">A pedir</th><th></th></tr></thead>
+    <tbody>${list.map(p=>{const ap=(p.lines||[]).filter(l=>(+l.order||0)>0).length;return `<tr>
+      <td class="tnum">${fmtFecha(p.f)}</td>
+      <td><span class="fdot"><i style="background:${fincaColor(p.finca)}"></i>${esc(p.finca)}</span></td>
+      <td class="r tnum">${(+p.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})}</td>
+      <td class="r tnum">${(p.lines||[]).length}</td>
+      <td class="r tnum"><b style="color:var(--green2)">${ap}</b></td>
+      <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Cargar en el calculador" onclick="pedLoad(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="iconbtn" title="PDF" onclick="pedPrintSaved(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="pedDel(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`;}).join('')}
+    </tbody></table></div></div>`;
+}
+function pedLoad(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;ui.pedFinca=p.finca;ui.pedHa=p.ha;ui.pedFecha=p.f;ui.pedLines=(p.lines&&p.lines.length)?p.lines.map(l=>({n:l.n,d:l.d,u:l.u,stock:l.stock})):[{n:'',d:'',u:'ml',stock:''}];persistPedDraft();renderPedidos();toast('Pedido cargado');}
+function pedDel(id){const p=PEDIDOS.find(x=>x.id===id);confirmModal('Eliminar pedido',`Se eliminará el pedido de ${p?esc(p.finca):'esta finca'} del ${p?fmtFecha(p.f):''}.`,async()=>{PEDIDOS=PEDIDOS.filter(x=>x.id!==id);await persistPedidos();closeModal();renderPedidos();toast('Pedido eliminado');});}
+function pedStatementHTML(m){
+  const rows=m.lines.map(l=>`<tr><td class="wrap">${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${(+l.stock)?qFmt(l.stock,l.u):'—'}</td><td class="r tnum"><b>${(+l.order>0)?qFmt(l.order,l.u):'—'}</b></td></tr>`).join('');
+  return `
+   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Pedido</div><h2>${esc(m.finca)}</h2><div class="rh-sub">${(+m.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · Fecha del pedido ${fmtFecha(m.f||m.fecha)}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   <div class="report-sec">
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Productos a pedir<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">En bodega</th><th class="r">A pedir</th></tr></thead>
+       <tbody>${rows||'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin productos.</td></tr>'}</tbody></table></div></div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo que hay en bodega.</div>
+   </div>`;
+}
+function pedPrint(){const m=pedCompute();if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}if(!m.lines.length){toast('Agrega productos al pedido');return;}printIsolated(pedStatementHTML(m),'Pedido · '+m.finca);}
+function pedPrintSaved(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;printIsolated(pedStatementHTML(p),'Pedido · '+p.finca);}
 
 /* ===== RENTABILIDAD POR HECTÁREA ===== */
 function rentData(){
@@ -3141,7 +3281,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
