@@ -414,7 +414,16 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .perfil-bar .pf-switch:hover{background:var(--surface3);color:var(--green2)}
 .perfil-bar .pf-switch svg{width:18px;height:18px}
 .secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px 12px;margin-top:4px}
+.secgrid2{display:grid;grid-template-columns:1fr;gap:7px;margin-top:2px}
 .seccheck{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.secrow{display:flex;align-items:center;gap:10px}
+.secrow .secname{flex:1;font-size:13px;min-width:0}
+.secrow .secsel{width:148px;flex:0 0 auto;padding:6px 9px}
+@media(min-width:620px){.secgrid2{grid-template-columns:1fr 1fr;gap:8px 18px}}
+.ro-lock button:not(.ro-ok),.ro-lock .iconbtn:not(.ro-ok),.ro-lock input,.ro-lock select,.ro-lock textarea,.ro-lock a[onclick]{opacity:.5;cursor:not-allowed}
+.ro-lock .ro-ok{opacity:1;cursor:pointer}
+.ro-banner{display:flex;align-items:center;gap:9px;background:var(--amber-soft);color:#8a5a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
+.ro-banner svg{width:18px;height:18px;flex:0 0 auto}
 .seccheck input{width:auto;flex:0 0 auto}
 .login-wrap{display:flex;justify-content:center;padding:24px 4px}
 .login-card{width:100%;max-width:440px;text-align:center}
@@ -792,7 +801,7 @@ async function init(){
     window.addEventListener('beforeunload',()=>Cloud.flush());
   }
 }
-async function persistMovs(){await Store.set('movimientos',JSON.stringify(MOVS));Cloud.schedulePush();}
+async function persistMovs(){if(roGuard())return;await Store.set('movimientos',JSON.stringify(MOVS));Cloud.schedulePush();}
 async function persistCfg(){await Store.set('config',JSON.stringify(CFG));Cloud.schedulePush();}
 function normalizeNominaMonths(){let ch=false;NOMINAS.forEach(n=>{if(n&&n.hasta){const y=+n.hasta.slice(0,4),mo=+n.hasta.slice(5,7)-1;if(n.year!==y||n.mes!==mo){n.year=y;n.mes=mo;ch=true;}}});return ch;}
 function stripFincaArt(n){const m=(n||'').trim().match(/^(la|el|los|las)\s+(.+)$/i);if(!m)return (n||'').trim();const r=m[2].trim();return r.charAt(0).toUpperCase()+r.slice(1);}
@@ -847,6 +856,30 @@ function perfilActivo(){return perfiles().find(p=>p.id===ui.perfilId)||null;}
 function anyAdmin(){return perfiles().some(p=>p.admin);}
 function loginNeeded(){return ui.needLogin&&!perfilActivo();}
 function perfilCanView(v){const p=perfilActivo();if(!p)return true;if(p.admin)return true;if(v==='config')return !anyAdmin();return (p.views||[]).includes(v);}
+function perfilCanEdit(v){const p=perfilActivo();if(!p)return true;if(p.admin)return true;if(v==='config')return !anyAdmin();const e=Array.isArray(p.edit)?p.edit:(p.views||[]);return e.includes(v);}
+function roGuard(){if(ui.roActive){toast('Tu perfil solo puede ver esta sección, no modificarla');return true;}return false;}
+function lockReadOnly(){
+  const c=document.getElementById('content'),tc=document.getElementById('topctl');
+  [c,tc].forEach(el=>{if(el)el.classList.add('ro-lock');});
+  if(c){const b=document.createElement('div');b.className='ro-banner';b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg><span>Modo solo lectura: tu perfil puede ver esta sección pero no hacer cambios.</span>`;c.prepend(b);}
+  document.querySelectorAll('.ro-lock button').forEach(b=>{const t=(b.textContent||'').trim();if(/pdf|imprimir|estado de cuenta/i.test(t)){b.classList.add('ro-ok');}else{b.disabled=true;}});
+  document.querySelectorAll('.ro-lock input,.ro-lock select,.ro-lock textarea').forEach(e=>{e.disabled=true;});
+  document.querySelectorAll('.ro-lock .iconbtn').forEach(b=>{if(!b.classList.contains('ro-ok'))b.disabled=true;});
+}
+function render(){
+  applyNavPerms();
+  ['content','topctl'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('ro-lock');});
+  ui.roActive=false;
+  if(loginNeeded()){renderLogin();return;}
+  if(!perfilCanView(ui.view)){const fv=firstAllowedView();if(fv)ui.view=fv;else{renderNoAccess();return;}}
+  document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===ui.view));
+  const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
+  document.getElementById('topctl').innerHTML='';
+  const ro=!perfilCanEdit(ui.view);
+  ui.roActive=ro;
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  if(ro)lockReadOnly();
+}
 function firstAllowedView(){const order=[...document.querySelectorAll('#nav a')].map(a=>a.dataset.view);for(const v of order)if(perfilCanView(v))return v;return null;}
 function perfilColor(p){const pal=['#2f8f57','#2B6CB0','#C9821F','#8E44AD','#C0392B','#16A085','#D9822B'];let h=0;const s=(p&&p.n)||'';for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return pal[h%pal.length];}
 function applyNavPerms(){
@@ -888,7 +921,7 @@ function perfilesPanel(){
       ${list.map(p=>`<tr>
         <td><span class="fdot"><i style="background:${perfilColor(p)}"></i>${esc(p.n)}</span></td>
         <td>${p.admin?'<span class="chip i">Administrador</span>':'<span class="chip pay">Limitado</span>'}</td>
-        <td class="r tnum">${p.admin?'Todas':((p.views||[]).length+'/'+SECCIONES.length)}</td>
+        <td class="r tnum">${p.admin?'Todas':((p.views||[]).length+' ver · '+(Array.isArray(p.edit)?p.edit:(p.views||[])).length+' editar')}</td>
         <td>${p.pin?'Sí':'—'}</td>
         <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Editar" onclick="perfilEdit('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="perfilDel('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
       </tr>`).join('')}
@@ -899,40 +932,37 @@ function perfilesPanel(){
 }
 function perfilEdit(id){
   const p=id?perfiles().find(x=>x.id===id):null;
-  const cur=p||{n:'',pin:'',admin:false,views:SECCIONES.map(s=>s[0])};
-  const checks=SECCIONES.map(([v,l])=>`<label class="seccheck"><input type="checkbox" value="${v}" ${(cur.views||[]).includes(v)?'checked':''}> ${esc(l)}</label>`).join('');
+  const cur=p||{n:'',pin:'',admin:false,views:SECCIONES.map(s=>s[0]),edit:SECCIONES.map(s=>s[0])};
+  const editArr=Array.isArray(cur.edit)?cur.edit:(cur.views||[]);
+  const rows=SECCIONES.map(([v,l])=>{
+    const lvl=(editArr.includes(v))?'edit':((cur.views||[]).includes(v)?'view':'none');
+    return `<div class="secrow"><span class="secname">${esc(l)}</span><select class="input secsel" data-v="${v}"><option value="none" ${lvl==='none'?'selected':''}>Sin acceso</option><option value="view" ${lvl==='view'?'selected':''}>Solo ver</option><option value="edit" ${lvl==='edit'?'selected':''}>Ver y editar</option></select></div>`;
+  }).join('');
   showModal(id?'Editar perfil':'Nuevo perfil',`
    <div class="form-grid">
      <div class="field"><label>Nombre del perfil</label><input class="input" id="pf_n" value="${esc(cur.n)}" placeholder="Ej: Contadora, Capataz…"></div>
      <div class="field"><label>PIN (opcional)</label><input class="input tnum" id="pf_pin" inputmode="numeric" value="${esc(cur.pin||'')}" placeholder="Sin PIN"></div>
    </div>
-   <label class="seccheck" style="margin:10px 0 2px"><input type="checkbox" id="pf_admin" ${cur.admin?'checked':''} onchange="document.getElementById('pf_secs').style.display=this.checked?'none':''"> <b>Administrador</b> — acceso total, incluida Configuración</label>
+   <label class="seccheck" style="margin:10px 0 2px"><input type="checkbox" id="pf_admin" ${cur.admin?'checked':''} onchange="document.getElementById('pf_secs').style.display=this.checked?'none':''"> <b>Administrador</b> — acceso y edición total, incluida Configuración</label>
    <div id="pf_secs" style="display:${cur.admin?'none':''}">
-     <div style="font-size:12.5px;color:var(--muted);margin:10px 0 2px">Secciones permitidas:</div>
-     <div class="secgrid">${checks}</div>
-     <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs input').forEach(c=>c.checked=true)">Marcar todas</button><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs input').forEach(c=>c.checked=false)">Ninguna</button></div>
+     <div style="font-size:12.5px;color:var(--muted);margin:10px 0 4px">Permiso por sección:</div>
+     <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap"><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs .secsel').forEach(s=>s.value='edit')">Todo editable</button><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs .secsel').forEach(s=>s.value='view')">Todo solo ver</button><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs .secsel').forEach(s=>s.value='none')">Sin acceso</button></div>
+     <div class="secgrid2">${rows}</div>
    </div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
      const n=(document.getElementById('pf_n').value||'').trim();if(!n){toast('Escribe el nombre del perfil');return;}
      const pin=(document.getElementById('pf_pin').value||'').trim();
      const admin=document.getElementById('pf_admin').checked;
-     const views=[...document.querySelectorAll('#pf_secs input[type=checkbox]')].filter(c=>c.checked).map(c=>c.value);
+     let views,edit;
+     if(admin){views=SECCIONES.map(s=>s[0]);edit=views.slice();}
+     else{views=[];edit=[];document.querySelectorAll('#pf_secs .secsel').forEach(s=>{if(s.value!=='none')views.push(s.dataset.v);if(s.value==='edit')edit.push(s.dataset.v);});}
      if(!CFG.perfiles)CFG.perfiles=[];
-     if(p){p.n=n;p.pin=pin;p.admin=admin;p.views=views;}
-     else CFG.perfiles.push({id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1000),n,pin,admin,views});
+     if(p){p.n=n;p.pin=pin;p.admin=admin;p.views=views;p.edit=edit;}
+     else CFG.perfiles.push({id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1000),n,pin,admin,views,edit});
      await persistCfg();closeModal();renderConfig();toast('Perfil guardado');
    }}]);
 }
 function perfilDel(id){const p=perfiles().find(x=>x.id===id);confirmModal('Eliminar perfil',`Se eliminará el perfil ${p?esc(p.n):''}. Los datos de la app no se borran.`,async()=>{CFG.perfiles=perfiles().filter(x=>x.id!==id);if(ui.perfilId===id)ui.perfilId='';await persistCfg();closeModal();renderConfig();toast('Perfil eliminado');});}
-function render(){
-  applyNavPerms();
-  if(loginNeeded()){renderLogin();return;}
-  if(!perfilCanView(ui.view)){const fv=firstAllowedView();if(fv)ui.view=fv;else{renderNoAccess();return;}}
-  document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===ui.view));
-  const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
-  document.getElementById('topctl').innerHTML='';
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
-}
 
 /* ===== DETALLE por categoría ===== */
 function detalleData(){
@@ -1478,7 +1508,7 @@ async function facturaEditSave(){
 }
 
 /* ===== NÓMINA ===== */
-async function persistNom(){await Store.set('nominas',JSON.stringify(NOMINAS));Cloud.schedulePush();}
+async function persistNom(){if(roGuard())return;await Store.set('nominas',JSON.stringify(NOMINAS));Cloud.schedulePush();}
 const jVal=l=>{const j=CFG.jornadas.find(x=>x.l===l);return j?+j.v||0:0;};
 const entryBruto=e=>e.dias.reduce((a,d)=>a+jVal(d.j),0);
 const entryNeto=e=>Math.max(0,entryBruto(e)-(+e.prestamo||0));
@@ -2233,7 +2263,7 @@ async function addComercio(){const inp=document.getElementById('newCom');const v
 async function delComercio(name){CFG.comercios=CFG.comercios.filter(c=>c!==name);await persistCfg();renderComercios();toast('Comercio quitado de la lista');}
 
 /* ===== DRON (fumigación) ===== */
-async function persistDron(){await Store.set('dron',JSON.stringify(DRON));Cloud.schedulePush();}
+async function persistDron(){if(roGuard())return;await Store.set('dron',JSON.stringify(DRON));Cloud.schedulePush();}
 const dronSocios=()=>CFG.dronSocios||[];
 const dronPctTotal=()=>dronSocios().reduce((a,s)=>a+(+s.p||0),0);
 function dronData(){
@@ -2738,7 +2768,7 @@ function cronoMonthGet(k){return (ui.cronoMonthK&&ui.cronoMonthK[k])||'';}
 function cronoMonthSet(k,v){if(!ui.cronoMonthK)ui.cronoMonthK={fum:'',ab:''};ui.cronoMonthK[k]=v;}
 function cronoFincaGet(k){return (ui.cronoFincaK&&ui.cronoFincaK[k])||'';}
 function cronoFincaSet(k,v){if(!ui.cronoFincaK)ui.cronoFincaK={fum:'',ab:''};ui.cronoFincaK[k]=v;}
-async function persistCrono(k){const cfg=cronoKindCfg(k);await Store.set(cfg.store,JSON.stringify(cronoArr(k)));Cloud.schedulePush();}
+async function persistCrono(k){if(roGuard())return;const cfg=cronoKindCfg(k);await Store.set(cfg.store,JSON.stringify(cronoArr(k)));Cloud.schedulePush();}
 function cronoNext(r){if(r.prox)return r.prox;return (r.dias&&r.f)?addDaysISO(r.f,+r.dias):null;}
 function cronoDaysTo(iso){return Math.round((new Date(iso+'T00:00:00')-new Date(todayISO()+'T00:00:00'))/86400000);}
 function cronoLinesText(r){const per=(r&&r.mode==='ab')?'árbol':'ha';return (r.lines||[]).filter(l=>l.n).map(l=>`${esc(l.n)} — ${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/${per}`).join(' · ')||'—';}
@@ -3026,7 +3056,7 @@ async function bodegaSetQty(finca,prod,qtyBase){
   await persistCfg();renderPedidos();
 }
 async function bodegaDel(finca,prod){if(CFG.bodega&&CFG.bodega[finca])delete CFG.bodega[finca][prod];await persistCfg();renderPedidos();}
-async function persistPedidos(){await Store.set('pedidos',JSON.stringify(PEDIDOS));Cloud.schedulePush();}
+async function persistPedidos(){if(roGuard())return;await Store.set('pedidos',JSON.stringify(PEDIDOS));Cloud.schedulePush();}
 async function persistPedDraft(){await Store.set('peddraft',JSON.stringify({finca:ui.pedFinca,ha:ui.pedHa,fecha:ui.pedFecha,lines:ui.pedLines}));Cloud.schedulePush();}
 function pedCompute(){
   const finca=ui.pedFinca||'';
