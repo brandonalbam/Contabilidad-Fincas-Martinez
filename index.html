@@ -228,6 +228,9 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .pedline .ped-stock{flex:1 1 80px;min-width:0;text-align:right}
 .pedline .ped-del{flex:0 0 auto}
 @media(min-width:760px){.pedline .ped-prod{flex:2 1 200px}.pedline .ped-sub{flex:3 1 auto}}
+.ped-bod{flex:1 1 100%;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--green2);margin-top:2px}
+.ped-bod input{width:auto;flex:0 0 auto}
+.ped-bod.off{color:var(--faint)}
 /* Cronograma */
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .cal-title{font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize}
@@ -616,7 +619,7 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});cronoMigrate();Store.set('crono',JSON.stringify(CRONO));
   PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
@@ -668,7 +671,7 @@ let ui={view:'dash',
   rentYear:'',rentFrom:'',rentTo:'',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixLines:[{n:'',d:'',u:'ml'}],
   cronoMonth:'',cronoFinca:'',
-  pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',stock:''}]
+  pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}]
 };
 
 /* ===== helpers ===== */
@@ -719,9 +722,10 @@ async function init(){
   if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.bodega){CFG.bodega={};await Store.set('config',JSON.stringify(CFG));}
   const pd2=await Store.get('pedidos'); PEDIDOS=pd2?JSON.parse(pd2):[];
   PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
-  const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',stock:''}];}}catch(e){}}
+  const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',useBodega:true}];}}catch(e){}}
   const mx=await Store.get('mixdraft'); if(mx){try{const j=JSON.parse(mx);if(j){ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];}}catch(e){}}
   if(migrateFincaNames()){
     await Store.set('config',JSON.stringify(CFG));
@@ -763,6 +767,7 @@ function migrateFincaNames(){
   CFG.fincas=nf;
   if(CFG.fincaHa){const nh={};Object.entries(CFG.fincaHa).forEach(([k,v])=>{const n=map[k]||k;nh[n]=Object.assign(nh[n]||{},v);});CFG.fincaHa=nh;}
   if(CFG.fincaHaTot){const nt={};Object.entries(CFG.fincaHaTot).forEach(([k,v])=>{nt[map[k]||k]=v;});CFG.fincaHaTot=nt;}
+  if(CFG.bodega){const nb={};Object.entries(CFG.bodega).forEach(([k,v])=>{nb[map[k]||k]=Object.assign(nb[map[k]||k]||{},v);});CFG.bodega=nb;}
   MOVS.forEach(m=>{if(m.fi&&map[m.fi])m.fi=map[m.fi];});
   NOMINAS.forEach(nm=>(nm.entries||[]).forEach(e=>(e.dias||[]).forEach(d=>{if(d.fi&&map[d.fi])d.fi=map[d.fi];})));
   CRONO.forEach(r=>{if(r.finca&&map[r.finca])r.finca=map[r.finca];});
@@ -2801,14 +2806,30 @@ function cronoStatementHTML(){
 /* ===== PEDIDOS ===== */
 function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
 function pedCatalog(){return CFG.quimicos||[];}
+function bodegaAvail(finca,prod){const f=CFG.bodega&&CFG.bodega[finca];const e=f&&f[prod];return e?{q:+e.q||0,u:e.u||'ml'}:null;}
+async function bodegaAddQty(finca,prod,qtyBase,u){
+  if(!CFG.bodega)CFG.bodega={};if(!CFG.bodega[finca])CFG.bodega[finca]={};
+  const e=CFG.bodega[finca][prod]||{q:0,u};e.q=(+e.q||0)+qtyBase;e.u=u;CFG.bodega[finca][prod]=e;
+  await persistCfg();
+}
+async function bodegaSetQty(finca,prod,qtyBase){
+  if(!(CFG.bodega&&CFG.bodega[finca]&&CFG.bodega[finca][prod]))return;
+  if(qtyBase<=0)delete CFG.bodega[finca][prod];else CFG.bodega[finca][prod].q=qtyBase;
+  await persistCfg();renderPedidos();
+}
+async function bodegaDel(finca,prod){if(CFG.bodega&&CFG.bodega[finca])delete CFG.bodega[finca][prod];await persistCfg();renderPedidos();}
 async function persistPedidos(){await Store.set('pedidos',JSON.stringify(PEDIDOS));Cloud.schedulePush();}
 async function persistPedDraft(){await Store.set('peddraft',JSON.stringify({finca:ui.pedFinca,ha:ui.pedHa,fecha:ui.pedFecha,lines:ui.pedLines}));Cloud.schedulePush();}
 function pedCompute(){
   const finca=ui.pedFinca||'';
   const ha=+ui.pedHa||0;
   const lines=(ui.pedLines||[]).filter(l=>l.n).map(l=>{
-    const d=+l.d||0, stock=+l.stock||0, need=d*ha, order=Math.max(need-stock,0);
-    return {n:l.n,d,u:l.u||'ml',stock,need,order};
+    const d=+l.d||0, need=d*ha;
+    const av=bodegaAvail(finca,l.n); const avail=av?av.q:0;
+    const use=(l.useBodega!==false)&&avail>0;
+    const used=use?Math.min(avail,need):0;
+    const order=Math.max(need-used,0);
+    return {n:l.n,d,u:l.u||'ml',need,avail,used,order,useBodega:use};
   });
   return {finca,ha,fecha:ui.pedFecha||todayISO(),lines};
 }
@@ -2844,7 +2865,9 @@ function pedRenderLines(){
   const box=document.getElementById('ped_lines');if(!box)return;
   const cat=pedCatalog();
   if(!ui.pedLines||!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];
-  box.innerHTML=ui.pedLines.map((l,i)=>`<div class="pedline">
+  box.innerHTML=ui.pedLines.map((l,i)=>{
+    const av=bodegaAvail(ui.pedFinca,l.n);const avail=av?av.q:0;const on=l.useBodega!==false;
+    return `<div class="pedline">
      <select class="input ped-prod" onchange="pedSetProd(${i},this.value)">
        <option value="">— Elegir producto —</option>
        ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
@@ -2852,31 +2875,88 @@ function pedRenderLines(){
      <div class="ped-sub">
        <input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
        <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
-       <input class="input tnum ped-stock" inputmode="decimal" value="${esc(l.stock)}" placeholder="bodega" oninput="ui.pedLines[${i}].stock=this.value;pedCalc();persistPedDraft()" title="Cantidad que hay en bodega (en la misma unidad)">
        <button class="iconbtn del ped-del" onclick="pedDelLine(${i})">${ic('trash')}</button>
      </div>
-   </div>`).join('');
+     ${l.n?(avail>0?`<label class="ped-bod on"><input type="checkbox" ${on?'checked':''} onchange="ui.pedLines[${i}].useBodega=this.checked;pedCalc();persistPedDraft()"> Usar disponible en bodega (${qFmt(avail,(av&&av.u)||l.u)})</label>`:`<span class="ped-bod off">Sin stock en bodega de ${esc(ui.pedFinca||'—')}</span>`):''}
+   </div>`;}).join('');
 }
-function pedAddLine(){ui.pedLines.push({n:'',d:'',u:'ml',stock:''});pedRenderLines();pedCalc();persistPedDraft();}
-function pedDelLine(i){ui.pedLines.splice(i,1);if(!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];pedRenderLines();pedCalc();persistPedDraft();}
-function pedSetProd(i,val){const c=pedCatalog().find(x=>x.n===val);ui.pedLines[i].n=val;if(c){if(!ui.pedLines[i].d)ui.pedLines[i].d=c.d;ui.pedLines[i].u=c.u||'ml';}pedRenderLines();pedCalc();persistPedDraft();}
+function pedAddLine(){ui.pedLines.push({n:'',d:'',u:'ml',useBodega:true});pedRenderLines();pedCalc();persistPedDraft();}
+function pedDelLine(i){ui.pedLines.splice(i,1);if(!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',useBodega:true}];pedRenderLines();pedCalc();persistPedDraft();}
+function pedSetProd(i,val){const c=pedCatalog().find(x=>x.n===val);ui.pedLines[i].n=val;if(c){if(!ui.pedLines[i].d)ui.pedLines[i].d=c.d;ui.pedLines[i].u=c.u||'ml';}if(ui.pedLines[i].useBodega===undefined)ui.pedLines[i].useBodega=true;pedRenderLines();pedCalc();persistPedDraft();}
 function pedCalc(){
   const el=document.getElementById('ped_results');if(!el)return;
   const m=pedCompute();
   if(!m.finca||!m.ha){el.innerHTML=`<div class="card panel"><div class="empty" style="padding:26px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Elige la finca y confirma las hectáreas para calcular el pedido.</span></div></div>`;return;}
-  const rows=m.lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${l.d.toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${l.stock?qFmt(l.stock,l.u):'—'}</td><td class="r tnum"><b style="color:${l.order>0?'var(--green2)':'var(--muted)'}">${l.order>0?qFmt(l.order,l.u):'Suficiente'}</b></td></tr>`).join('');
+  const rows=m.lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${l.d.toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum" style="color:${l.used>0?'var(--green2)':'var(--muted)'}">${l.used>0?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b style="color:${l.order>0?'var(--green2)':'var(--muted)'}">${l.order>0?qFmt(l.order,l.u):'Suficiente'}</b></td></tr>`).join('');
+  const usan=m.lines.filter(l=>l.used>0);
   el.innerHTML=`
    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
      <div class="card kpi lead"><div class="lab">Finca</div><div class="val" style="font-size:16px">${esc(m.finca)}</div><div class="meta">${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha</div></div>
      <div class="card kpi"><div class="lab">Productos</div><div class="val tnum" style="font-size:22px">${m.lines.length}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--green2)">A pedir</div><div class="val tnum" style="font-size:22px;color:var(--green2)">${m.lines.filter(l=>l.order>0).length}</div></div>
    </div>
-   ${m.lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedido para ${esc(m.finca)}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Necesario = dosis/ha × ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · A pedir = necesario − bodega</p></div>
-     <div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">En bodega</th><th class="r">A pedir</th></tr></thead><tbody>${rows}</tbody></table></div></div>`:'<div class="card" style="margin-top:16px"><div style="padding:18px;color:var(--muted);font-size:13px">Agrega productos para calcular el pedido.</div></div>'}`;
+   ${m.lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedido para ${esc(m.finca)}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Necesario = dosis/ha × ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · A pedir = necesario − lo usado de bodega</p></div>
+     <div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">De bodega</th><th class="r">A pedir</th></tr></thead><tbody>${rows}</tbody></table></div>
+     ${usan.length?`<div class="note" style="margin:0 16px 14px">Observación: ${usan.map(l=>`en <b>${esc(l.n)}</b> se usarán ${qFmt(l.used,l.u)} de la bodega de ${esc(m.finca)}`).join('; ')}. Al guardar el pedido, esas cantidades se descuentan de la bodega.</div>`:''}</div>`:'<div class="card" style="margin-top:16px"><div style="padding:18px;color:var(--muted);font-size:13px">Agrega productos para calcular el pedido.</div></div>'}
+   ${pedBodegaCard()}`;
+}
+function pedBodegaCard(){
+  const cat=pedCatalog();
+  const fincas=CFG.fincas;
+  const inv=CFG.bodega||{};
+  const invRows=[];
+  Object.keys(inv).sort((a,b)=>a.localeCompare(b)).forEach(fi=>{
+    Object.keys(inv[fi]||{}).sort((a,b)=>a.localeCompare(b)).forEach(p=>{
+      const e=inv[fi][p];invRows.push(`<tr>
+        <td><span class="fdot"><i style="background:${fincaColor(fi)}"></i>${esc(fi)}</span></td>
+        <td class="qname">${esc(p)}</td>
+        <td class="r tnum">${qFmt(e.q,e.u||'ml')}</td>
+        <td class="r"><button class="iconbtn" title="Editar cantidad" onclick="bodegaEdit('${esc(fi).replace(/'/g,"\\'")}','${esc(p).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="bodegaDel('${esc(fi).replace(/'/g,"\\'")}','${esc(p).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`);
+    });
+  });
+  return `<div class="card panel" style="margin-top:16px">
+    <div class="ph"><div><h2>Bodega por finca</h2><p>Agrega existencias que luego se usan solas en los pedidos de esa finca</p></div></div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+      <div class="field"><label>Finca (bodega)</label><select class="input" id="pb_fi">${fincas.map(f=>`<option ${ui.pedFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+      <div class="field"><label>Producto</label><select class="input" id="pb_p">${cat.length?cat.map(c=>`<option data-u="${c.u||'ml'}">${esc(c.n)}</option>`).join(''):'<option value="">(catálogo vacío)</option>'}</select></div>
+      <div class="field"><label>Cantidad</label><input class="input tnum" id="pb_q" type="number" step="any" placeholder="0"></div>
+      <div class="field"><label>Unidad</label><select class="input" id="pb_u"><option value="ml">ml</option><option value="L">L</option><option value="g">g</option><option value="kg">kg</option></select></div>
+    </div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="bodegaAddFromForm()">${ic('plus')}Agregar a bodega</button>
+    ${invRows.length?`<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Finca</th><th>Producto</th><th class="r">En bodega</th><th></th></tr></thead><tbody>${invRows.join('')}</tbody></table></div>`:'<div class="note">La bodega está vacía. Agrega existencias arriba.</div>'}
+  </div>`;
+}
+function pedUnitBase(u){return (u==='g'||u==='kg')?'g':'ml';}
+function pedToBase(qty,u){return (u==='L'||u==='kg')?qty*1000:qty;}
+async function bodegaAddFromForm(){
+  const fi=document.getElementById('pb_fi').value;
+  const p=document.getElementById('pb_p').value;
+  const q=+document.getElementById('pb_q').value||0;
+  const u=document.getElementById('pb_u').value||'ml';
+  if(!p){toast('Elige un producto (agrégalo al catálogo en Preparación de químicos)');return;}
+  if(q<=0){toast('Indica la cantidad');return;}
+  await bodegaAddQty(fi,p,pedToBase(q,u),pedUnitBase(u));
+  renderPedidos();toast('Agregado a la bodega de '+fi);
+}
+function bodegaEdit(finca,prod){
+  const e=CFG.bodega&&CFG.bodega[finca]&&CFG.bodega[finca][prod];if(!e)return;
+  const base=e.u||'ml';const big=base==='g'?'kg':'L';
+  showModal('Editar bodega',`
+   <p style="color:var(--muted);margin-bottom:10px"><b>${esc(prod)}</b> · bodega de <b>${esc(finca)}</b></p>
+   <div class="form-grid">
+     <div class="field"><label>Cantidad</label><input class="input tnum" id="be_q" type="number" step="any" value="${e.q}"></div>
+     <div class="field"><label>Unidad</label><select class="input" id="be_u"><option value="${base}">${base}</option><option value="${big}">${big}</option></select></div>
+   </div>
+   <div class="note">La cantidad actual está en ${base}. Si eliges ${big}, se multiplicará por 1.000.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
+     const q=+document.getElementById('be_q').value||0;const u=document.getElementById('be_u').value;
+     const base2=(u==='kg'||u==='L')?q*1000:q;
+     await bodegaSetQty(finca,prod,base2);closeModal();
+   }}]);
 }
 function pedNuevo(){
-  confirmModal('Nuevo pedido','Se borrarán los datos del pedido actual (finca, hectáreas y productos). ¿Continuar?',async()=>{
-    ui.pedFinca='';ui.pedHa='';ui.pedFecha='';ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];
+  confirmModal('Nuevo pedido','Se borrarán los datos del pedido actual (finca, hectáreas y productos). La bodega no se modifica. ¿Continuar?',async()=>{
+    ui.pedFinca='';ui.pedHa='';ui.pedFecha='';ui.pedLines=[{n:'',d:'',u:'ml',useBodega:true}];
     await persistPedDraft();closeModal();renderPedidos();toast('Listo para un nuevo pedido');
   });
 }
@@ -2884,8 +2964,11 @@ async function pedGuardar(){
   const m=pedCompute();
   if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}
   if(!m.lines.length){toast('Agrega al menos un producto');return;}
-  PEDIDOS.push({id:pseq++,finca:m.finca,ha:m.ha,f:m.fecha,lines:m.lines.map(l=>({n:l.n,d:l.d,u:l.u,stock:l.stock,need:l.need,order:l.order}))});
-  await persistPedidos();renderPedidos();toast('Pedido guardado');
+  PEDIDOS.push({id:pseq++,finca:m.finca,ha:m.ha,f:m.fecha,lines:m.lines.map(l=>({n:l.n,d:l.d,u:l.u,need:l.need,used:l.used,order:l.order}))});
+  let deducted=0;
+  m.lines.forEach(l=>{if(l.used>0&&CFG.bodega&&CFG.bodega[m.finca]&&CFG.bodega[m.finca][l.n]){const e=CFG.bodega[m.finca][l.n];e.q=Math.max(0,(+e.q||0)-l.used);if(e.q<=0.0001)delete CFG.bodega[m.finca][l.n];deducted++;}});
+  await persistPedidos();await persistCfg();renderPedidos();
+  toast('Pedido guardado'+(deducted?' · bodega actualizada':''));
 }
 function pedSavedList(){
   if(!PEDIDOS.length)return '';
@@ -2902,18 +2985,21 @@ function pedSavedList(){
       <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Cargar en el calculador" onclick="pedLoad(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="iconbtn" title="PDF" onclick="pedPrintSaved(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="pedDel(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`;}).join('')}
     </tbody></table></div></div>`;
 }
-function pedLoad(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;ui.pedFinca=p.finca;ui.pedHa=p.ha;ui.pedFecha=p.f;ui.pedLines=(p.lines&&p.lines.length)?p.lines.map(l=>({n:l.n,d:l.d,u:l.u,stock:l.stock})):[{n:'',d:'',u:'ml',stock:''}];persistPedDraft();renderPedidos();toast('Pedido cargado');}
-function pedDel(id){const p=PEDIDOS.find(x=>x.id===id);confirmModal('Eliminar pedido',`Se eliminará el pedido de ${p?esc(p.finca):'esta finca'} del ${p?fmtFecha(p.f):''}.`,async()=>{PEDIDOS=PEDIDOS.filter(x=>x.id!==id);await persistPedidos();closeModal();renderPedidos();toast('Pedido eliminado');});}
+function pedLoad(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;ui.pedFinca=p.finca;ui.pedHa=p.ha;ui.pedFecha=p.f;ui.pedLines=(p.lines&&p.lines.length)?p.lines.map(l=>({n:l.n,d:l.d,u:l.u,useBodega:true})):[{n:'',d:'',u:'ml',useBodega:true}];persistPedDraft();renderPedidos();toast('Pedido cargado');}
+function pedDel(id){const p=PEDIDOS.find(x=>x.id===id);confirmModal('Eliminar pedido',`Se eliminará el pedido de ${p?esc(p.finca):'esta finca'} del ${p?fmtFecha(p.f):''}. (La bodega no se restaura.)`,async()=>{PEDIDOS=PEDIDOS.filter(x=>x.id!==id);await persistPedidos();closeModal();renderPedidos();toast('Pedido eliminado');});}
 function pedStatementHTML(m){
-  const rows=m.lines.map(l=>`<tr><td class="wrap">${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${(+l.stock)?qFmt(l.stock,l.u):'—'}</td><td class="r tnum"><b>${(+l.order>0)?qFmt(l.order,l.u):'—'}</b></td></tr>`).join('');
+  const rows=m.lines.map(l=>`<tr><td class="wrap">${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${(+l.used>0)?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b>${(+l.order>0)?qFmt(l.order,l.u):'—'}</b></td></tr>`).join('');
+  const usan=m.lines.filter(l=>(+l.used||0)>0);
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Pedido</div><h2>${esc(m.finca)}</h2><div class="rh-sub">${(+m.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · Fecha del pedido ${fmtFecha(m.f||m.fecha)}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
    <div class="report-sec">
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Productos a pedir<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">En bodega</th><th class="r">A pedir</th></tr></thead>
+       <thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">De bodega</th><th class="r">A pedir</th></tr></thead>
        <tbody>${rows||'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin productos.</td></tr>'}</tbody></table></div></div>
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo que hay en bodega.</div>
+     ${usan.length?`<div class="sec-title" style="margin-top:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Observaciones · uso de bodega<span class="ln"></span></div>
+     <div class="card"><div style="padding:14px 16px;font-size:13px;line-height:1.7">${usan.map(l=>`En <b>${esc(l.n)}</b> se utilizarán <b>${qFmt(l.used,l.u)}</b> disponibles en la bodega de ${esc(m.finca)}; solo se piden ${qFmt(l.order,l.u)}.`).join('<br>')}</div></div>`:''}
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo usado de la bodega de la finca.</div>
    </div>`;
 }
 function pedPrint(){const m=pedCompute();if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}if(!m.lines.length){toast('Agrega productos al pedido');return;}printIsolated(pedStatementHTML(m),'Pedido · '+m.finca);}
@@ -3281,7 +3367,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
