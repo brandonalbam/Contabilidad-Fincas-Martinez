@@ -404,6 +404,30 @@ table.mini td{padding:4px 8px;border-bottom:1px solid var(--surface3);white-spac
 table.mini td.r{text-align:right}
 table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 @media(max-width:560px){.payslip-weeks{grid-template-columns:1fr}}
+/* Perfiles / ingreso */
+.perfil-bar{display:flex;align-items:center;gap:9px;margin:0 14px 10px;padding:8px 10px;background:var(--surface2);border-radius:12px;box-shadow:var(--clay-in)}
+.perfil-bar .pf-av{width:30px;height:30px;border-radius:50%;color:#fff;font-weight:700;font-family:var(--display);display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.perfil-bar .pf-info{flex:1;min-width:0;line-height:1.2}
+.perfil-bar .pf-info b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--display)}
+.perfil-bar .pf-info span{font-size:11px;color:var(--muted)}
+.perfil-bar .pf-switch{border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;flex:0 0 auto}
+.perfil-bar .pf-switch:hover{background:var(--surface3);color:var(--green2)}
+.perfil-bar .pf-switch svg{width:18px;height:18px}
+.secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px 12px;margin-top:4px}
+.seccheck{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.seccheck input{width:auto;flex:0 0 auto}
+.login-wrap{display:flex;justify-content:center;padding:24px 4px}
+.login-card{width:100%;max-width:440px;text-align:center}
+.login-card .login-logo{display:flex;justify-content:center;margin-bottom:14px}
+.login-card .login-logo .mark{width:58px;height:58px}
+.login-card h2{font-family:var(--display);font-size:19px;margin-bottom:18px}
+.pf-list{display:flex;flex-direction:column;gap:10px}
+.pf-choose{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;border:none;background:var(--surface);box-shadow:var(--clay-sm);cursor:pointer;transition:.12s;text-align:left;width:100%}
+.pf-choose:hover{transform:translateY(-1px)}
+.pf-choose .pf-av{width:40px;height:40px;border-radius:50%;color:#fff;font-weight:700;font-family:var(--display);display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto}
+.pf-choose .pf-nm{flex:1;font-weight:600;font-family:var(--display)}
+.pf-choose .pf-nm em{color:var(--muted);font-weight:500;font-style:normal;font-size:12px}
+.pf-choose .pf-lock{width:16px;height:16px;color:var(--faint)}
 #printArea{display:none}
 /* Vista previa de documentos (PDF) */
 #pvWrap{position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;background:#eef1ee}
@@ -461,6 +485,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <div class="mark logo-estrella"></div>
       <div><b>Frutas La Estrella</b><span class="lema">desde 1970</span><span>Contabilidad</span></div>
     </div>
+    <div id="perfilBar" class="perfil-bar" style="display:none"></div>
     <nav class="nav" id="nav">
       <div class="nav-label">General</div>
       <a data-view="dash" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Resumen</span></a>
@@ -622,7 +647,8 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];
+  ui.needLogin=perfiles().length>0&&!perfilActivo();
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
@@ -677,6 +703,7 @@ let ui={view:'dash',
   rentYear:'',rentFrom:'',rentTo:'',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixMode:'fum',mixTrees:'',mixLines:[{n:'',d:'',u:'ml'}],
   cronoMonthK:{fum:'',ab:''},cronoFincaK:{fum:'',ab:''},cronoKind:'fum',
+  perfilId:'',needLogin:false,
   pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}]
 };
 
@@ -731,6 +758,9 @@ async function init(){
   if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.bodega){CFG.bodega={};await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.perfiles){CFG.perfiles=[];await Store.set('config',JSON.stringify(CFG));}
+  ui.perfilId=(await Store.get('perfilActivo'))||'';
+  ui.needLogin=perfiles().length>0 && !perfilActivo();
   const pd2=await Store.get('pedidos'); PEDIDOS=pd2?JSON.parse(pd2):[];
   PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
   const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',useBodega:true}];}}catch(e){}}
@@ -811,7 +841,94 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  ficha:['Ficha por finca','Estado financiero individual con descuento administrativo'],
  fruta:['Cuentas de fruta','Liquidación de cosecha por finca'],
  config:['Configuración','Listas, parámetros y respaldo de datos']};
+const SECCIONES=[['dash','Resumen'],['movs','Movimientos'],['clientes','Clientes'],['comercios','Comercios'],['nomina','Nómina'],['dron','Dron'],['quimicos','Preparación químicos'],['crono','Cronograma Fumigadas'],['cronoab','Cronograma Abonadas'],['pedidos','Pedidos'],['informe','Informes'],['detalle','Detalle'],['resumen','Resumen por finca'],['rent','Rentabilidad/ha'],['ficha','Ficha por finca'],['fruta','Cuentas de fruta']];
+function perfiles(){return CFG.perfiles||[];}
+function perfilActivo(){return perfiles().find(p=>p.id===ui.perfilId)||null;}
+function anyAdmin(){return perfiles().some(p=>p.admin);}
+function loginNeeded(){return ui.needLogin&&!perfilActivo();}
+function perfilCanView(v){const p=perfilActivo();if(!p)return true;if(p.admin)return true;if(v==='config')return !anyAdmin();return (p.views||[]).includes(v);}
+function firstAllowedView(){const order=[...document.querySelectorAll('#nav a')].map(a=>a.dataset.view);for(const v of order)if(perfilCanView(v))return v;return null;}
+function perfilColor(p){const pal=['#2f8f57','#2B6CB0','#C9821F','#8E44AD','#C0392B','#16A085','#D9822B'];let h=0;const s=(p&&p.n)||'';for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return pal[h%pal.length];}
+function applyNavPerms(){
+  const login=loginNeeded();
+  document.querySelectorAll('#nav a').forEach(a=>{a.style.display=(!login&&perfilCanView(a.dataset.view))?'':'none';});
+  const nav=document.getElementById('nav');if(nav){const arr=[...nav.children];arr.forEach((el,i)=>{if(el.classList&&el.classList.contains('nav-label')){let vis=false;for(let j=i+1;j<arr.length;j++){const kk=arr[j];if(kk.classList&&kk.classList.contains('nav-label'))break;if(kk.tagName==='A'&&kk.style.display!=='none'){vis=true;break;}}el.style.display=vis?'':'none';}});}
+  const bar=document.getElementById('perfilBar');if(bar){const p=perfilActivo();if(!login&&perfiles().length&&p){bar.style.display='';bar.innerHTML=`<span class="pf-av" style="background:${perfilColor(p)}">${esc((p.n||'?').slice(0,1).toUpperCase())}</span><div class="pf-info"><b>${esc(p.n)}</b><span>${p.admin?'Administrador':'Acceso limitado'}</span></div><button class="pf-switch" title="Cambiar de perfil" onclick="logoutPerfil()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg></button>`;}else bar.style.display='none';}
+}
+function renderLogin(){
+  document.getElementById('topctl').innerHTML='';
+  document.getElementById('vtitle').textContent='Ingreso';
+  document.getElementById('vsub').textContent='Selecciona tu perfil para continuar';
+  document.querySelectorAll('#nav a').forEach(x=>x.classList.remove('on'));
+  const list=perfiles();
+  document.getElementById('content').innerHTML=`<div class="login-wrap"><div class="login-card">
+    <div class="login-logo"><div class="mark logo-estrella"></div></div>
+    <h2>¿Con qué perfil quieres ingresar?</h2>
+    <div class="pf-list">${list.map(p=>`<button class="pf-choose" onclick="perfilLogin('${p.id}')"><span class="pf-av" style="background:${perfilColor(p)}">${esc((p.n||'?').slice(0,1).toUpperCase())}</span><span class="pf-nm">${esc(p.n)}${p.admin?' <em>· admin</em>':''}</span>${p.pin?'<svg class="pf-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>':''}</button>`).join('')}</div>
+  </div></div>`;
+}
+function renderNoAccess(){
+  document.getElementById('topctl').innerHTML='';
+  document.getElementById('vtitle').textContent='Sin acceso';document.getElementById('vsub').textContent='';
+  document.getElementById('content').innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><b>Tu perfil no tiene secciones asignadas</b>Pide a un administrador que te asigne acceso, o cambia de perfil.</div><div style="padding:0 18px 20px;text-align:center"><button class="btn primary" onclick="logoutPerfil()">Cambiar de perfil</button></div></div>`;
+}
+function perfilLogin(id){const p=perfiles().find(x=>x.id===id);if(!p)return;
+  if(p.pin){showModal('Perfil · '+esc(p.n),`<div class="form-grid"><div class="field full"><label>PIN</label><input class="input tnum" type="password" id="pf_pin_in" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')perfilPinTry('${id}')"></div></div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Ingresar',cls:'btn primary',fn:()=>perfilPinTry(id)}]);
+  }else setPerfilActivo(id);
+}
+function perfilPinTry(id){const p=perfiles().find(x=>x.id===id);if(!p)return;const el=document.getElementById('pf_pin_in');const v=(el?el.value:'').trim();if(v!==String(p.pin)){toast('PIN incorrecto');return;}closeModal();setPerfilActivo(id);}
+async function setPerfilActivo(id){ui.perfilId=id;ui.needLogin=false;await Store.set('perfilActivo',id);const fv=firstAllowedView();ui.view=fv||'dash';render();const p=perfilActivo();toast('Bienvenido'+(p?', '+p.n:''));}
+function logoutPerfil(){ui.perfilId='';ui.needLogin=true;Store.set('perfilActivo','');render();}
+function perfilesPanel(){
+  const list=perfiles();
+  return `<div class="card panel" style="margin-bottom:16px">
+    <div class="ph"><div><h2>Perfiles y permisos</h2><p>Crea perfiles y elige a qué secciones puede entrar cada uno. Cuando exista al menos un perfil, la app pedirá elegir perfil al iniciar.</p></div></div>
+    ${list.length?`<div class="tablewrap" style="border:none"><table><thead><tr><th>Perfil</th><th>Tipo</th><th class="r">Secciones</th><th>PIN</th><th></th></tr></thead><tbody>
+      ${list.map(p=>`<tr>
+        <td><span class="fdot"><i style="background:${perfilColor(p)}"></i>${esc(p.n)}</span></td>
+        <td>${p.admin?'<span class="chip i">Administrador</span>':'<span class="chip pay">Limitado</span>'}</td>
+        <td class="r tnum">${p.admin?'Todas':((p.views||[]).length+'/'+SECCIONES.length)}</td>
+        <td>${p.pin?'Sí':'—'}</td>
+        <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Editar" onclick="perfilEdit('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="perfilDel('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
+      </tr>`).join('')}
+    </tbody></table></div>`:'<div class="note" style="margin-top:0">Aún no hay perfiles: la app da acceso total. Crea al menos un perfil <b>Administrador</b> para ti, y luego los perfiles limitados de tu equipo.</div>'}
+    <button class="btn primary" style="margin-top:12px" onclick="perfilEdit('')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo perfil</button>
+    <div class="note">Los perfiles se sincronizan entre dispositivos. El perfil elegido se recuerda en cada dispositivo. Es un control de acceso a la vista, no una seguridad de nivel bancario.</div>
+  </div>`;
+}
+function perfilEdit(id){
+  const p=id?perfiles().find(x=>x.id===id):null;
+  const cur=p||{n:'',pin:'',admin:false,views:SECCIONES.map(s=>s[0])};
+  const checks=SECCIONES.map(([v,l])=>`<label class="seccheck"><input type="checkbox" value="${v}" ${(cur.views||[]).includes(v)?'checked':''}> ${esc(l)}</label>`).join('');
+  showModal(id?'Editar perfil':'Nuevo perfil',`
+   <div class="form-grid">
+     <div class="field"><label>Nombre del perfil</label><input class="input" id="pf_n" value="${esc(cur.n)}" placeholder="Ej: Contadora, Capataz…"></div>
+     <div class="field"><label>PIN (opcional)</label><input class="input tnum" id="pf_pin" inputmode="numeric" value="${esc(cur.pin||'')}" placeholder="Sin PIN"></div>
+   </div>
+   <label class="seccheck" style="margin:10px 0 2px"><input type="checkbox" id="pf_admin" ${cur.admin?'checked':''} onchange="document.getElementById('pf_secs').style.display=this.checked?'none':''"> <b>Administrador</b> — acceso total, incluida Configuración</label>
+   <div id="pf_secs" style="display:${cur.admin?'none':''}">
+     <div style="font-size:12.5px;color:var(--muted);margin:10px 0 2px">Secciones permitidas:</div>
+     <div class="secgrid">${checks}</div>
+     <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs input').forEach(c=>c.checked=true)">Marcar todas</button><button class="btn sm" type="button" onclick="document.querySelectorAll('#pf_secs input').forEach(c=>c.checked=false)">Ninguna</button></div>
+   </div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
+     const n=(document.getElementById('pf_n').value||'').trim();if(!n){toast('Escribe el nombre del perfil');return;}
+     const pin=(document.getElementById('pf_pin').value||'').trim();
+     const admin=document.getElementById('pf_admin').checked;
+     const views=[...document.querySelectorAll('#pf_secs input[type=checkbox]')].filter(c=>c.checked).map(c=>c.value);
+     if(!CFG.perfiles)CFG.perfiles=[];
+     if(p){p.n=n;p.pin=pin;p.admin=admin;p.views=views;}
+     else CFG.perfiles.push({id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1000),n,pin,admin,views});
+     await persistCfg();closeModal();renderConfig();toast('Perfil guardado');
+   }}]);
+}
+function perfilDel(id){const p=perfiles().find(x=>x.id===id);confirmModal('Eliminar perfil',`Se eliminará el perfil ${p?esc(p.n):''}. Los datos de la app no se borran.`,async()=>{CFG.perfiles=perfiles().filter(x=>x.id!==id);if(ui.perfilId===id)ui.perfilId='';await persistCfg();closeModal();renderConfig();toast('Perfil eliminado');});}
 function render(){
+  applyNavPerms();
+  if(loginNeeded()){renderLogin();return;}
+  if(!perfilCanView(ui.view)){const fv=firstAllowedView();if(fv)ui.view=fv;else{renderNoAccess();return;}}
+  document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===ui.view));
   const[t,s]=TITLES[ui.view];document.getElementById('vtitle').textContent=t;document.getElementById('vsub').textContent=s;
   document.getElementById('topctl').innerHTML='';
   ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
@@ -2899,7 +3016,7 @@ function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
 function pedCatalog(){return CFG.quimicos||[];}
 function bodegaAvail(finca,prod){const f=CFG.bodega&&CFG.bodega[finca];const e=f&&f[prod];return e?{q:+e.q||0,u:e.u||'ml'}:null;}
 async function bodegaAddQty(finca,prod,qtyBase,u){
-  if(!CFG.bodega)CFG.bodega={};if(!CFG.bodega[finca])CFG.bodega[finca]={};
+  if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.bodega[finca])CFG.bodega[finca]={};
   const e=CFG.bodega[finca][prod]||{q:0,u};e.q=(+e.q||0)+qtyBase;e.u=u;CFG.bodega[finca][prod]=e;
   await persistCfg();
 }
@@ -3322,6 +3439,7 @@ function renderConfig(){
      <div class="addrow"><input class="input" placeholder="Agregar…" id="add_${key}" onkeydown="if(event.key==='Enter')addCfg('${key}')"><button class="btn sm primary" onclick="addCfg('${key}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
    </div>`;
   document.getElementById('content').innerHTML=`
+   ${perfilesPanel()}
    <div class="card panel" style="margin-bottom:16px">
      <div class="ph"><h2>Parámetros generales</h2></div>
      <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -3458,7 +3576,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
