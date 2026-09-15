@@ -1869,6 +1869,62 @@ function pagadasSection(pagadas,key,verbo){
           </tbody></table></div>
       </div>`;
 }
+function smartAbonoPlan(clName,amount){
+  const pend=MOVS.filter(m=>m.t==='I'&&m.cl===clName&&m.e==='X'&&saldo(m)>0)
+    .sort((a,b)=>(a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0)));
+  let rem=Math.max(0,Math.round(amount||0));const plan=[];
+  for(const m of pend){
+    if(rem<=0)break;
+    const s=saldo(m);if(s<=0)continue;
+    const ap=Math.min(rem,s);
+    plan.push({m,ap,sBefore:s,sAfter:s-ap,full:ap>=s});
+    rem-=ap;
+  }
+  return{plan,rem,pend,deudaTotal:pend.reduce((a,m)=>a+saldo(m),0)};
+}
+function smartAbono(clName){
+  const {pend,deudaTotal}=smartAbonoPlan(clName,0);
+  if(!pend.length){toast('Este cliente no tiene cuentas por cobrar');return;}
+  const clj=esc(clName).replace(/'/g,"\\'");
+  showModal('Abono inteligente',`
+   <p style="color:var(--muted);margin-bottom:12px"><b>${esc(clName)}</b> debe <b style="color:var(--amber)">${fmt(deudaTotal)}</b> en ${pend.length} factura(s) pendientes.</p>
+   <div class="form-grid">
+     <div class="field"><label>Fecha del abono</label><input class="input tnum" type="date" id="sa_f" value="${todayISO()}"></div>
+     <div class="field"><label>Monto del abono</label><input class="input tnum money" inputmode="numeric" id="sa_v" placeholder="0" oninput="smartAbonoPreview('${clj}')"></div>
+   </div>
+   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('sa_v');e.value='${fmn(deudaTotal)}';e.dataset.raw='${Math.round(deudaTotal)}';smartAbonoPreview('${clj}')">Abonar toda la deuda (${fmt(deudaTotal)})</button></div>
+   <div id="sa_prev" style="margin-top:12px"></div>
+   <div class="note">El abono se distribuye solo: primero paga por completo las facturas más antiguas y el remanente lo abona parcialmente a la siguiente. Cada movimiento queda registrado con la fecha indicada en el historial de cada factura.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar abono',cls:'btn primary',fn:()=>smartAbonoApply(clName)}]);
+  setTimeout(()=>smartAbonoPreview(clName),0);
+}
+function smartAbonoPreview(clName){
+  const el=document.getElementById('sa_prev');if(!el)return;
+  const amount=Math.round(num(document.getElementById('sa_v').value));
+  const{plan,rem}=smartAbonoPlan(clName,amount);
+  if(!amount){el.innerHTML='<div style="color:var(--muted);font-size:12.5px">Escribe el monto para ver cómo se distribuirá.</div>';return;}
+  const rows=plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td><span class="fdot"><i style="background:${fincaColor(p.m.fi)}"></i>${esc(p.m.fi)}</span>${p.m.fa?' · '+esc(p.m.fa):''}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${fmt(p.sAfter)}</td><td>${p.full?'<span class="chip i">Pagada</span>':'<span class="chip pend">Parcial</span>'}</td></tr>`).join('');
+  const aplicado=plan.reduce((a,p)=>a+p.ap,0);
+  el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th class="r">Saldo</th><th class="r">Abono</th><th class="r">Queda</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="padding:12px;color:var(--muted)">Sin facturas pendientes.</td></tr>'}</tbody></table></div>
+   <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:8px;flex-wrap:wrap;gap:6px"><span>Se aplicará: <b style="color:var(--green2)">${fmt(aplicado)}</b> en <b>${plan.length}</b> factura(s)</span>${rem>0?`<span style="color:var(--amber)">Sobran ${fmt(rem)} (superan la deuda; no se aplicarán)</span>`:''}</div>`;
+}
+async function smartAbonoApply(clName){
+  const amount=Math.round(num(document.getElementById('sa_v').value));
+  const f=document.getElementById('sa_f').value||todayISO();
+  if(amount<=0){toast('Escribe el monto del abono');return;}
+  const{plan}=smartAbonoPlan(clName,amount);
+  if(!plan.length){toast('El cliente no tiene cuentas pendientes');return;}
+  plan.forEach(({m,ap})=>{
+    m.abs=Array.isArray(m.abs)?m.abs:[];
+    m.abs.push({f,v:Math.round(ap),auto:1});
+    m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+    m.ab=(+m.ab||0)+ap;
+    if(m.ab>=(+m.tot||0))m.e='P';
+  });
+  const aplicado=plan.reduce((a,p)=>a+p.ap,0);
+  await persistMovs();closeModal();render();
+  toast(`Abono de ${fmt(aplicado)} distribuido en ${plan.length} factura(s)`);
+}
 function cliCard(d,i){
   const initial=d.cl.trim().charAt(0).toUpperCase()||'·';
   const alDia=d.deuda<=0;
@@ -1882,7 +1938,7 @@ function cliCard(d,i){
       <span class="chev" id="chev_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
     </div>
     <div class="cli-detail" id="cli_${i}" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
+      <div style="padding:12px 16px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button>${d.deuda>0?`<button class="btn sm primary" onclick="smartAbono('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abono inteligente</button>`:''}</div>
       ${d.pend.length?detailTable(d.pend):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin deudas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
       ${pagadasSection(d.pagadas,i,'cobrados')}
     </div></div>`;
