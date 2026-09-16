@@ -438,9 +438,18 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .task-meta .chip{font-size:10px;padding:1px 8px}
 .task-od{font-size:11px;font-weight:700;color:var(--red);white-space:nowrap}
 .task-act{display:flex;gap:2px;flex:0 0 auto}
-.task-day-add{display:flex;gap:7px}
-.task-day-add input{flex:1}
-.task-day-add .btn.sm{flex:0 0 auto}
+.task-day-add{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.task-day-add .tqa-txt{flex:1 1 100%;min-width:0}
+.task-day-add .tqa-fi{flex:1 1 120px;min-width:0}
+.task-day-add .tqa-p{flex:0 0 auto;width:104px}
+.task-day-add .tqa-btn{flex:0 0 auto}
+@media(min-width:720px){.task-day-add .tqa-txt{flex:2 1 220px}}
+.ta-dayhead{padding:14px 16px 9px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ta-daytitle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.ta-daydate{font-family:var(--display);font-weight:700;font-size:16px}
+.ta-daysub{font-size:12px;color:var(--muted);white-space:nowrap}
+.ta-pill{font-family:var(--display);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--surface2);border-radius:99px;padding:3px 9px}
+.ta-pill.now{background:var(--green-soft);color:var(--green2)}
 .seccheck input{width:auto;flex:0 0 auto}
 .login-wrap{display:flex;justify-content:center;padding:24px 4px}
 .login-card{width:100%;max-width:440px;text-align:center}
@@ -3249,6 +3258,8 @@ function taPrioLab(p){return p==='u'?'Urgente':p==='m'?'Media':'Normal';}
 function taPrioChip(p){return p==='u'?'<span class="chip e">Urgente</span>':p==='m'?'<span class="chip pend">Media</span>':'<span class="chip pay">Normal</span>';}
 function taDayLabel(d){const today=todayISO();const pre=d===today?'Hoy · ':(d===addDaysISO(today,1)?'Mañana · ':(d===addDaysISO(today,-1)?'Ayer · ':''));return pre+fmtFecha(d);}
 function taSort(arr){const o={u:0,m:1,n:2};return arr.slice().sort((a,b)=>{if(!!a.done!==!!b.done)return a.done?1:-1;const pa=o[a.prio]??2,pb=o[b.prio]??2;if(pa!==pb)return pa-pb;return (a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0));});}
+function taFincas(){const arr=(CFG.fincas||[]).slice();if(!arr.includes('DRON'))arr.push('DRON');return arr;}
+function taFincaOpts(sel){return taFincas().map(f=>`<option ${sel===f?'selected':''}>${esc(f)}</option>`).join('');}
 function renderTareas(){
   document.getElementById('topctl').innerHTML='';
   const ff=ui.tareaFinca||'';
@@ -3265,10 +3276,21 @@ function renderTareas(){
   const taday=ui.taDay||today;
   const dayCard=(d,tasks)=>{
     const rows=taSort(tasks).map(t=>taRow(t)).join('');
+    const isToday=d===today;
+    const pre=isToday?'Hoy':(d===addDaysISO(today,1)?'Mañana':(d===addDaysISO(today,-1)?'Ayer':''));
+    const nPend=tasks.filter(x=>!x.done).length,nDone=tasks.filter(x=>x.done).length;
     return `<div class="card" style="margin-bottom:14px">
-      <div class="ph" style="padding-bottom:6px"><div><h2 style="text-transform:capitalize">${taDayLabel(d)}</h2><p>${tasks.filter(x=>!x.done).length} pendiente(s)${tasks.some(x=>x.done)?' · '+tasks.filter(x=>x.done).length+' hecha(s)':''}</p></div></div>
+      <div class="ta-dayhead">
+        <div class="ta-daytitle">${pre?`<span class="ta-pill ${isToday?'now':''}">${pre}</span>`:''}<span class="ta-daydate">${fmtFecha(d)}</span></div>
+        <div class="ta-daysub">${nPend} pendiente(s)${nDone?` · ${nDone} hecha(s)`:''}</div>
+      </div>
       <div style="padding:0 16px 4px">${rows||'<div style="padding:10px 0;color:var(--muted);font-size:13px">Sin tareas.</div>'}</div>
-      <div style="padding:4px 16px 14px"><div class="task-day-add"><input class="input" placeholder="Nueva tarea para este día…" onkeydown="if(event.key==='Enter'){taQuickAdd('${d}',this)}"><button class="btn sm primary" onclick="taQuickAdd('${d}',this.previousElementSibling)"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></button></div></div>
+      <div style="padding:6px 16px 14px"><div class="task-day-add">
+        <input class="input tqa-txt" id="qa_${d}" placeholder="Nueva tarea para este día…" onkeydown="if(event.key==='Enter')taQuickAdd('${d}')">
+        <select class="input tqa-fi" id="qaf_${d}"><option value="">Sin finca</option>${taFincaOpts('')}</select>
+        <select class="input tqa-p" id="qap_${d}"><option value="n">Normal</option><option value="m">Media</option><option value="u">Urgente</option></select>
+        <button class="btn sm primary tqa-btn" title="Agregar" onclick="taQuickAdd('${d}')"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></button>
+      </div></div>
     </div>`;
   };
   const C=document.getElementById('content');
@@ -3278,7 +3300,7 @@ function renderTareas(){
      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
        <div class="field full"><label>¿Qué hay que hacer?</label><input class="input" id="ta_txt" placeholder="Ej. Reparar bomba de riego" onkeydown="if(event.key==='Enter')taAdd()"></div>
        <div class="field"><label>Día</label><input class="input tnum" type="date" id="ta_f" value="${esc(taday)}" onchange="ui.taDay=this.value"></div>
-       <div class="field"><label>Finca</label><select class="input" id="ta_fi" onchange="ui.taFinca=this.value"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${ui.taFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+       <div class="field"><label>Finca</label><select class="input" id="ta_fi" onchange="ui.taFinca=this.value"><option value="">— Sin finca —</option>${taFincaOpts(ui.taFinca)}</select></div>
        <div class="field"><label>Prioridad</label><select class="input" id="ta_p" onchange="ui.taPrio=this.value"><option value="u" ${ui.taPrio==='u'?'selected':''}>Urgente</option><option value="m" ${ui.taPrio==='m'?'selected':''}>Media</option><option value="n" ${ui.taPrio==='n'||!ui.taPrio?'selected':''}>Normal</option></select></div>
      </div>
      <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="taAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar tarea</button>
@@ -3321,9 +3343,12 @@ async function taAdd(){
   const el=document.getElementById('ta_txt');if(el){el.value='';el.focus();}
   toast('Tarea agregada');
 }
-async function taQuickAdd(day,inp){
+async function taQuickAdd(day){
+  const inp=document.getElementById('qa_'+day);
   const txt=(inp&&inp.value||'').trim();if(!txt){toast('Escribe la tarea');return;}
-  TAREAS.push({id:tseq++,txt,f:day,finca:ui.tareaFinca||'',prio:'n',done:false});
+  const fi=(document.getElementById('qaf_'+day)||{}).value||'';
+  const p=(document.getElementById('qap_'+day)||{}).value||'n';
+  TAREAS.push({id:tseq++,txt,f:day,finca:fi,prio:p,done:false});
   await persistTareas();renderTareas();toast('Tarea agregada');
 }
 async function taToggle(id){const t=TAREAS.find(x=>x.id===id);if(!t)return;t.done=!t.done;t.doneF=t.done?todayISO():'';await persistTareas();renderTareas();}
@@ -3334,7 +3359,7 @@ function taEdit(id){
    <div class="form-grid">
      <div class="field full"><label>Tarea</label><input class="input" id="te_txt" value="${esc(t.txt)}"></div>
      <div class="field"><label>Día</label><input class="input tnum" type="date" id="te_f" value="${esc(t.f)}"></div>
-     <div class="field"><label>Finca</label><select class="input" id="te_fi"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${t.finca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+     <div class="field"><label>Finca</label><select class="input" id="te_fi"><option value="">— Sin finca —</option>${taFincaOpts(t.finca)}</select></div>
      <div class="field full"><label>Prioridad</label><select class="input" id="te_p"><option value="u" ${t.prio==='u'?'selected':''}>Urgente</option><option value="m" ${t.prio==='m'?'selected':''}>Media</option><option value="n" ${t.prio==='n'?'selected':''}>Normal</option></select></div>
    </div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
