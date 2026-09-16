@@ -424,6 +424,23 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .ro-lock .ro-ok{opacity:1;cursor:pointer}
 .ro-banner{display:flex;align-items:center;gap:9px;background:var(--amber-soft);color:#8a5a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
 .ro-banner svg{width:18px;height:18px;flex:0 0 auto}
+/* Cosas pendientes */
+.task{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:none}
+.task-check{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;padding:0;margin-top:1px;transition:.12s}
+.task-check svg{width:14px;height:14px;opacity:0;transition:.12s}
+.task.done .task-check{background:var(--green2);border-color:var(--green2)}
+.task.done .task-check svg{opacity:1}
+.task-body{flex:1;min-width:0}
+.task-txt{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.task.done .task-txt{text-decoration:line-through;color:var(--faint)}
+.task-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}
+.task-meta .chip{font-size:10px;padding:1px 8px}
+.task-od{font-size:11px;font-weight:700;color:var(--red);white-space:nowrap}
+.task-act{display:flex;gap:2px;flex:0 0 auto}
+.task-day-add{display:flex;gap:7px}
+.task-day-add input{flex:1}
+.task-day-add .btn.sm{flex:0 0 auto}
 .seccheck input{width:auto;flex:0 0 auto}
 .login-wrap{display:flex;justify-content:center;padding:24px 4px}
 .login-card{width:100%;max-width:440px;text-align:center}
@@ -507,6 +524,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="crono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg><span>Cronograma Fumigadas</span></a>
       <a data-view="cronoab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2.5"/></svg><span>Cronograma Abonadas</span></a>
       <a data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Pedidos</span></a>
+      <a data-view="tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Cosas pendientes</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
@@ -646,7 +664,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -663,6 +681,7 @@ function applyCloud(d){
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
   cronoMigrate();Store.set('crono',JSON.stringify(CRONO));Store.set('cronoab',JSON.stringify(CRONOA));
   PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
+  TAREAS=d.tareas||[];TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});Store.set('tareas',JSON.stringify(TAREAS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   normalizeNominaMonths();
@@ -699,6 +718,7 @@ let DRON=[], dseq=1;
 let CRONO=[], cseq=1;
 let CRONOA=[], caseq=1;
 let PEDIDOS=[], pseq=1;
+let TAREAS=[], tseq=1;
 const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 let ui={view:'dash',
@@ -713,7 +733,8 @@ let ui={view:'dash',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixMode:'fum',mixTrees:'',mixLines:[{n:'',d:'',u:'ml'}],
   cronoMonthK:{fum:'',ab:''},cronoFincaK:{fum:'',ab:''},cronoKind:'fum',
   perfilId:'',needLogin:false,
-  pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}]
+  pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}],
+  taDay:'',taFinca:'',taPrio:'n',tareaFinca:''
 };
 
 /* ===== helpers ===== */
@@ -771,6 +792,8 @@ async function init(){
   ui.perfilId=(await Store.get('perfilActivo'))||'';
   ui.needLogin=perfiles().length>0 && !perfilActivo();
   const pd2=await Store.get('pedidos'); PEDIDOS=pd2?JSON.parse(pd2):[];
+  const tk2=await Store.get('tareas'); TAREAS=tk2?JSON.parse(tk2):[];
+  TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});
   PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
   const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',useBodega:true}];}}catch(e){}}
   const mx=await Store.get('mixdraft'); if(mx){try{const j=JSON.parse(mx);if(j){ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];}}catch(e){}}
@@ -843,6 +866,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  crono:['Cronograma Fumigadas','Control de fumigaciones · próximas aplicaciones por finca'],
  cronoab:['Cronograma Abonadas','Control de abonadas · próximas aplicaciones por finca'],
  pedidos:['Pedidos','Productos a pedir por finca · según hectáreas y bodega'],
+ tareas:['Cosas pendientes','Tareas por día · lo no completado pasa al día siguiente'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
@@ -850,7 +874,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  ficha:['Ficha por finca','Estado financiero individual con descuento administrativo'],
  fruta:['Cuentas de fruta','Liquidación de cosecha por finca'],
  config:['Configuración','Listas, parámetros y respaldo de datos']};
-const SECCIONES=[['dash','Resumen'],['movs','Movimientos'],['clientes','Clientes'],['comercios','Comercios'],['nomina','Nómina'],['dron','Dron'],['quimicos','Preparación químicos'],['crono','Cronograma Fumigadas'],['cronoab','Cronograma Abonadas'],['pedidos','Pedidos'],['informe','Informes'],['detalle','Detalle'],['resumen','Resumen por finca'],['rent','Rentabilidad/ha'],['ficha','Ficha por finca'],['fruta','Cuentas de fruta']];
+const SECCIONES=[['dash','Resumen'],['movs','Movimientos'],['clientes','Clientes'],['comercios','Comercios'],['nomina','Nómina'],['dron','Dron'],['quimicos','Preparación químicos'],['crono','Cronograma Fumigadas'],['cronoab','Cronograma Abonadas'],['pedidos','Pedidos'],['tareas','Cosas pendientes'],['informe','Informes'],['detalle','Detalle'],['resumen','Resumen por finca'],['rent','Rentabilidad/ha'],['ficha','Ficha por finca'],['fruta','Cuentas de fruta']];
 function perfiles(){return CFG.perfiles||[];}
 function perfilActivo(){return perfiles().find(p=>p.id===ui.perfilId)||null;}
 function anyAdmin(){return perfiles().some(p=>p.admin);}
@@ -877,7 +901,7 @@ function render(){
   document.getElementById('topctl').innerHTML='';
   const ro=!perfilCanEdit(ui.view);
   ui.roActive=ro;
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,tareas:renderTareas,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
   if(ro)lockReadOnly();
 }
 function firstAllowedView(){const order=[...document.querySelectorAll('#nav a')].map(a=>a.dataset.view);for(const v of order)if(perfilCanView(v))return v;return null;}
@@ -3215,6 +3239,110 @@ function pedStatementHTML(m){
 }
 function pedPrint(){const m=pedCompute();if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}if(!m.lines.length){toast('Agrega productos al pedido');return;}printIsolated(pedStatementHTML(m),'Pedido · '+m.finca);}
 function pedPrintSaved(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;printIsolated(pedStatementHTML(p),'Pedido · '+p.finca);}
+
+/* ===== COSAS PENDIENTES ===== */
+async function persistTareas(){if(roGuard())return;await Store.set('tareas',JSON.stringify(TAREAS));Cloud.schedulePush();}
+function taDaysDiff(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);}
+function taEffDay(t){if(t.done)return t.f;const today=todayISO();return (t.f<today)?today:t.f;}
+function taOverdue(t){if(t.done)return 0;const today=todayISO();return (t.f<today)?taDaysDiff(t.f,today):0;}
+function taPrioLab(p){return p==='u'?'Urgente':p==='m'?'Media':'Normal';}
+function taPrioChip(p){return p==='u'?'<span class="chip e">Urgente</span>':p==='m'?'<span class="chip pend">Media</span>':'<span class="chip pay">Normal</span>';}
+function taDayLabel(d){const today=todayISO();const pre=d===today?'Hoy · ':(d===addDaysISO(today,1)?'Mañana · ':(d===addDaysISO(today,-1)?'Ayer · ':''));return pre+fmtFecha(d);}
+function taSort(arr){const o={u:0,m:1,n:2};return arr.slice().sort((a,b)=>{if(!!a.done!==!!b.done)return a.done?1:-1;const pa=o[a.prio]??2,pb=o[b.prio]??2;if(pa!==pb)return pa-pb;return (a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0));});}
+function renderTareas(){
+  document.getElementById('topctl').innerHTML='';
+  const ff=ui.tareaFinca||'';
+  const list=ff?TAREAS.filter(t=>t.finca===ff):TAREAS;
+  const today=todayISO();
+  const pend=list.filter(t=>!t.done);
+  const vencidas=pend.filter(t=>t.f<today).length;
+  const hoy=list.filter(t=>!t.done&&taEffDay(t)===today).length;
+  const groups={};list.forEach(t=>{const d=taEffDay(t);(groups[d]=groups[d]||[]).push(t);});
+  const days=Object.keys(groups).sort();
+  const future=days.filter(d=>d>today);
+  const past=days.filter(d=>d<today);
+  const fincasT=[...new Set(TAREAS.map(t=>t.finca).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const taday=ui.taDay||today;
+  const dayCard=(d,tasks)=>{
+    const rows=taSort(tasks).map(t=>taRow(t)).join('');
+    return `<div class="card" style="margin-bottom:14px">
+      <div class="ph" style="padding-bottom:6px"><div><h2 style="text-transform:capitalize">${taDayLabel(d)}</h2><p>${tasks.filter(x=>!x.done).length} pendiente(s)${tasks.some(x=>x.done)?' · '+tasks.filter(x=>x.done).length+' hecha(s)':''}</p></div></div>
+      <div style="padding:0 16px 4px">${rows||'<div style="padding:10px 0;color:var(--muted);font-size:13px">Sin tareas.</div>'}</div>
+      <div style="padding:4px 16px 14px"><div class="task-day-add"><input class="input" placeholder="Nueva tarea para este día…" onkeydown="if(event.key==='Enter'){taQuickAdd('${d}',this)}"><button class="btn sm primary" onclick="taQuickAdd('${d}',this.previousElementSibling)"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></button></div></div>
+    </div>`;
+  };
+  const C=document.getElementById('content');
+  C.innerHTML=`
+   <div class="card panel" style="margin-bottom:16px">
+     <div class="ph"><div><h2>Agregar pendiente</h2><p>Elige el día, la finca y la prioridad</p></div></div>
+     <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+       <div class="field full"><label>¿Qué hay que hacer?</label><input class="input" id="ta_txt" placeholder="Ej. Reparar bomba de riego" onkeydown="if(event.key==='Enter')taAdd()"></div>
+       <div class="field"><label>Día</label><input class="input tnum" type="date" id="ta_f" value="${esc(taday)}" onchange="ui.taDay=this.value"></div>
+       <div class="field"><label>Finca</label><select class="input" id="ta_fi" onchange="ui.taFinca=this.value"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${ui.taFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+       <div class="field"><label>Prioridad</label><select class="input" id="ta_p" onchange="ui.taPrio=this.value"><option value="u" ${ui.taPrio==='u'?'selected':''}>Urgente</option><option value="m" ${ui.taPrio==='m'?'selected':''}>Media</option><option value="n" ${ui.taPrio==='n'||!ui.taPrio?'selected':''}>Normal</option></select></div>
+     </div>
+     <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="taAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar tarea</button>
+   </div>
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+     <div class="card kpi lead"><div class="lab">Pendientes</div><div class="val tnum">${pend.length}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--red)">Vencidas</div><div class="val tnum" style="font-size:22px;color:var(--red)">${vencidas}</div></div>
+     <div class="card kpi"><div class="lab">Para hoy</div><div class="val tnum" style="font-size:22px">${hoy}</div></div>
+   </div>
+   ${fincasT.length?`<div class="card panel" style="padding:12px 14px;margin-top:14px"><div class="field" style="margin:0"><label>Filtrar por finca</label><select class="input" onchange="ui.tareaFinca=this.value;renderTareas()"><option value="">Todas las fincas</option>${fincasT.map(f=>`<option ${ff===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>`:''}
+   <div style="margin-top:16px">
+     ${dayCard(today,groups[today]||[])}
+     ${future.map(d=>dayCard(d,groups[d])).join('')}
+   </div>
+   ${past.length?`<details style="margin-top:6px"><summary style="cursor:pointer;font-family:var(--display);font-weight:600;font-size:14px;padding:8px 2px;color:var(--muted)">Días anteriores (${past.reduce((a,d)=>a+groups[d].length,0)} tarea(s))</summary><div style="margin-top:10px">${past.slice().reverse().map(d=>dayCard(d,groups[d])).join('')}</div></details>`:''}`;
+}
+function taRow(t){
+  const od=taOverdue(t);
+  return `<div class="task ${t.done?'done':''}">
+    <button class="task-check" title="${t.done?'Marcar como pendiente':'Marcar como hecha'}" onclick="taToggle(${t.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+    <div class="task-body">
+      <div class="task-txt">${esc(t.txt)}</div>
+      <div class="task-meta">${taPrioChip(t.prio)}${t.finca?`<span class="fdot"><i style="background:${fincaColor(t.finca)}"></i>${esc(t.finca)}</span>`:''}${od>0?`<span class="task-od">⏱ hace ${od} día${od===1?'':'s'}</span>`:''}</div>
+    </div>
+    <div class="task-act">
+      <button class="iconbtn" title="Editar" onclick="taEdit(${t.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="iconbtn del" title="Eliminar" onclick="taDel(${t.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+    </div>
+  </div>`;
+}
+async function taAdd(){
+  const txt=(document.getElementById('ta_txt').value||'').trim();
+  if(!txt){toast('Escribe la tarea');return;}
+  const f=document.getElementById('ta_f').value||todayISO();
+  const fi=document.getElementById('ta_fi').value||'';
+  const p=document.getElementById('ta_p').value||'n';
+  ui.taDay=f;ui.taFinca=fi;ui.taPrio=p;
+  TAREAS.push({id:tseq++,txt,f,finca:fi,prio:p,done:false});
+  await persistTareas();renderTareas();
+  const el=document.getElementById('ta_txt');if(el){el.value='';el.focus();}
+  toast('Tarea agregada');
+}
+async function taQuickAdd(day,inp){
+  const txt=(inp&&inp.value||'').trim();if(!txt){toast('Escribe la tarea');return;}
+  TAREAS.push({id:tseq++,txt,f:day,finca:ui.tareaFinca||'',prio:'n',done:false});
+  await persistTareas();renderTareas();toast('Tarea agregada');
+}
+async function taToggle(id){const t=TAREAS.find(x=>x.id===id);if(!t)return;t.done=!t.done;t.doneF=t.done?todayISO():'';await persistTareas();renderTareas();}
+function taDel(id){TAREAS=TAREAS.filter(x=>x.id!==id);persistTareas();renderTareas();toast('Tarea eliminada');}
+function taEdit(id){
+  const t=TAREAS.find(x=>x.id===id);if(!t)return;
+  showModal('Editar tarea',`
+   <div class="form-grid">
+     <div class="field full"><label>Tarea</label><input class="input" id="te_txt" value="${esc(t.txt)}"></div>
+     <div class="field"><label>Día</label><input class="input tnum" type="date" id="te_f" value="${esc(t.f)}"></div>
+     <div class="field"><label>Finca</label><select class="input" id="te_fi"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${t.finca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+     <div class="field full"><label>Prioridad</label><select class="input" id="te_p"><option value="u" ${t.prio==='u'?'selected':''}>Urgente</option><option value="m" ${t.prio==='m'?'selected':''}>Media</option><option value="n" ${t.prio==='n'?'selected':''}>Normal</option></select></div>
+   </div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
+     const txt=(document.getElementById('te_txt').value||'').trim();if(!txt){toast('Escribe la tarea');return;}
+     t.txt=txt;t.f=document.getElementById('te_f').value||todayISO();t.finca=document.getElementById('te_fi').value||'';t.prio=document.getElementById('te_p').value||'n';
+     await persistTareas();closeModal();renderTareas();toast('Tarea actualizada');
+   }}]);
+}
 
 /* ===== RENTABILIDAD POR HECTÁREA ===== */
 function rentData(){
