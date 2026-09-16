@@ -534,6 +534,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
       <a data-view="cronoab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2.5"/></svg><span>Cronograma Abonadas</span></a>
       <a data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Pedidos</span></a>
       <a data-view="tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Cosas pendientes</span></a>
+      <a data-view="canast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span>Préstamo canastillas</span></a>
       <div class="nav-label">Análisis</div>
       <a data-view="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="18" x2="8" y2="13"/><line x1="12" y1="18" x2="12" y2="11"/><line x1="16" y1="18" x2="16" y2="15"/></svg><span>Informes</span></a>
       <a data-view="detalle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><span>Detalle</span></a>
@@ -673,7 +674,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,prestamos:PRESTAMOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -692,6 +693,7 @@ function applyCloud(d){
   cronoMigrate();Store.set('crono',JSON.stringify(CRONO));Store.set('cronoab',JSON.stringify(CRONOA));
   PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
   TAREAS=d.tareas||[];TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});Store.set('tareas',JSON.stringify(TAREAS));
+  PRESTAMOS=d.prestamos||[];PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});Store.set('prestamos',JSON.stringify(PRESTAMOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   normalizeNominaMonths();
@@ -729,6 +731,7 @@ let CRONO=[], cseq=1;
 let CRONOA=[], caseq=1;
 let PEDIDOS=[], pseq=1;
 let TAREAS=[], tseq=1;
+let PRESTAMOS=[], preseq=1;
 const MES_ABV=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 let ui={view:'dash',
@@ -744,7 +747,8 @@ let ui={view:'dash',
   cronoMonthK:{fum:'',ab:''},cronoFincaK:{fum:'',ab:''},cronoKind:'fum',
   perfilId:'',needLogin:false,
   pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}],
-  taDay:'',taFinca:'',taPrio:'n',tareaFinca:''
+  taDay:'',taFinca:'',taPrio:'n',tareaFinca:'',
+  presFecha:'',presCli:'',presQ:''
 };
 
 /* ===== helpers ===== */
@@ -803,6 +807,8 @@ async function init(){
   ui.needLogin=perfiles().length>0 && !perfilActivo();
   const pd2=await Store.get('pedidos'); PEDIDOS=pd2?JSON.parse(pd2):[];
   const tk2=await Store.get('tareas'); TAREAS=tk2?JSON.parse(tk2):[];
+  const pr2=await Store.get('prestamos'); PRESTAMOS=pr2?JSON.parse(pr2):[];
+  PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});
   TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});
   PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
   const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',useBodega:true}];}}catch(e){}}
@@ -877,6 +883,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  cronoab:['Cronograma Abonadas','Control de abonadas · próximas aplicaciones por finca'],
  pedidos:['Pedidos','Productos a pedir por finca · según hectáreas y bodega'],
  tareas:['Cosas pendientes','Tareas por día · lo no completado pasa al día siguiente'],
+ canast:['Préstamo de canastillas','Canastillas prestadas por cliente · registro de devoluciones'],
  informe:['Informe contable','Reporte ejecutivo para junta directiva'],
  detalle:['Detalle por categoría','Movimientos detallados por finca(s) y periodo · ingresos y egresos'],
  resumen:['Resumen por finca','Utilidad neta mes a mes, por finca'],
@@ -884,7 +891,7 @@ const TITLES={dash:['Resumen general','Balance consolidado de todas las fincas']
  ficha:['Ficha por finca','Estado financiero individual con descuento administrativo'],
  fruta:['Cuentas de fruta','Liquidación de cosecha por finca'],
  config:['Configuración','Listas, parámetros y respaldo de datos']};
-const SECCIONES=[['dash','Resumen'],['movs','Movimientos'],['clientes','Clientes'],['comercios','Comercios'],['nomina','Nómina'],['dron','Dron'],['quimicos','Preparación químicos'],['crono','Cronograma Fumigadas'],['cronoab','Cronograma Abonadas'],['pedidos','Pedidos'],['tareas','Cosas pendientes'],['informe','Informes'],['detalle','Detalle'],['resumen','Resumen por finca'],['rent','Rentabilidad/ha'],['ficha','Ficha por finca'],['fruta','Cuentas de fruta']];
+const SECCIONES=[['dash','Resumen'],['movs','Movimientos'],['clientes','Clientes'],['comercios','Comercios'],['nomina','Nómina'],['dron','Dron'],['quimicos','Preparación químicos'],['crono','Cronograma Fumigadas'],['cronoab','Cronograma Abonadas'],['pedidos','Pedidos'],['tareas','Cosas pendientes'],['canast','Préstamo canastillas'],['informe','Informes'],['detalle','Detalle'],['resumen','Resumen por finca'],['rent','Rentabilidad/ha'],['ficha','Ficha por finca'],['fruta','Cuentas de fruta']];
 function perfiles(){return CFG.perfiles||[];}
 function perfilActivo(){return perfiles().find(p=>p.id===ui.perfilId)||null;}
 function anyAdmin(){return perfiles().some(p=>p.admin);}
@@ -911,7 +918,7 @@ function render(){
   document.getElementById('topctl').innerHTML='';
   const ro=!perfilCanEdit(ui.view);
   ui.roActive=ro;
-  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,tareas:renderTareas,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
+  ({dash:renderDash,movs:renderMovs,clientes:renderClientes,comercios:renderComercios,nomina:renderNomina,dron:renderDron,quimicos:renderQuimicos,crono:renderCronoFum,cronoab:renderCronoAb,pedidos:renderPedidos,tareas:renderTareas,canast:renderPrestamos,informe:renderInforme,detalle:renderDetalle,resumen:renderResumen,rent:renderRent,ficha:renderFicha,fruta:renderFruta,config:renderConfig}[ui.view])();
   if(ro)lockReadOnly();
 }
 function firstAllowedView(){const order=[...document.querySelectorAll('#nav a')].map(a=>a.dataset.view);for(const v of order)if(perfilCanView(v))return v;return null;}
@@ -3414,6 +3421,156 @@ function taEdit(id){
      t.txt=txt;t.f=document.getElementById('te_f').value||todayISO();t.finca=document.getElementById('te_fi').value||'';t.prio=document.getElementById('te_p').value||'n';
      await persistTareas();closeModal();renderTareas();toast('Tarea actualizada');
    }}]);
+}
+
+/* ===== PRÉSTAMO DE CANASTILLAS ===== */
+async function persistPrestamos(){if(roGuard())return;await Store.set('prestamos',JSON.stringify(PRESTAMOS));Cloud.schedulePush();}
+function presClientes(){return [...new Set([...(CFG.clientes||[]),...MOVS.filter(m=>m.cl).map(m=>m.cl),...PRESTAMOS.map(e=>e.cl)])].filter(Boolean).sort((a,b)=>a.localeCompare(b));}
+function presByClient(){
+  const map={};
+  PRESTAMOS.forEach(e=>{const c=e.cl||'—';map[c]=map[c]||{cl:c,prest:0,dev:0,entries:[]};if(e.t==='d')map[c].dev+=(+e.q||0);else map[c].prest+=(+e.q||0);map[c].entries.push(e);});
+  return Object.values(map).map(o=>({cl:o.cl,prest:o.prest,dev:o.dev,pend:Math.max(o.prest-o.dev,0),entries:o.entries})).sort((a,b)=>b.pend-a.pend||a.cl.localeCompare(b.cl));
+}
+function renderPrestamos(){
+  document.getElementById('topctl').innerHTML=PRESTAMOS.length?`<button class="btn primary" onclick="presPrintAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF consolidado</button>`:'';
+  const data=presByClient();
+  const totalPend=data.reduce((a,d)=>a+d.pend,0);
+  const totalPrest=data.reduce((a,d)=>a+d.prest,0);
+  const conPend=data.filter(d=>d.pend>0).length;
+  const clis=presClientes();
+  const C=document.getElementById('content');
+  C.innerHTML=`
+   <div class="card panel" style="margin-bottom:16px">
+     <div class="ph"><div><h2>Registrar préstamo</h2><p>Presta canastillas a un cliente</p></div></div>
+     <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="pc_f" value="${todayISO()}"></div>
+       <div class="field full"><label>Cliente</label><select class="input" id="pc_cl"><option value="">— Elegir cliente —</option>${clis.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+       <div class="field"><label>Cantidad de canastillas</label><input class="input tnum" type="number" min="1" step="1" id="pc_q" placeholder="0"></div>
+     </div>
+     <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="presAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar préstamo</button>
+     ${clis.length?'':'<div class="note">No hay clientes. Agrégalos en Configuración o en la sección Clientes.</div>'}
+   </div>
+   <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+     <div class="card kpi lead"><div class="lab">Canastillas sin devolver</div><div class="val tnum">${totalPend.toLocaleString('es-CO')}</div><div class="meta">${conPend} cliente(s) con saldo</div></div>
+     <div class="card kpi"><div class="lab">Total prestadas (histórico)</div><div class="val tnum" style="font-size:22px">${totalPrest.toLocaleString('es-CO')}</div></div>
+     <div class="card kpi"><div class="lab">Clientes con préstamos</div><div class="val tnum" style="font-size:22px">${data.length}</div></div>
+   </div>
+   <div style="margin-top:16px">
+     ${data.length?data.map((d,i)=>presCard(d,i)).join(''):`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><b>Aún no hay préstamos registrados</b>Usa el formulario de arriba para prestar canastillas a un cliente.</div></div>`}
+   </div>`;
+}
+function presCard(d,i){
+  const asc=d.entries.slice().sort((a,b)=>(a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0)));
+  let bal=0;const balById={};asc.forEach(e=>{bal+=(e.t==='d'?-(+e.q||0):(+e.q||0));balById[e.id]=Math.max(bal,0);});
+  const rowsDesc=d.entries.slice().sort((a,b)=>(b.f||'').localeCompare(a.f||'')||((b.id||0)-(a.id||0)));
+  const rows=rowsDesc.map(e=>`<tr>
+     <td class="tnum">${fmtFecha(e.f)}</td>
+     <td>${e.t==='d'?'<span class="chip i">Devolución</span>':'<span class="chip pend">Préstamo</span>'}</td>
+     <td class="r tnum" style="color:${e.t==='d'?'var(--green2)':'var(--amber)'}"><b>${e.t==='d'?'−':'+'}${(+e.q||0).toLocaleString('es-CO')}</b></td>
+     <td class="r tnum">${(balById[e.id]||0).toLocaleString('es-CO')}</td>
+     <td class="r"><button class="iconbtn del" title="Eliminar registro" onclick="presDelEntry(${e.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join('');
+  const clj=esc(d.cl).replace(/'/g,"\\'");
+  return `<div class="card" style="margin-bottom:12px;overflow:hidden">
+    <div class="cli-head" onclick="const b=document.getElementById('pcb_${i}');const c=document.getElementById('pcc_${i}');const o=b.style.display==='none';b.style.display=o?'':'none';if(c)c.classList.toggle('open',o)">
+      <div class="av" style="background:${fincaColor(d.cl)}">${esc((d.cl||'?').slice(0,1).toUpperCase())}</div>
+      <div class="nmb"><div class="nn">${esc(d.cl)}</div><div class="ss">${d.prest.toLocaleString('es-CO')} prestadas · ${d.dev.toLocaleString('es-CO')} devueltas</div></div>
+      <div class="amt" style="color:${d.pend>0?'var(--amber)':'var(--green2)'}">${d.pend.toLocaleString('es-CO')} <span style="font-size:12px;font-weight:500;color:var(--muted)">sin devolver</span></div>
+      <span class="chev" id="pcc_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div id="pcb_${i}" style="display:none">
+      <div style="padding:12px 16px 0;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="presPrestarMas('${clj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Prestar más</button>
+        <button class="btn sm primary" ${d.pend<=0?'disabled':''} onclick="presDevolver('${clj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>Registrar devolución</button>
+        <button class="btn sm" onclick="presPrintCli('${clj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF</button>
+      </div>
+      <div class="tablewrap" style="border:none"><table><thead><tr><th>Fecha</th><th>Tipo</th><th class="r">Canastillas</th><th class="r">Saldo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>
+  </div>`;
+}
+async function presAdd(){
+  const f=document.getElementById('pc_f').value||todayISO();
+  const cl=document.getElementById('pc_cl').value;
+  const q=Math.round(+document.getElementById('pc_q').value||0);
+  if(!cl){toast('Elige el cliente');return;}
+  if(q<=0){toast('Indica la cantidad de canastillas');return;}
+  PRESTAMOS.push({id:preseq++,f,cl,q,t:'p'});
+  await persistPrestamos();renderPrestamos();
+  const qi=document.getElementById('pc_q');if(qi)qi.value='';
+  toast(q+' canastilla(s) prestada(s) a '+cl);
+}
+function presPrestarMas(cl){
+  showModal('Prestar más · '+esc(cl),`
+   <div class="form-grid">
+     <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="pm_f" value="${todayISO()}"></div>
+     <div class="field"><label>Canastillas a prestar</label><input class="input tnum" type="number" min="1" step="1" id="pm_q" placeholder="0"></div>
+   </div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar préstamo',cls:'btn primary',fn:async()=>{
+     const f=document.getElementById('pm_f').value||todayISO();const q=Math.round(+document.getElementById('pm_q').value||0);
+     if(q<=0){toast('Indica la cantidad');return;}
+     PRESTAMOS.push({id:preseq++,f,cl,q,t:'p'});await persistPrestamos();closeModal();renderPrestamos();toast('Préstamo registrado');
+   }}]);
+}
+function presDevolver(cl){
+  const d=presByClient().find(x=>x.cl===cl);const pend=d?d.pend:0;
+  if(pend<=0){toast('Este cliente no tiene canastillas por devolver');return;}
+  showModal('Registrar devolución · '+esc(cl),`
+   <p style="color:var(--muted);margin-bottom:12px">Pendientes por devolver: <b style="color:var(--amber)">${pend.toLocaleString('es-CO')}</b> canastilla(s).</p>
+   <div class="form-grid">
+     <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="pd_f" value="${todayISO()}"></div>
+     <div class="field"><label>Canastillas devueltas</label><input class="input tnum" type="number" min="1" step="1" id="pd_q" placeholder="0"></div>
+   </div>
+   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="document.getElementById('pd_q').value='${pend}'">Devolvió todas (${pend.toLocaleString('es-CO')})</button></div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar devolución',cls:'btn primary',fn:async()=>{
+     const f=document.getElementById('pd_f').value||todayISO();let q=Math.round(+document.getElementById('pd_q').value||0);
+     if(q<=0){toast('Indica la cantidad devuelta');return;}
+     if(q>pend){q=pend;toast('Se registró el máximo pendiente ('+pend+')');}
+     PRESTAMOS.push({id:preseq++,f,cl,q,t:'d'});await persistPrestamos();closeModal();renderPrestamos();toast('Devolución registrada');
+   }}]);
+}
+function presDelEntry(id){const e=PRESTAMOS.find(x=>x.id===id);confirmModal('Eliminar registro',`Se eliminará este ${e&&e.t==='d'?'registro de devolución':'préstamo'} de ${e?esc(e.cl):''} (${e?e.q:''} canastillas).`,async()=>{PRESTAMOS=PRESTAMOS.filter(x=>x.id!==id);await persistPrestamos();closeModal();renderPrestamos();toast('Registro eliminado');});}
+function presCliHistTable(d){
+  const asc=d.entries.slice().sort((a,b)=>(a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0)));
+  let bal=0;const balById={};asc.forEach(e=>{bal+=(e.t==='d'?-(+e.q||0):(+e.q||0));balById[e.id]=Math.max(bal,0);});
+  const rows=d.entries.slice().sort((a,b)=>(b.f||'').localeCompare(a.f||'')||((b.id||0)-(a.id||0))).map(e=>`<tr><td class="tnum">${fmtFecha(e.f)}</td><td>${e.t==='d'?'Devolución':'Préstamo'}</td><td class="r tnum">${e.t==='d'?'−':'+'}${(+e.q||0).toLocaleString('es-CO')}</td><td class="r tnum">${(balById[e.id]||0).toLocaleString('es-CO')}</td></tr>`).join('');
+  return `<div class="card"><div class="tablewrap" style="border:none"><table>
+     <thead><tr><th>Fecha</th><th>Tipo</th><th class="r">Canastillas</th><th class="r">Saldo</th></tr></thead>
+     <tbody>${rows||'<tr><td colspan="4" style="padding:16px;color:var(--muted)">Sin registros.</td></tr>'}</tbody></table></div></div>`;
+}
+function presCliStatementHTML(d){
+  return `
+   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Préstamo de canastillas</div><h2>${esc(d.cl)}</h2><div class="rh-sub">Estado de canastillas al ${fmtFecha(todayISO())}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   <div class="report-sec">
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+       <div class="card kpi lead"><div class="lab">Prestadas</div><div class="val tnum">${d.prest.toLocaleString('es-CO')}</div></div>
+       <div class="card kpi"><div class="lab">Devueltas</div><div class="val tnum" style="font-size:20px">${d.dev.toLocaleString('es-CO')}</div></div>
+       <div class="card kpi"><div class="lab">Sin devolver</div><div class="val tnum" style="font-size:20px">${d.pend.toLocaleString('es-CO')}</div></div>
+     </div>
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Movimientos de canastillas<span class="ln"></span></div>
+     ${presCliHistTable(d)}
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Sin devolver = prestadas − devueltas. El saldo muestra las canastillas en poder del cliente después de cada movimiento.</div>
+   </div>`;
+}
+function presPrintCli(cl){const d=presByClient().find(x=>x.cl===cl);if(!d){toast('Sin datos');return;}printIsolated(presCliStatementHTML(d),'Canastillas · '+cl);}
+function presPrintAll(){
+  const data=presByClient();
+  if(!data.length){toast('No hay préstamos');return;}
+  const totalPend=data.reduce((a,d)=>a+d.pend,0),totalPrest=data.reduce((a,d)=>a+d.prest,0),totalDev=data.reduce((a,d)=>a+d.dev,0);
+  const rows=data.map(d=>`<tr><td>${esc(d.cl)}</td><td class="r tnum">${d.prest.toLocaleString('es-CO')}</td><td class="r tnum">${d.dev.toLocaleString('es-CO')}</td><td class="r tnum"><b style="color:${d.pend>0?'var(--amber)':'inherit'}">${d.pend.toLocaleString('es-CO')}</b></td></tr>`).join('');
+  const body=`
+   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Préstamo de canastillas</div><h2>Consolidado por cliente</h2><div class="rh-sub">Estado al ${fmtFecha(todayISO())}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   <div class="report-sec">
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+       <div class="card kpi lead"><div class="lab">Sin devolver</div><div class="val tnum">${totalPend.toLocaleString('es-CO')}</div></div>
+       <div class="card kpi"><div class="lab">Total prestadas</div><div class="val tnum" style="font-size:20px">${totalPrest.toLocaleString('es-CO')}</div></div>
+       <div class="card kpi"><div class="lab">Total devueltas</div><div class="val tnum" style="font-size:20px">${totalDev.toLocaleString('es-CO')}</div></div>
+     </div>
+     <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Canastillas por cliente<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Cliente</th><th class="r">Prestadas</th><th class="r">Devueltas</th><th class="r">Sin devolver</th></tr></thead>
+       <tbody>${rows}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${totalPrest.toLocaleString('es-CO')}</b></td><td class="r tnum"><b>${totalDev.toLocaleString('es-CO')}</b></td><td class="r tnum"><b>${totalPend.toLocaleString('es-CO')}</b></td></tr></tbody></table></div></div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Sin devolver = prestadas − devueltas.</div>
+   </div>`;
+  printIsolated(body,'Canastillas · consolidado');
 }
 
 /* ===== RENTABILIDAD POR HECTÁREA ===== */
