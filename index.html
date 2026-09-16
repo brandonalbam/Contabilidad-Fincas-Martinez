@@ -683,8 +683,9 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
   ui.needLogin=perfiles().length>0&&!perfilActivo();
+  migrateDronAyu();
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
@@ -790,7 +791,7 @@ async function init(){
   if(cronoMigrate()){await Store.set('crono',JSON.stringify(CRONO));await Store.set('cronoab',JSON.stringify(CRONOA));}
   if(!CFG.dronSocios){CFG.dronSocios=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
-  if(!CFG.dronPilotos){CFG.dronPilotos=[];await Store.set('config',JSON.stringify(CFG));}
+  if(migrateDronAyu())await Store.set('config',JSON.stringify(CFG));
   if(!CFG.cultivos){CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
@@ -989,7 +990,7 @@ function perfilEdit(id){
      let views,edit;
      if(admin){views=SECCIONES.map(s=>s[0]);edit=views.slice();}
      else{views=[];edit=[];document.querySelectorAll('#pf_secs .secsel').forEach(s=>{if(s.value!=='none')views.push(s.dataset.v);if(s.value==='edit')edit.push(s.dataset.v);});}
-     if(!CFG.perfiles)CFG.perfiles=[];
+     if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
      if(p){p.n=n;p.pin=pin;p.admin=admin;p.views=views;p.edit=edit;}
      else CFG.perfiles.push({id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1000),n,pin,admin,views,edit});
      await persistCfg();closeModal();renderConfig();toast('Perfil guardado');
@@ -2272,6 +2273,10 @@ async function delComercio(name){CFG.comercios=CFG.comercios.filter(c=>c!==name)
 async function persistDron(){if(roGuard())return;await Store.set('dron',JSON.stringify(DRON));Cloud.schedulePush();}
 const dronSocios=()=>CFG.dronSocios||[];
 const dronPctTotal=()=>dronSocios().reduce((a,s)=>a+(+s.p||0),0);
+function migrateDronAyu(){let ch=false;(CFG.dronPilotos||[]).forEach(p=>{if(p.pct==null){p.pct=5;ch=true;}});if(!CFG.dronAyuPagos){CFG.dronAyuPagos={};ch=true;}return ch;}
+function dronAyuAcct(){const a={};DRON.filter(r=>r.k==='job'&&r.piloto).forEach(r=>{const n=r.piloto;a[n]=a[n]||{earned:0,ha:0};a[n].earned+=(+r.pilPago||0);a[n].ha+=(+r.ha||0);});return a;}
+function dronAyuPaid(n){const p=(CFG.dronAyuPagos||{})[n];const abs=p&&Array.isArray(p.abs)?p.abs:[];return abs.reduce((s,x)=>s+(+x.v||0),0);}
+function dronAyuPct(n){const p=(CFG.dronPilotos||[]).find(x=>x.n===n);return p?(+p.pct||0):0;}
 function dronData(){
   const from=ui.dronFrom,to=ui.dronTo;
   const inR=r=>(!from||r.f>=from)&&(!to||r.f<=to);
@@ -2295,7 +2300,7 @@ function renderDron(){
   document.getElementById('content').innerHTML=`
    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
      <div class="card kpi lead"><div class="lab">Ingresos del dron</div><div class="val tnum">${fmt(d.ingresos)}</div><div class="meta">${d.jobs.length} fumigación(es) · ${d.haTot.toLocaleString('es-CO')} ha</div></div>
-     <div class="card kpi"><div class="lab" style="color:var(--red)">Pago a pilotos</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.pilotos)}</div></div>
+     <div class="card kpi"><div class="lab" style="color:var(--red)">Pago a ayudantes</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.pilotos)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Combustible y aceite</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.combustible)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Mantenimiento</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.mant)}</div></div>
      <div class="card kpi"><div class="lab" style="color:var(--red)">Gastos extras</div><div class="val tnum" style="font-size:20px;color:var(--red)">${fmt(d.extra)}</div></div>
@@ -2309,14 +2314,14 @@ function renderDron(){
          <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="dr_f" value="${todayISO()}"></div>
          <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="dr_pu" placeholder="0" oninput="dronCalc()"></div>
          <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="dr_ha" value="${fincaHaDefault(CFG.fincas[0])||''}" placeholder="0" oninput="dronCalc()"></div>
-         <div class="field full"><label>Piloto</label><select class="input" id="dr_pil" onchange="dronCalc()"><option value="">— Sin piloto —</option>${(CFG.dronPilotos||[]).map(p=>`<option>${esc(p.n)}</option>`).join('')}</select></div>
+         <div class="field full"><label>Ayudante</label><select class="input" id="dr_pil" onchange="dronCalc()"><option value="">— Sin ayudante —</option>${(CFG.dronPilotos||[]).map(p=>`<option>${esc(p.n)}</option>`).join('')}</select></div>
        </div>
        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
          <div class="card kpi lead"><div class="lab">Total fumigación</div><div class="val tnum" id="dr_total" style="font-size:20px">${fmt(0)}</div></div>
-         <div class="card kpi"><div class="lab">Pago al piloto</div><div class="val tnum" id="dr_pilpago" style="font-size:20px;color:var(--red)">${fmt(0)}</div></div>
+         <div class="card kpi"><div class="lab">Pago al ayudante</div><div class="val tnum" id="dr_pilpago" style="font-size:20px;color:var(--red)">${fmt(0)}</div></div>
        </div>
        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="dronSendJob()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Enviar a movimientos</button>
-       <div class="note">Crea un egreso de fumigación en la finca elegida (en Movimientos) y registra el ingreso en las cuentas del dron. El pago al piloto se descuenta de los ingresos del dron.</div>
+       <div class="note">Crea un egreso de fumigación en la finca elegida (en Movimientos) y registra el ingreso en las cuentas del dron. El pago al ayudante es un porcentaje del total de la fumigación (según la finca y las hectáreas) y se descuenta de los ingresos del dron.</div>
      </div>
      <div class="card panel">
        <div class="ph"><div><h2>Mantenimiento</h2><p>Se descuenta de la utilidad según el % de cada socio</p></div></div>
@@ -2360,7 +2365,7 @@ function dronCalc(){
   const ha=+(document.getElementById('dr_ha')||{}).value||0;
   const el=document.getElementById('dr_total');if(el)el.textContent=fmt(pu*ha);
   const psel=document.getElementById('dr_pil'),pel=document.getElementById('dr_pilpago');
-  if(psel&&pel){const p=(CFG.dronPilotos||[]).find(x=>x.n===psel.value);pel.textContent=fmt((p?+p.pu||0:0)*ha);}
+  if(psel&&pel){const p=(CFG.dronPilotos||[]).find(x=>x.n===psel.value);const pct=p?+p.pct||0:0;pel.textContent=fmt(Math.round(pu*ha*pct/100))+(pct?` (${pct}%)`:'');}
 }
 async function dronSendJob(){
   const fi=document.getElementById('dr_fi').value;
@@ -2371,37 +2376,79 @@ async function dronSendJob(){
   const tot=Math.round(pu*ha);
   const pilN=document.getElementById('dr_pil').value;
   const pil=(CFG.dronPilotos||[]).find(x=>x.n===pilN);
-  const pilPu=pil?+pil.pu||0:0, pilPago=Math.round(pilPu*ha);
+  const pilPct=pil?+pil.pct||0:0, pilPago=Math.round(tot*pilPct/100);
   let cat=CFG.catEgresos.find(c=>/fumig/i.test(c))||'Fumigación';
   if(!CFG.catEgresos.includes(cat)){CFG.catEgresos.push(cat);await persistCfg();}
   const mid=seq++;
   MOVS.push({id:mid,f,fi,t:'E',c:cat,d:`Fumigación con dron · ${ha} ha × ${fmt(pu)}/ha`,u:'HECTÁREA',q:ha,pu,tot,e:'P',ab:0,fa:'',co:''});
-  DRON.push({id:dseq++,k:'job',f,fi,ha,pu,tot,piloto:pilN||'',pilPu,pilPago,movId:mid});
+  DRON.push({id:dseq++,k:'job',f,fi,ha,pu,tot,piloto:pilN||'',pilPct,pilPago,movId:mid});
   await persistMovs();await persistDron();toast('Fumigación enviada a movimientos por '+fmt(tot));renderDron();
 }
 function dronPilotosPanel(d){
   const pilotos=CFG.dronPilotos||[];
-  const earn={},haByP={};
-  d.jobs.forEach(r=>{if(r.piloto){earn[r.piloto]=(earn[r.piloto]||0)+(+r.pilPago||0);haByP[r.piloto]=(haByP[r.piloto]||0)+(+r.ha||0);}});
+  const acct=dronAyuAcct();
+  const names=[...new Set([...pilotos.map(p=>p.n),...Object.keys(acct)])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  const payRows=names.map(n=>{const earned=(acct[n]&&acct[n].earned)||0;const paid=dronAyuPaid(n);const sal=Math.max(earned-paid,0);const nj=paid>0||((CFG.dronAyuPagos||{})[n]&&(CFG.dronAyuPagos[n].abs||[]).length);
+    return `<tr>
+      <td>${esc(n)}</td>
+      <td class="r tnum">${(acct[n]&&acct[n].ha||0).toLocaleString('es-CO')}</td>
+      <td class="r tnum"><b style="color:var(--green2)">${fmt(earned)}</b></td>
+      <td class="r tnum">${fmt(paid)}</td>
+      <td class="r tnum"><b style="color:${sal>0?'var(--amber)':'var(--green2)'}">${fmt(sal)}</b></td>
+      <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end">${nj?`<button class="iconbtn" title="Ver pagos" onclick="dronAyuVerPagos('${esc(n).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>`:''}<button class="btn sm" ${sal<=0?'disabled':''} onclick="dronAyuAbono('${esc(n).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Pagar</button></div></td></tr>`;}).join('');
   return `<div class="card panel" style="margin-top:16px">
-    <div class="ph"><div><h2>Pilotos y pago por hectárea</h2><p>Define el pago/ha de cada piloto. Se descuenta de los ingresos del dron.</p></div>
-      <span class="chip pay">Pagado en periodo: ${fmt(d.pilotos)}</span></div>
+    <div class="ph"><div><h2>Ayudantes y porcentaje</h2><p>El ayudante gana un % del total de cada fumigación (según finca y hectáreas). Se descuenta de los ingresos del dron.</p></div>
+      <span class="chip pay">Pagado a ayudantes (periodo): ${fmt(d.pilotos)}</span></div>
     <div class="tablewrap" style="border:none"><table>
-      <thead><tr><th>Piloto</th><th class="r" style="width:140px">Pago por ha</th><th class="r">Hectáreas (periodo)</th><th class="r">Ganancia (periodo)</th><th></th></tr></thead>
+      <thead><tr><th>Ayudante</th><th class="r" style="width:120px">Porcentaje</th><th></th></tr></thead>
       <tbody>${pilotos.length?pilotos.map((p,i)=>`<tr>
         <td><input class="input" style="padding:6px 9px" value="${esc(p.n)}" onchange="dronSetPiloto(${i},'n',this.value)"></td>
-        <td class="r"><input class="input tnum money" inputmode="numeric" style="padding:6px 9px;width:120px;text-align:right" value="${fmn(p.pu)}" onchange="dronSetPiloto(${i},'pu',this.value)"></td>
-        <td class="r tnum">${(haByP[p.n]||0).toLocaleString('es-CO')}</td>
-        <td class="r tnum"><b style="color:var(--green2)">${fmt(earn[p.n]||0)}</b></td>
-        <td class="r"><button class="iconbtn del" onclick="dronDelPiloto(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="5" style="padding:18px;color:var(--muted)">Agrega pilotos y su pago por hectárea.</td></tr>`}
+        <td class="r"><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end"><input class="input tnum" type="number" step="any" min="0" style="padding:6px 9px;width:78px;text-align:right" value="${p.pct}" onchange="dronSetPiloto(${i},'pct',this.value)"><span style="color:var(--muted)">%</span></div></td>
+        <td class="r"><button class="iconbtn del" onclick="dronDelPiloto(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="3" style="padding:18px;color:var(--muted)">Agrega ayudantes y su porcentaje.</td></tr>`}
       </tbody></table></div>
-    <div class="addrow"><input class="input" id="dp_n" placeholder="Nombre del piloto" style="flex:2"><input class="input tnum money" inputmode="numeric" id="dp_pu" placeholder="Pago por hectárea" style="flex:1"><button class="btn sm primary" onclick="dronAddPiloto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
-    <div class="note">El pago al piloto de cada fumigación = hectáreas × pago/ha del piloto, y se resta de los ingresos antes de repartir la utilidad entre los socios.</div>
+    <div class="addrow"><input class="input" id="dp_n" placeholder="Nombre del ayudante" style="flex:2"><input class="input tnum" type="number" step="any" id="dp_pct" placeholder="% (5)" style="flex:1"><button class="btn sm primary" onclick="dronAddPiloto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+    <div class="note">Pago al ayudante por fumigación = total de la fumigación × su porcentaje. Se resta de los ingresos antes de repartir la utilidad entre los socios.</div>
+    <div style="padding:16px 0 0"><h2 style="font-family:var(--display);font-size:15px;margin-bottom:2px">Ganancias y pagos al ayudante</h2><p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Total generado (histórico), lo pagado y el saldo. Puedes abonar o pagar todo.</p>
+    <div class="tablewrap" style="border:none"><table>
+      <thead><tr><th>Ayudante</th><th class="r">Hectáreas</th><th class="r">Generado</th><th class="r">Pagado</th><th class="r">Saldo</th><th></th></tr></thead>
+      <tbody>${payRows||`<tr><td colspan="6" style="padding:18px;color:var(--muted)">Aún no hay fumigaciones con ayudante.</td></tr>`}</tbody></table></div></div>
   </div>`;
 }
-async function dronSetPiloto(i,field,val){if(!CFG.dronPilotos)CFG.dronPilotos=[];if(field==='pu')CFG.dronPilotos[i].pu=num(val);else CFG.dronPilotos[i].n=(val||'').trim();await persistCfg();renderDron();}
-async function dronAddPiloto(){const n=document.getElementById('dp_n').value.trim();const pu=num(document.getElementById('dp_pu').value);if(!n){toast('Escribe el nombre del piloto');return;}if(!CFG.dronPilotos)CFG.dronPilotos=[];CFG.dronPilotos.push({n,pu});await persistCfg();renderDron();toast('Piloto agregado');}
+async function dronSetPiloto(i,field,val){if(!CFG.dronPilotos)CFG.dronPilotos=[];if(field==='pct')CFG.dronPilotos[i].pct=(+val||0);else CFG.dronPilotos[i].n=(val||'').trim();await persistCfg();renderDron();}
+async function dronAddPiloto(){const n=document.getElementById('dp_n').value.trim();let pct=+document.getElementById('dp_pct').value;if(!pct&&pct!==0)pct=5;if(!n){toast('Escribe el nombre del ayudante');return;}if(!CFG.dronPilotos)CFG.dronPilotos=[];CFG.dronPilotos.push({n,pct});await persistCfg();renderDron();toast('Ayudante agregado');}
 async function dronDelPiloto(i){CFG.dronPilotos.splice(i,1);await persistCfg();renderDron();}
+function dronAyuAbono(n){
+  const earned=(dronAyuAcct()[n]||{}).earned||0;const paid=dronAyuPaid(n);const sal=Math.max(earned-paid,0);
+  if(sal<=0){toast('Este ayudante no tiene saldo pendiente');return;}
+  showModal('Pagar a '+esc(n),`
+   <p style="color:var(--muted);margin-bottom:12px">Generado: <b style="color:var(--green2)">${fmt(earned)}</b> · Pagado: <b>${fmt(paid)}</b> · Saldo: <b style="color:var(--amber)">${fmt(sal)}</b></p>
+   <div class="form-grid">
+     <div class="field"><label>Fecha del pago</label><input class="input tnum" type="date" id="ap_f" value="${todayISO()}"></div>
+     <div class="field"><label>Monto a pagar</label><input class="input tnum money" inputmode="numeric" id="ap_v" placeholder="0"></div>
+   </div>
+   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('ap_v');e.value='${fmn(sal)}';e.dataset.raw='${Math.round(sal)}'">Pagar todo el saldo (${fmt(sal)})</button></div>
+   <div class="note">Cada pago queda registrado con su fecha. Puedes hacer abonos parciales o pagar todo el saldo generado.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar pago',cls:'btn primary',fn:async()=>{
+     const v=num(document.getElementById('ap_v').value);const f=document.getElementById('ap_f').value||todayISO();
+     if(v<=0){toast('Escribe el monto');return;}
+     if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.dronAyuPagos[n])CFG.dronAyuPagos[n]={abs:[]};
+     CFG.dronAyuPagos[n].abs=CFG.dronAyuPagos[n].abs||[];CFG.dronAyuPagos[n].abs.push({f,v:Math.round(v)});CFG.dronAyuPagos[n].abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+     await persistCfg();closeModal();renderDron();toast('Pago de '+fmt(v)+' registrado');
+   }}]);
+}
+function dronAyuVerPagos(n){
+  const earned=(dronAyuAcct()[n]||{}).earned||0;const abs=(((CFG.dronAyuPagos||{})[n]||{}).abs||[]).slice().sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+  let ac=0;const rows=abs.map((a,i)=>{ac+=(+a.v||0);return `<tr><td class="tnum">${i+1}</td><td class="tnum">${fmtFecha(a.f)}</td><td class="r tnum" style="color:var(--green2)"><b>${fmt(a.v)}</b></td><td class="r tnum">${fmt(ac)}</td><td class="r tnum">${fmt(Math.max(earned-ac,0))}</td></tr>`;}).join('');
+  const paid=abs.reduce((s,x)=>s+(+x.v||0),0);
+  showModal('Pagos a '+esc(n),`
+   <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px">
+     <div class="card kpi"><div class="lab">Generado</div><div class="val tnum" style="font-size:16px;color:var(--green2)">${fmt(earned)}</div></div>
+     <div class="card kpi"><div class="lab">Pagado</div><div class="val tnum" style="font-size:16px">${fmt(paid)}</div></div>
+     <div class="card kpi"><div class="lab">Saldo</div><div class="val tnum" style="font-size:16px;color:${earned-paid>0?'var(--amber)':'var(--green2)'}">${fmt(Math.max(earned-paid,0))}</div></div>
+   </div>
+   ${abs.length?`<div class="tablewrap"><table><thead><tr><th>#</th><th>Fecha</th><th class="r">Pago</th><th class="r">Acumulado</th><th class="r">Saldo</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="note" style="margin:0">Aún no se han registrado pagos a este ayudante.</div>'}`,
+   [{label:'Cerrar',cls:'btn',fn:closeModal}]);
+}
 async function dronAddMant(){
   const f=document.getElementById('dm_f').value||todayISO();
   const v=num(document.getElementById('dm_v').value);
@@ -2463,7 +2510,7 @@ function dronRecordsList(d){
       <tbody>${d.recs.length?d.recs.map(r=>`<tr>
         <td class="tnum">${fmtFecha(r.f)}</td>
         <td>${r.k==='job'?'<span class="chip pay">Fumigación</span>':r.k==='fuel'?'<span class="chip pend">Combustible</span>':r.k==='extra'?'<span class="chip pend">Gasto extra</span>':'<span class="chip pend">Mantenim.</span>'}</td>
-        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · piloto: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||(r.k==='extra'?'Gasto extra':'Mantenimiento'))}</td>
+        <td>${r.k==='job'?'<span class="fdot"><i style="background:'+fincaColor(r.fi)+'"></i>'+esc(r.fi)+'</span> · '+fmt(r.pu)+'/ha'+(r.piloto?' · ayudante: '+esc(r.piloto)+' ('+fmt(r.pilPago||0)+')':''):r.k==='fuel'?'Gasolina '+fmt(r.gasTot||0)+' · Aceite '+fmt(r.aceiteTot||0):esc(r.d||(r.k==='extra'?'Gasto extra':'Mantenimiento'))}</td>
         <td class="r tnum">${r.k==='job'?(+r.ha).toLocaleString('es-CO'):'—'}</td>
         <td class="r tnum ${r.k!=='job'?'neg':''}">${r.k!=='job'?'− ':''}${fmt(r.tot)}</td>
         <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Editar" onclick="dronEditRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="dronDelRec(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`).join(''):`<tr><td colspan="6">${emptyRow('Sin movimientos del dron en el periodo')}</td></tr>`}
@@ -2473,16 +2520,16 @@ function dronRecordsList(d){
 function dronEditRec(id){
   const r=DRON.find(x=>x.id===id);if(!r)return;
   if(r.k==='job'){
-    const pilOpts=`<option value="">— Sin piloto —</option>`+(CFG.dronPilotos||[]).map(p=>`<option ${r.piloto===p.n?'selected':''}>${esc(p.n)}</option>`).join('');
+    const pilOpts=`<option value="">— Sin ayudante —</option>`+(CFG.dronPilotos||[]).map(p=>`<option ${r.piloto===p.n?'selected':''}>${esc(p.n)}</option>`).join('');
     showModal('Editar fumigación',`
      <div class="form-grid">
        <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="e_f" value="${r.f||todayISO()}"></div>
        <div class="field"><label>Finca fumigada</label><select class="input" id="e_fi">${CFG.fincas.map(f=>`<option ${r.fi===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
        <div class="field"><label>Valor por hectárea</label><input class="input tnum money" inputmode="numeric" id="e_pu" value="${fmn(r.pu)}"></div>
        <div class="field"><label>N° de hectáreas</label><input class="input tnum" type="number" step="any" id="e_ha" value="${r.ha}"></div>
-       <div class="field full"><label>Piloto</label><select class="input" id="e_pil">${pilOpts}</select></div>
+       <div class="field full"><label>Ayudante</label><select class="input" id="e_pil">${pilOpts}</select></div>
      </div>
-     <div class="note">Se recalcularán el total de la fumigación y el pago al piloto. El movimiento en «Movimientos» ligado a esta fumigación se actualizará con los nuevos datos${(r.movId&&MOVS.find(m=>m.id===r.movId&&m.e==='X'))?'; si tenía abonos, se conservan':''}.</div>`,
+     <div class="note">Se recalcularán el total de la fumigación y el pago al ayudante (porcentaje del total). El movimiento en «Movimientos» ligado a esta fumigación se actualizará con los nuevos datos${(r.movId&&MOVS.find(m=>m.id===r.movId&&m.e==='X'))?'; si tenía abonos, se conservan':''}.</div>`,
      [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn primary',fn:async()=>{
        const f=document.getElementById('e_f').value||todayISO();
        const fi=document.getElementById('e_fi').value;
@@ -2491,8 +2538,8 @@ function dronEditRec(id){
        if(!pu||!ha){toast('Indica valor por hectárea y número de hectáreas');return;}
        const pilN=document.getElementById('e_pil').value;
        const pil=(CFG.dronPilotos||[]).find(x=>x.n===pilN);
-       const pilPu=pil?+pil.pu||0:0, pilPago=Math.round(pilPu*ha), tot=Math.round(pu*ha);
-       Object.assign(r,{f,fi,pu,ha,tot,piloto:pilN||'',pilPu,pilPago});
+       const pilPct=pil?+pil.pct||0:0, tot=Math.round(pu*ha), pilPago=Math.round(tot*pilPct/100);
+       Object.assign(r,{f,fi,pu,ha,tot,piloto:pilN||'',pilPct,pilPago});
        const mv=r.movId?MOVS.find(m=>m.id===r.movId):null;
        if(mv){mv.f=f;mv.fi=fi;mv.q=ha;mv.pu=pu;mv.tot=tot;mv.u='HECTÁREA';mv.d=`Fumigación con dron · ${ha} ha × ${fmt(pu)}/ha`;if((+mv.ab||0)>=tot)mv.e='P';}
        await persistDron();await persistMovs();closeModal();renderDron();toast('Fumigación actualizada');
@@ -2554,7 +2601,7 @@ function dronStatementHTML(){
    <div class="report-sec">
      <div class="grid kpis" style="grid-template-columns:repeat(7,1fr);margin-bottom:16px">
        <div class="card kpi lead"><div class="lab">Ingresos</div><div class="val tnum" style="font-size:17px">${fmt(d.ingresos)}</div></div>
-       <div class="card kpi"><div class="lab">Pago a pilotos</div><div class="val tnum" style="font-size:16px">${fmt(d.pilotos)}</div></div>
+       <div class="card kpi"><div class="lab">Pago a ayudantes</div><div class="val tnum" style="font-size:16px">${fmt(d.pilotos)}</div></div>
        <div class="card kpi"><div class="lab">Combustible/aceite</div><div class="val tnum" style="font-size:16px">${fmt(d.combustible)}</div></div>
        <div class="card kpi"><div class="lab">Mantenimiento</div><div class="val tnum" style="font-size:16px">${fmt(d.mant)}</div></div>
        <div class="card kpi"><div class="lab">Gastos extras</div><div class="val tnum" style="font-size:16px">${fmt(d.extra)}</div></div>
@@ -2563,11 +2610,11 @@ function dronStatementHTML(){
      </div>
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Reparto por socio<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Socio</th><th class="r">%</th><th class="r">Parte ingresos</th><th class="r">Parte pilotos</th><th class="r">Parte combust.</th><th class="r">Parte mantenim.</th><th class="r">Parte extras</th><th class="r">Ganancia neta</th></tr></thead>
+       <thead><tr><th>Socio</th><th class="r">%</th><th class="r">Parte ingresos</th><th class="r">Parte ayudantes</th><th class="r">Parte combust.</th><th class="r">Parte mantenim.</th><th class="r">Parte extras</th><th class="r">Ganancia neta</th></tr></thead>
        <tbody>${socioRows||'<tr><td colspan="8" style="padding:16px;color:var(--muted)">Sin socios registrados.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${dronPctTotal()}%</b></td><td class="r tnum"><b>${fmt(d.ingresos)}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td><td class="r tnum"><b>${fmt(d.mant)}</b></td><td class="r tnum"><b>${fmt(d.extra)}</b></td><td class="r tnum"><b>${fmt(d.util)}</b></td></tr></tbody></table></div></div>
-     ${pilRows?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>Pago a pilotos<span class="ln"></span></div>
+     ${pilRows?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>Pago a ayudantes<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Piloto</th><th class="r">Hectáreas</th><th class="r">Ganancia</th></tr></thead>
+       <thead><tr><th>Ayudante</th><th class="r">Hectáreas</th><th class="r">Ganancia</th></tr></thead>
        <tbody>${pilRows}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${d.haTot.toLocaleString('es-CO')}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td></tr></tbody></table></div></div>`:''}
      ${d.fuels.length?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Combustible y aceite<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
@@ -2575,7 +2622,7 @@ function dronStatementHTML(){
        <tbody>${fuelRows}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>TOTAL</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td></tr></tbody></table></div></div>`:''}
      <div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M7.6 7.6l1.9 1.9M16.4 7.6l-1.9 1.9M7.6 16.4l1.9-1.9M16.4 16.4l-1.9-1.9"/></svg>Fumigaciones<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
-       <thead><tr><th>Fecha</th><th>Finca</th><th>Piloto</th><th class="r">Hectáreas</th><th class="r">Valor/ha</th><th class="r">Total</th></tr></thead>
+       <thead><tr><th>Fecha</th><th>Finca</th><th>Ayudante</th><th class="r">Hectáreas</th><th class="r">Valor/ha</th><th class="r">Total</th></tr></thead>
        <tbody>${jobRows||'<tr><td colspan="6" style="padding:16px;color:var(--muted)">Sin fumigaciones en el periodo.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>TOTAL</b></td><td class="r tnum"><b>${d.haTot.toLocaleString('es-CO')}</b></td><td></td><td class="r tnum"><b>${fmt(d.ingresos)}</b></td></tr></tbody></table></div></div>
      ${d.mants.length?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Mantenimientos<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
@@ -2585,7 +2632,7 @@ function dronStatementHTML(){
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Fecha</th><th>Descripción</th><th class="r">Valor</th></tr></thead>
        <tbody>${extraRows}<tr style="border-top:2px solid var(--line)"><td colspan="2"><b>TOTAL</b></td><td class="r tnum"><b>${fmt(d.extra)}</b></td></tr></tbody></table></div></div>`:''}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). La ganancia neta de cada socio es la utilidad del dron (ingresos − pago a pilotos − combustible y aceite − mantenimiento − gastos extras) multiplicada por su porcentaje.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). La ganancia neta de cada socio es la utilidad del dron (ingresos − pago a ayudantes − combustible y aceite − mantenimiento − gastos extras) multiplicada por su porcentaje.</div>
    </div>`;
 }
 function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
@@ -3052,7 +3099,7 @@ function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
 function pedCatalog(){return CFG.quimicos||[];}
 function bodegaAvail(finca,prod){const f=CFG.bodega&&CFG.bodega[finca];const e=f&&f[prod];return e?{q:+e.q||0,u:e.u||'ml'}:null;}
 async function bodegaAddQty(finca,prod,qtyBase,u){
-  if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.bodega[finca])CFG.bodega[finca]={};
+  if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.bodega[finca])CFG.bodega[finca]={};
   const e=CFG.bodega[finca][prod]||{q:0,u};e.q=(+e.q||0)+qtyBase;e.u=u;CFG.bodega[finca][prod]=e;
   await persistCfg();
 }
@@ -3732,7 +3779,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
