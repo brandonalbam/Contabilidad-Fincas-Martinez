@@ -1217,9 +1217,10 @@ function rowHTML(m){
 }
 
 /* ===== MODAL movimiento ===== */
-function openMov(id){
-  const m=id?MOVS.find(x=>x.id===id):{f:todayISO(),fi:ui.mFinca||CFG.fincas[0],t:'E',c:'',d:'',u:'',q:1,pu:'',tot:0,e:'P',ab:0,fa:'',co:''};
-  const isNew=!id;const tmp={...m};
+function openMov(id,preset){
+  const def={f:todayISO(),fi:ui.mFinca||CFG.fincas[0],t:'E',c:'',d:'',u:'',q:1,pu:'',tot:0,e:'P',ab:0,fa:'',co:''};
+  const m=id?MOVS.find(x=>x.id===id):(preset?{...def,...preset}:def);
+  const isNew=!id;const isDup=isNew&&!!preset;const tmp={...m};
   const body=()=>`
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="m_f" value="${tmp.f}"></div>
@@ -1238,9 +1239,9 @@ function openMov(id){
       <div class="field" id="m_abwrap" style="${tmp.e==='X'?'':'display:none'}"><label>Abono / pago recibido</label><input class="input tnum money" inputmode="numeric" id="m_ab" value="${fmn(tmp.ab||0)}" oninput="window.__saldo()"></div>
       <div class="field" id="m_salwrap" style="${tmp.e==='X'?'':'display:none'}"><label id="m_sallab">Saldo pendiente</label><input class="input tnum" id="m_sal" value="${fmt(Math.max(((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)-(+tmp.ab||0),0))}" disabled></div>
     </div>`;
-  showModal(isNew?'Nuevo movimiento':'Editar movimiento',body(),[
+  showModal(isDup?'Duplicar movimiento':(isNew?'Nuevo movimiento':'Editar movimiento'),body(),[
     {label:'Cancelar',cls:'btn',fn:closeModal},
-    {label:isNew?'Guardar movimiento':'Guardar cambios',cls:'btn primary',fn:()=>saveMov(id)}
+    {label:isDup?'Crear duplicado':(isNew?'Guardar movimiento':'Guardar cambios'),cls:'btn primary',fn:()=>saveMov(id)}
   ]);
   window.__saldo=()=>{const tot=(+document.getElementById('m_q').value||0)*num(document.getElementById('m_pu').value);const ab=num(document.getElementById('m_ab').value);const s=Math.max(tot-ab,0);const se=document.getElementById('m_sal');if(se)se.value=fmt(s);const lb=document.getElementById('m_sallab');if(lb)lb.textContent=document.getElementById('m_t').value==='I'?'Saldo (debe el cliente)':'Saldo por pagar';};
   window.__movType=v=>{document.getElementById('m_c').innerHTML=catOpts(v,'');document.getElementById('m_clwrap').style.display=v==='I'?'':'none';window.__saldo();};
@@ -1260,36 +1261,8 @@ async function saveMov(id){
 }
 function dupMov(id){
   const m=MOVS.find(x=>x.id===id);if(!m)return;
-  const tmp={...m};const esI=tmp.t==='I';
-  const info=(lab,val)=>`<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0"><span style="color:var(--muted)">${lab}</span><b>${esc(val)}</b></div>`;
-  const body=`
-    <div class="note" style="margin:0 0 14px">Se creará un movimiento nuevo con los mismos datos; solo cambia lo de abajo. Se conservan: fecha, tipo, categoría, descripción, cantidad y estado.</div>
-    <div class="card" style="padding:12px 14px;margin-bottom:14px;background:var(--surface2)">
-      ${info('Fecha',tmp.f)}${info('Tipo',esI?'Ingreso':'Egreso')}${info('Categoría',tmp.c||'—')}${info('Descripción',tmp.d||'—')}${info('Cantidad',(tmp.q||0)+(tmp.u?' '+tmp.u:''))}${info('Estado',tmp.e==='P'?'Pagado / Recibido':'Pendiente')}
-    </div>
-    <div class="form-grid">
-      <div class="field"><label>Finca / centro</label><select class="input" id="d_fi">${CFG.fincas.map(f=>`<option ${tmp.fi===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
-      <div class="field"><label># Factura</label><input class="input" id="d_fa" value="${esc(tmp.fa||'')}"></div>
-      ${esI
-        ? `<div class="field"><label>Cliente</label><select class="input" id="d_cl"><option value="">—</option>${CFG.clientes.map(c=>`<option ${tmp.cl===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`
-        : `<div class="field"><label>Comercio / proveedor</label><input class="input" id="d_co" list="d_co_list" autocomplete="off" placeholder="Escribe para buscar…" value="${esc(tmp.co||'')}"><datalist id="d_co_list">${CFG.comercios.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div>`}
-      <div class="field"><label>Valor total</label><input class="input tnum money" inputmode="numeric" id="d_val" value="${fmn(+tmp.tot||0)}"></div>
-    </div>`;
-  showModal('Duplicar movimiento',body,[
-    {label:'Cancelar',cls:'btn',fn:closeModal},
-    {label:'Crear duplicado',cls:'btn primary',fn:()=>saveDup(id)}
-  ]);
-}
-async function saveDup(id){
-  const m=MOVS.find(x=>x.id===id);if(!m)return;
-  const g=x=>{const el=document.getElementById(x);return el?el.value:'';};
-  const val=num(g('d_val'));const q=+m.q||0;
-  const nuevo={...m,id:seq++,fi:g('d_fi'),fa:(g('d_fa')||'').trim(),
-    tot:Math.round(val), pu:q?Math.round(val/q):val,
-    co:m.t==='I'?'':(g('d_co')||'').trim(), cl:m.t==='I'?g('d_cl'):'',
-    ab:m.e==='X'?0:0};
-  MOVS.push(nuevo);
-  await persistMovs();closeModal();render();toast('Movimiento duplicado');
+  const copy={...m};delete copy.id;delete copy.abs;copy.ab=0;
+  openMov(null,copy);
 }
 function delMov(id){const m=MOVS.find(x=>x.id===id);
   confirmModal('Eliminar movimiento',`Se eliminará "${esc(m.d||m.c)}" (${fmt(m.tot)}) de ${esc(m.fi)}. Esta acción no se puede deshacer.`,async()=>{
