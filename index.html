@@ -233,6 +233,12 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .ped-bod{flex:1 1 100%;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--green2);margin-top:2px}
 .ped-bod input{width:auto;flex:0 0 auto}
 .ped-bod.off{color:var(--faint)}
+.fact-box{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:11px 14px;margin-top:12px;flex-wrap:wrap}
+.fact-box .fb-info{min-width:0;flex:1}
+.fact-box .fb-info .fb-lab{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);font-weight:700;display:block}
+.fact-box .fb-info b{font-family:var(--display);font-size:14px;display:block;line-height:1.3}
+.fact-box .fb-info span{font-size:12.5px;color:var(--muted)}
+.fact-box.empty .fb-info b{color:var(--ink)}
 /* Cronograma */
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .cal-title{font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize}
@@ -684,7 +690,7 @@ const Cloud={
 };
 function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
-  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
+  if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
   ui.needLogin=perfiles().length>0&&!perfilActivo();
   migrateDronAyu();
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
@@ -802,6 +808,7 @@ async function init(){
   if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.bodega){CFG.bodega={};await Store.set('config',JSON.stringify(CFG));}
+  if(!CFG.fincaFact){CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.perfiles){CFG.perfiles=[];await Store.set('config',JSON.stringify(CFG));}
   ui.perfilId=(await Store.get('perfilActivo'))||'';
   ui.needLogin=perfiles().length>0 && !perfilActivo();
@@ -854,6 +861,7 @@ function migrateFincaNames(){
   if(CFG.fincaHa){const nh={};Object.entries(CFG.fincaHa).forEach(([k,v])=>{const n=map[k]||k;nh[n]=Object.assign(nh[n]||{},v);});CFG.fincaHa=nh;}
   if(CFG.fincaHaTot){const nt={};Object.entries(CFG.fincaHaTot).forEach(([k,v])=>{nt[map[k]||k]=v;});CFG.fincaHaTot=nt;}
   if(CFG.bodega){const nb={};Object.entries(CFG.bodega).forEach(([k,v])=>{nb[map[k]||k]=Object.assign(nb[map[k]||k]||{},v);});CFG.bodega=nb;}
+  if(CFG.fincaFact){const nff={};Object.entries(CFG.fincaFact).forEach(([k,v])=>{nff[map[k]||k]=v;});CFG.fincaFact=nff;}
   MOVS.forEach(m=>{if(m.fi&&map[m.fi])m.fi=map[m.fi];});
   NOMINAS.forEach(nm=>(nm.entries||[]).forEach(e=>(e.dias||[]).forEach(d=>{if(d.fi&&map[d.fi])d.fi=map[d.fi];})));
   CRONO.forEach(r=>{if(r.finca&&map[r.finca])r.finca=map[r.finca];});
@@ -997,7 +1005,7 @@ function perfilEdit(id){
      let views,edit;
      if(admin){views=SECCIONES.map(s=>s[0]);edit=views.slice();}
      else{views=[];edit=[];document.querySelectorAll('#pf_secs .secsel').forEach(s=>{if(s.value!=='none')views.push(s.dataset.v);if(s.value==='edit')edit.push(s.dataset.v);});}
-     if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
+     if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
      if(p){p.n=n;p.pin=pin;p.admin=admin;p.views=views;p.edit=edit;}
      else CFG.perfiles.push({id:'p'+Date.now().toString(36)+Math.floor(Math.random()*1000),n,pin,admin,views,edit});
      await persistCfg();closeModal();renderConfig();toast('Perfil guardado');
@@ -2438,7 +2446,7 @@ function dronAyuAbono(n){
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar pago',cls:'btn primary',fn:async()=>{
      const v=num(document.getElementById('ap_v').value);const f=document.getElementById('ap_f').value||todayISO();
      if(v<=0){toast('Escribe el monto');return;}
-     if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.dronAyuPagos[n])CFG.dronAyuPagos[n]={abs:[]};
+     if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};if(!CFG.dronAyuPagos[n])CFG.dronAyuPagos[n]={abs:[]};
      CFG.dronAyuPagos[n].abs=CFG.dronAyuPagos[n].abs||[];CFG.dronAyuPagos[n].abs.push({f,v:Math.round(v)});CFG.dronAyuPagos[n].abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
      await persistCfg();closeModal();renderDron();toast('Pago de '+fmt(v)+' registrado');
    }}]);
@@ -3103,10 +3111,34 @@ function cronoStatementHTML(k){
 
 /* ===== PEDIDOS ===== */
 function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
+function fincaFactOf(f){return (CFG.fincaFact&&CFG.fincaFact[f])||null;}
+function fincaFactBox(f){
+  if(!f)return '';
+  const d=fincaFactOf(f);const clj=esc(f).replace(/'/g,"\\'");
+  const editBtn=`<button class="btn sm" onclick="fincaFactEdit('${clj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar</button>`;
+  if(!d||(!d.razon&&!d.nit))return `<div class="fact-box empty"><div class="fb-info"><b>Datos de facturación</b><span>${esc(f)} · sin datos registrados</span></div><button class="btn sm primary" onclick="fincaFactEdit('${clj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar</button></div>`;
+  return `<div class="fact-box"><div class="fb-info"><span class="fb-lab">Facturar a</span><b>${esc(d.razon||'—')}</b><span>${d.nit?'NIT / C.C. '+esc(d.nit):''}${d.dir?' · '+esc(d.dir):''}${d.tel?' · Tel. '+esc(d.tel):''}</span></div>${editBtn}</div>`;
+}
+function fincaFactEdit(f){
+  const d=fincaFactOf(f)||{};
+  showModal('Datos de facturación · '+esc(f),`
+   <div class="form-grid">
+     <div class="field full"><label>Nombre / Razón social</label><input class="input" id="ff_razon" value="${esc(d.razon||'')}" placeholder="Ej: Betti Martinez Quiroga"></div>
+     <div class="field"><label>NIT o C.C.</label><input class="input" id="ff_nit" value="${esc(d.nit||'')}" placeholder="Ej: 52028602"></div>
+     <div class="field"><label>Teléfono (opcional)</label><input class="input" id="ff_tel" value="${esc(d.tel||'')}"></div>
+     <div class="field full"><label>Dirección (opcional)</label><input class="input" id="ff_dir" value="${esc(d.dir||'')}"></div>
+   </div>
+   <div class="note">Estos datos aparecerán automáticamente al elegir <b>${esc(f)}</b> en un pedido y en el PDF del pedido.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar',cls:'btn primary',fn:async()=>{
+     if(!CFG.fincaFact)CFG.fincaFact={};
+     CFG.fincaFact[f]={razon:(document.getElementById('ff_razon').value||'').trim(),nit:(document.getElementById('ff_nit').value||'').trim(),tel:(document.getElementById('ff_tel').value||'').trim(),dir:(document.getElementById('ff_dir').value||'').trim()};
+     await persistCfg();closeModal();renderPedidos();toast('Datos de facturación guardados');
+   }}]);
+}
 function pedCatalog(){return CFG.quimicos||[];}
 function bodegaAvail(finca,prod){const f=CFG.bodega&&CFG.bodega[finca];const e=f&&f[prod];return e?{q:+e.q||0,u:e.u||'ml'}:null;}
 async function bodegaAddQty(finca,prod,qtyBase,u){
-  if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.bodega[finca])CFG.bodega[finca]={};
+  if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};if(!CFG.bodega[finca])CFG.bodega[finca]={};
   const e=CFG.bodega[finca][prod]||{q:0,u};e.q=(+e.q||0)+qtyBase;e.u=u;CFG.bodega[finca][prod]=e;
   await persistCfg();
 }
@@ -3147,6 +3179,7 @@ function renderPedidos(){
          <div class="field"><label>Fecha del pedido</label><input class="input tnum" type="date" value="${esc(ui.pedFecha||todayISO())}" oninput="ui.pedFecha=this.value;persistPedDraft()"></div>
        </div>
        <div class="note">Al elegir la finca se cargan sus hectáreas automáticamente (puedes ajustarlas). La cantidad necesaria de cada producto = dosis por hectárea × hectáreas.</div>
+       ${fincaFactBox(ui.pedFinca)}
      </div>
      <div class="card panel">
        <div class="ph"><div><h2>Productos a pedir</h2><p>Elige del catálogo de químicos e indica lo que hay en bodega</p></div></div>
@@ -3290,6 +3323,7 @@ function pedStatementHTML(m){
   const usan=m.lines.filter(l=>(+l.used||0)>0);
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Pedido</div><h2>${esc(m.finca)}</h2><div class="rh-sub">${(+m.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · Fecha del pedido ${fmtFecha(m.f||m.fecha)}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
+   ${(()=>{const d=fincaFactOf(m.finca);return (d&&(d.razon||d.nit))?`<div class="card" style="margin-bottom:14px"><div style="padding:12px 16px;font-size:13px;line-height:1.7"><b>Facturar a:</b> ${esc(d.razon||'—')}${d.nit?`<br><b>NIT / C.C.:</b> ${esc(d.nit)}`:''}${d.dir?`<br><b>Dirección:</b> ${esc(d.dir)}`:''}${d.tel?`<br><b>Teléfono:</b> ${esc(d.tel)}`:''}</div></div>`:'';})()}
    <div class="report-sec">
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Productos a pedir<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
@@ -3955,7 +3989,7 @@ function exportCSV(){
 function backup(){dl('respaldo_fincas_'+todayISO()+'.json',JSON.stringify({v:2,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON}),'application/json');toast('Respaldo descargado');}
 function restore(file){if(!file)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.movimientos)throw 0;
   CFG=d.config;MOVS=d.movimientos;NOMINAS=d.nominas||[];DRON=d.dron||[];seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;dseq=Math.max(0,...DRON.map(x=>x.id||0))+1;
-  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};
+  if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
   await persistCfg();await persistMovs();await persistNom();await persistDron();toast('Respaldo restaurado');render();
   }catch(e){toast('Archivo no válido');}};r.readAsText(file);}
 function wipe(){confirmModal('Borrar todo','Se eliminarán TODOS los movimientos. La configuración (fincas, categorías) se conserva. ¿Continuar?',async()=>{MOVS=[];seq=1;await persistMovs();closeModal();render();toast('Datos eliminados');});}
