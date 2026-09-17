@@ -692,7 +692,7 @@ function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
   if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
   ui.needLogin=perfiles().length>0&&!perfilActivo();
-  migrateDronAyu();
+  migrateDronAyu();migrateFincaFact();
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
@@ -809,6 +809,7 @@ async function init(){
   if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.bodega){CFG.bodega={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaFact){CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};await Store.set('config',JSON.stringify(CFG));}
+  if(migrateFincaFact())await Store.set('config',JSON.stringify(CFG));
   if(!CFG.perfiles){CFG.perfiles=[];await Store.set('config',JSON.stringify(CFG));}
   ui.perfilId=(await Store.get('perfilActivo'))||'';
   ui.needLogin=perfiles().length>0 && !perfilActivo();
@@ -3111,6 +3112,30 @@ function cronoStatementHTML(k){
 
 /* ===== PEDIDOS ===== */
 function fincaHaDefault(f){return (CFG.fincaHaTot&&+CFG.fincaHaTot[f])||0;}
+const FINCA_FACT_SEED={
+  ESTRELLA:{razon:'Betti Martinez Quiroga',nit:'52028602-5',tel:'3132517287'},
+  POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602-5',tel:'3132517287'},
+  FORTUNA:{razon:'Betti Martinez Quiroga',nit:'52028602-5',tel:'3132517287'},
+  MIRANDA:{razon:'Inversiones La Estrella JEML S.A.S',nit:'901831317-3',tel:'3138721789'},
+  PLACER:{razon:'Inversiones La Estrella JEML S.A.S',nit:'901831317-3',tel:'3138721789'},
+  MANDARINOS:{razon:'Inversiones La Estrella JEML S.A.S',nit:'901831317-3',tel:'3138721789'},
+  GANADERIA:{razon:'Inversiones La Estrella JEML S.A.S',nit:'901831317-3',tel:'3138721789'},
+  FUTURO:{razon:'Jefree Martinez Alba',nit:'1022396084-9',tel:'3229034736'},
+  CUBILLOS:{razon:'Jonatan Barbosa Ibagon',nit:'1120353605-7',tel:'3105700678'},
+  GALLINETA:{razon:'Jonatan Barbosa Ibagon',nit:'1120353605-7',tel:'3105700678'},
+  CHOCOLATERA:{razon:'Jonatan Barbosa Ibagon',nit:'1120353605-7',tel:'3105700678'},
+  FRUTEXCOL:{razon:'FRUTEXCOL BM S.A.S.',nit:'902009604-1',tel:'3138721789'}
+};
+function migrateFincaFact(){
+  if((+CFG.fincaFactV||0)>=2)return false;
+  if(!CFG.fincaFact)CFG.fincaFact={};
+  const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+  Object.entries(FINCA_FACT_SEED).forEach(([key,d])=>{
+    const real=(CFG.fincas||[]).find(f=>norm(f)===key)||key;
+    CFG.fincaFact[real]=Object.assign({},CFG.fincaFact[real]||{},d);
+  });
+  CFG.fincaFactV=2;return true;
+}
 function fincaFactOf(f){return (CFG.fincaFact&&CFG.fincaFact[f])||null;}
 function fincaFactBox(f){
   if(!f)return '';
