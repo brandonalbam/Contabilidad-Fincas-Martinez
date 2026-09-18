@@ -457,6 +457,7 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .ta-pill{font-family:var(--display);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--surface2);border-radius:99px;padding:3px 9px}
 .ta-pill.now{background:var(--green-soft);color:var(--green2)}
 .seccheck input{width:auto;flex:0 0 auto}
+.fincachk em{margin-left:auto;font-style:normal;font-size:11px;color:var(--muted)}
 .login-wrap{display:flex;justify-content:center;padding:24px 4px}
 .login-card{width:100%;max-width:440px;text-align:center}
 .login-card .login-logo{display:flex;justify-content:center;margin-bottom:14px}
@@ -2848,40 +2849,47 @@ function cronoAllHist(k,fFilter){const arr=[];cronoArr(k).forEach(r=>{if(fFilter
 
 function sendMixToCrono(){
   const m=mixCompute();
-  if(!m.finca){toast('Elige la finca de la preparación');return;}
   if(m.mode==='ab'){if(!m.trees){toast('Indica el número de árboles');return;}}
   else if(!m.ha||!m.lxha){toast('Completa hectáreas y litros por hectárea');return;}
+  if(!m.lines.length){toast('Agrega al menos un producto a la preparación');return;}
   const kSel=m.mode==='ab'?'ab':(ui.cronoKind==='ab'?'ab':'fum');
-  const detalle=m.mode==='ab'?`${m.trees.toLocaleString('es-CO')} árboles · ${m.lines.length} producto(s)`:`${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · ${m.lines.length} producto(s)`;
+  const isAb=m.mode==='ab';
+  const detalle=isAb?`${m.trees.toLocaleString('es-CO')} árboles · ${m.lines.length} producto(s)`:`${m.lxha.toLocaleString('es-CO')} L/ha · ${m.lines.length} producto(s)`;
+  const fincasChk=(CFG.fincas||[]).map(f=>{const chk=(f===m.finca)?'checked':'';const ha=fincaHaDefault(f);return `<label class="seccheck fincachk"><input type="checkbox" class="cx_fi" value="${esc(f)}" ${chk}> <span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span>${(!isAb&&ha)?`<em>${ha} ha</em>`:''}</label>`;}).join('');
   showModal('Enviar al cronograma',`
    <div class="form-grid">
      <div class="field full"><label>Cronograma destino</label><select class="input" id="cx_k"><option value="fum" ${kSel==='fum'?'selected':''}>Cronograma Fumigadas</option><option value="ab" ${kSel==='ab'?'selected':''}>Cronograma Abonadas</option></select></div>
-     <div class="field full"><label>Finca</label><input class="input" value="${esc(m.finca)}" disabled></div>
      <div class="field"><label>Fecha de aplicación</label><input class="input tnum" type="date" id="cx_f" value="${todayISO()}"></div>
      <div class="field"><label>Repetir cada (días)</label><input class="input tnum" type="number" id="cx_d" placeholder="Ej: 15" min="1"></div>
    </div>
-   <div class="note">Se registrará la aplicación de <b>${esc(m.finca)}</b> (${detalle}) en el cronograma elegido. Si esa finca ya está en ese cronograma, se marca como realizada, se guarda en el historial y se reprograma la siguiente. Cada cronograma es independiente.</div>`,
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 6px;flex-wrap:wrap"><span style="font-size:12.5px;color:var(--muted);font-weight:600">Fincas a las que se enviará esta preparación</span><span style="display:flex;gap:6px"><button class="btn sm" type="button" onclick="document.querySelectorAll('.cx_fi').forEach(c=>c.checked=true)">Todas</button><button class="btn sm" type="button" onclick="document.querySelectorAll('.cx_fi').forEach(c=>c.checked=false)">Ninguna</button></span></div>
+   <div class="secgrid">${fincasChk}</div>
+   <div class="note">Se registrará la misma preparación (${detalle}) en cada finca marcada, en el cronograma elegido. ${isAb?`Se usarán <b>${m.trees.toLocaleString('es-CO')} árboles</b> para todas (puedes ajustarlo luego en cada finca).`:`Para cada finca se usarán sus <b>hectáreas registradas</b> (si no tiene, las de esta preparación: ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha).`} Si una finca ya está en ese cronograma, se marca como realizada, se guarda en su historial y se reprograma la siguiente.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar al cronograma',cls:'btn primary',fn:async()=>{
      const kind=document.getElementById('cx_k').value==='ab'?'ab':'fum';
+     const fincas=[...document.querySelectorAll('.cx_fi')].filter(c=>c.checked).map(c=>c.value);
+     if(!fincas.length){toast('Marca al menos una finca');return;}
      ui.cronoKind=kind;
      const arr=cronoArr(kind);
-     const existing=arr.find(x=>x.finca===m.finca);
      const f=document.getElementById('cx_f').value||todayISO();
      const dias=+document.getElementById('cx_d').value||0;
-     const copy=JSON.parse(JSON.stringify(m.lines));
-     const isAb=m.mode==='ab';
-     const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy}:{f,lxha:m.lxha,ha:m.ha,lines:copy};
-     if(existing){
-       existing.hist=existing.hist||[];existing.hist.push(app);existing.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
-       existing.f=f;existing.lines=copy;existing.dias=dias;delete existing.prox;
-       if(isAb){existing.mode='ab';existing.arboles=m.trees;delete existing.lxha;delete existing.ha;}else{existing.lxha=m.lxha;existing.ha=m.ha;delete existing.mode;delete existing.arboles;}
-     }else{
-       const rec=isAb?{id:cronoNewId(kind),finca:m.finca,f,mode:'ab',arboles:m.trees,lines:copy,dias,hist:[app]}:{id:cronoNewId(kind),finca:m.finca,f,lxha:m.lxha,ha:m.ha,lines:copy,dias,hist:[app]};
-       arr.push(rec);
-     }
+     fincas.forEach(finca=>{
+       const copy=JSON.parse(JSON.stringify(m.lines));
+       const haF=isAb?0:(fincaHaDefault(finca)||m.ha);
+       const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy}:{f,lxha:m.lxha,ha:haF,lines:copy};
+       const existing=arr.find(x=>x.finca===finca);
+       if(existing){
+         existing.hist=existing.hist||[];existing.hist.push(app);existing.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+         existing.f=f;existing.lines=copy;existing.dias=dias;delete existing.prox;
+         if(isAb){existing.mode='ab';existing.arboles=m.trees;delete existing.lxha;delete existing.ha;}else{existing.lxha=m.lxha;existing.ha=haF;delete existing.mode;delete existing.arboles;}
+       }else{
+         const rec=isAb?{id:cronoNewId(kind),finca,f,mode:'ab',arboles:m.trees,lines:copy,dias,hist:[app]}:{id:cronoNewId(kind),finca,f,lxha:m.lxha,ha:haF,lines:copy,dias,hist:[app]};
+         arr.push(rec);
+       }
+     });
      await persistCrono(kind);closeModal();
      const cfg=cronoKindCfg(kind);
-     toast('Registrado en Cronograma '+cfg.L);
+     toast('Registrado en Cronograma '+cfg.L+' para '+fincas.length+' finca(s)');
      ui.view=cfg.view;cronoMonthSet(kind,f.slice(0,7));
      document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===cfg.view));render();
    }}]);
