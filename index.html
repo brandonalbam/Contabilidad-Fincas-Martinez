@@ -681,7 +681,7 @@ const Cloud={
     if(!this.cfg.enabled)return false;
     this.pushing=true;this.setStatus('sync');
     try{
-      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,prestamos:PRESTAMOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}};
+      const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,prestamos:PRESTAMOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines,applyK:ui.cronoApplyK||'',applyId:ui.cronoApplyId||0}};
       const r=await fetch(this.rowUrl(),{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify([{id:this.cfg.id,data:blob,updated_at:new Date(ts).toISOString()}])});
       if(!r.ok)throw new Error('HTTP '+r.status);
@@ -701,7 +701,7 @@ function applyCloud(d){
   PEDIDOS=d.pedidos||[];PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});Store.set('pedidos',JSON.stringify(PEDIDOS));
   TAREAS=d.tareas||[];TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});Store.set('tareas',JSON.stringify(TAREAS));
   PRESTAMOS=d.prestamos||[];PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});Store.set('prestamos',JSON.stringify(PRESTAMOS));
-  if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
+  if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.cronoApplyK=j.applyK||'';ui.cronoApplyId=+j.applyId||0;ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
   normalizeNominaMonths();
   if(migrateFincaNames()){Store.set('dron',JSON.stringify(DRON));Store.set('crono',JSON.stringify(CRONO));Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}));}
@@ -752,7 +752,7 @@ let ui={view:'dash',
   rentYear:'',rentFrom:'',rentTo:'',
   mixHa:'',mixLxHa:200,mixTank:1000,mixFinca:'',mixMode:'fum',mixTrees:'',mixLines:[{n:'',d:'',u:'ml'}],
   cronoMonthK:{fum:'',ab:''},cronoFincaK:{fum:'',ab:''},cronoKind:'fum',
-  perfilId:'',needLogin:false,
+  perfilId:'',needLogin:false,cronoApplyK:'',cronoApplyId:0,
   pedFinca:'',pedHa:'',pedFecha:'',pedLines:[{n:'',d:'',u:'ml',useBodega:true}],
   taDay:'',taFinca:'',taPrio:'n',tareaFinca:'',
   presFecha:'',presCli:'',presQ:''
@@ -821,7 +821,7 @@ async function init(){
   TAREAS.forEach(x=>{if(x.id>=tseq)tseq=x.id+1;});
   PEDIDOS.forEach(x=>{if(x.id>=pseq)pseq=x.id+1;});
   const pdd=await Store.get('peddraft'); if(pdd){try{const j=JSON.parse(pdd);if(j){ui.pedFinca=j.finca||'';ui.pedHa=j.ha??'';ui.pedFecha=j.fecha||'';ui.pedLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml',useBodega:true}];}}catch(e){}}
-  const mx=await Store.get('mixdraft'); if(mx){try{const j=JSON.parse(mx);if(j){ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];}}catch(e){}}
+  const mx=await Store.get('mixdraft'); if(mx){try{const j=JSON.parse(mx);if(j){ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.cronoApplyK=j.applyK||'';ui.cronoApplyId=+j.applyId||0;ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];}}catch(e){}}
   if(migrateFincaNames()){
     await Store.set('config',JSON.stringify(CFG));
     await Store.set('movimientos',JSON.stringify(MOVS));
@@ -2656,7 +2656,7 @@ function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
 
 /* ===== PREPARACIÓN DE QUÍMICOS ===== */
 function quimCatalog(){return CFG.quimicos||[];}
-async function persistMix(){await Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}));Cloud.schedulePush();}
+async function persistMix(){await Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines,applyK:ui.cronoApplyK||'',applyId:ui.cronoApplyId||0}));Cloud.schedulePush();}
 function qFmt(v,u){v=+v||0;const n=x=>x.toLocaleString('es-CO',{maximumFractionDigits:2});if(u==='g'){return v>=1000?n(v/1000)+' kg':n(v)+' g';}return v>=1000?n(v/1000)+' L':n(v)+' ml';}
 function quimTanks(totalVol,cap){const t=[];if(!(cap>0))cap=1000;let rem=totalVol,guard=0;while(rem>0.0001&&guard<10000){const v=Math.min(cap,rem);t.push(v);rem-=v;guard++;}return t;}
 function mixCompute(){
@@ -2675,6 +2675,7 @@ function mixCompute(){
 }
 function newMix(){
   confirmModal('Nueva preparación','Se borrarán los datos de la preparación actual para empezar una nueva. ¿Continuar?',async()=>{
+    ui.cronoApplyK='';ui.cronoApplyId=0;
     ui.mixHa='';ui.mixLxHa=200;ui.mixTank=1000;ui.mixFinca='';ui.mixTrees='';ui.mixLines=[{n:'',d:'',u:ui.mixMode==='ab'?'g':'ml'}];
     await persistMix();closeModal();renderQuimicos();toast('Lista para una nueva preparación');
   });
@@ -2864,7 +2865,7 @@ function sendMixToCrono(){
    </div>
    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 6px;flex-wrap:wrap"><span style="font-size:12.5px;color:var(--muted);font-weight:600">Fincas a las que se enviará esta preparación</span><span style="display:flex;gap:6px"><button class="btn sm" type="button" onclick="document.querySelectorAll('.cx_fi').forEach(c=>c.checked=true)">Todas</button><button class="btn sm" type="button" onclick="document.querySelectorAll('.cx_fi').forEach(c=>c.checked=false)">Ninguna</button></span></div>
    <div class="secgrid">${fincasChk}</div>
-   <div class="note">Se registrará la misma preparación (${detalle}) en cada finca marcada, en el cronograma elegido. ${isAb?`Se usarán <b>${m.trees.toLocaleString('es-CO')} árboles</b> para todas (puedes ajustarlo luego en cada finca).`:`Para cada finca se usarán sus <b>hectáreas registradas</b> (si no tiene, las de esta preparación: ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha).`} Si una finca ya está en ese cronograma, se marca como realizada, se guarda en su historial y se reprograma la siguiente.</div>`,
+   <div class="note">Se registrará la misma preparación (${detalle}) en cada finca marcada, en el cronograma elegido. ${isAb?`Se usarán <b>${m.trees.toLocaleString('es-CO')} árboles</b> para todas (puedes ajustarlo luego en cada finca).`:`Para cada finca se usarán sus <b>hectáreas registradas</b> (si no tiene, las de esta preparación: ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha).`} Se crea un <b>programa nuevo pendiente</b> por cada finca (una finca puede tener varias aplicaciones programadas a la vez, con repeticiones distintas). Una aplicación solo se marca como <b>realizada</b> cuando entras al cronograma y usas el botón «Aplicar».${(ui.cronoApplyId&&cronoArr(ui.cronoApplyK||'fum').find(x=>x.id===ui.cronoApplyId))?` <b>Vienes de «Aplicar» en ${esc((cronoArr(ui.cronoApplyK||'fum').find(x=>x.id===ui.cronoApplyId)||{}).finca||'')}</b>: esa aplicación sí se marcará como realizada y se reprogramará.`:''}</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar al cronograma',cls:'btn primary',fn:async()=>{
      const kind=document.getElementById('cx_k').value==='ab'?'ab':'fum';
      const fincas=[...document.querySelectorAll('.cx_fi')].filter(c=>c.checked).map(c=>c.value);
@@ -2873,30 +2874,34 @@ function sendMixToCrono(){
      const arr=cronoArr(kind);
      const f=document.getElementById('cx_f').value||todayISO();
      const dias=+document.getElementById('cx_d').value||0;
+     const applyTarget=(ui.cronoApplyId&&ui.cronoApplyK===kind)?arr.find(x=>x.id===ui.cronoApplyId):null;
+     let marcadas=0,nuevas=0;
      fincas.forEach(finca=>{
        const copy=JSON.parse(JSON.stringify(m.lines));
        const haF=isAb?0:(fincaHaDefault(finca)||m.ha);
        const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy}:{f,lxha:m.lxha,ha:haF,lines:copy};
-       const existing=arr.find(x=>x.finca===finca);
-       if(existing){
-         existing.hist=existing.hist||[];existing.hist.push(app);existing.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
-         existing.f=f;existing.lines=copy;existing.dias=dias;delete existing.prox;
-         if(isAb){existing.mode='ab';existing.arboles=m.trees;delete existing.lxha;delete existing.ha;}else{existing.lxha=m.lxha;existing.ha=haF;delete existing.mode;delete existing.arboles;}
+       const target=(applyTarget&&applyTarget.finca===finca)?applyTarget:null;
+       if(target){
+         target.hist=target.hist||[];target.hist.push(app);target.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+         target.f=f;target.lines=copy;target.dias=dias;delete target.prox;
+         if(isAb){target.mode='ab';target.arboles=m.trees;delete target.lxha;delete target.ha;}else{target.lxha=m.lxha;target.ha=haF;delete target.mode;delete target.arboles;}
+         marcadas++;
        }else{
          const rec=isAb?{id:cronoNewId(kind),finca,f,mode:'ab',arboles:m.trees,lines:copy,dias,hist:[app]}:{id:cronoNewId(kind),finca,f,lxha:m.lxha,ha:haF,lines:copy,dias,hist:[app]};
-         arr.push(rec);
+         arr.push(rec);nuevas++;
        }
      });
+     ui.cronoApplyK='';ui.cronoApplyId=0;persistMix();
      await persistCrono(kind);closeModal();
      const cfg=cronoKindCfg(kind);
-     toast('Registrado en Cronograma '+cfg.L+' para '+fincas.length+' finca(s)');
+     toast(marcadas?('Aplicación marcada como realizada'+(nuevas?' · '+nuevas+' programa(s) nuevo(s)':'')):(nuevas+' programa(s) pendiente(s) en Cronograma '+cfg.L));
      ui.view=cfg.view;cronoMonthSet(kind,f.slice(0,7));
      document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===cfg.view));render();
    }}]);
 }
 function cronoApply(k,id){
   const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
-  ui.cronoKind=k;
+  ui.cronoKind=k;ui.cronoApplyK=k;ui.cronoApplyId=id;
   const ab=(k==='ab'||r.mode==='ab');
   ui.mixMode=ab?'ab':'fum';
   ui.mixFinca=r.finca;
