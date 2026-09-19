@@ -233,6 +233,12 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .ped-bod{flex:1 1 100%;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--green2);margin-top:2px}
 .ped-bod input{width:auto;flex:0 0 auto}
 .ped-bod.off{color:var(--faint)}
+.ped-flags{flex:1 1 100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
+.ped-modo{display:inline-flex;align-items:center;gap:5px;border:none;background:var(--surface2);color:var(--muted);font-size:11.5px;font-weight:700;border-radius:99px;padding:4px 10px;cursor:pointer;transition:.12s}
+.ped-modo svg{width:13px;height:13px}
+.ped-modo:hover{background:var(--surface3)}
+.ped-modo.on{background:var(--amber-soft);color:#9a6313}
+.pedline.manual .ped-dose{border-color:var(--amber)}
 .fact-box{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:11px 14px;margin-top:12px;flex-wrap:wrap}
 .fact-box .fb-info{min-width:0;flex:1}
 .fact-box .fb-info .fb-lab{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);font-weight:700;display:block}
@@ -3188,16 +3194,21 @@ async function bodegaSetQty(finca,prod,qtyBase){
 async function bodegaDel(finca,prod){if(CFG.bodega&&CFG.bodega[finca])delete CFG.bodega[finca][prod];await persistCfg();renderPedidos();}
 async function persistPedidos(){if(roGuard())return;await Store.set('pedidos',JSON.stringify(PEDIDOS));Cloud.schedulePush();}
 async function persistPedDraft(){await Store.set('peddraft',JSON.stringify({finca:ui.pedFinca,ha:ui.pedHa,fecha:ui.pedFecha,lines:ui.pedLines}));Cloud.schedulePush();}
+function pedBaseU(u){return (u==='kg'||u==='g')?'g':'ml';}
+function pedManualBase(l){const q=+l.mq||0;const u=l.mu||'L';return (u==='L'||u==='kg')?q*1000:q;}
 function pedCompute(){
   const finca=ui.pedFinca||'';
   const ha=+ui.pedHa||0;
   const lines=(ui.pedLines||[]).filter(l=>l.n).map(l=>{
-    const d=+l.d||0, need=d*ha;
-    const av=bodegaAvail(finca,l.n); const avail=av?av.q:0;
+    const manual=!!l.manual;
+    const d=+l.d||0;
+    const u=manual?pedBaseU(l.mu||'L'):(l.u||'ml');
+    const need=manual?pedManualBase(l):d*ha;
+    const av=bodegaAvail(finca,l.n); const avail=(av&&pedBaseU(av.u||'ml')===u)?av.q:0;
     const use=(l.useBodega!==false)&&avail>0;
     const used=use?Math.min(avail,need):0;
     const order=Math.max(need-used,0);
-    return {n:l.n,d,u:l.u||'ml',need,avail,used,order,useBodega:use};
+    return {n:l.n,d,u,manual,mq:+l.mq||0,mu:l.mu||'L',need,avail,used,order,useBodega:use};
   });
   return {finca,ha,fecha:ui.pedFecha||todayISO(),lines};
 }
@@ -3216,7 +3227,7 @@ function renderPedidos(){
          <div class="field"><label>Hectáreas</label><input class="input tnum" type="number" step="any" value="${esc(ui.pedHa)}" placeholder="0" oninput="ui.pedHa=this.value;pedCalc();persistPedDraft()"></div>
          <div class="field"><label>Fecha del pedido</label><input class="input tnum" type="date" value="${esc(ui.pedFecha||todayISO())}" oninput="ui.pedFecha=this.value;persistPedDraft()"></div>
        </div>
-       <div class="note">Al elegir la finca se cargan sus hectáreas automáticamente (puedes ajustarlas). La cantidad necesaria de cada producto = dosis por hectárea × hectáreas.</div>
+       <div class="note">Al elegir la finca se cargan sus hectáreas automáticamente (puedes ajustarlas). La cantidad necesaria de cada producto = dosis por hectárea × hectáreas. Con el botón «Por hectáreas / Cantidad fija» de cada producto puedes escribir tú la cantidad (L, ml, kg o g) sin depender de las hectáreas.</div>
        ${fincaFactBox(ui.pedFinca)}
      </div>
      <div class="card panel">
@@ -3235,20 +3246,30 @@ function pedRenderLines(){
   const cat=pedCatalog();
   if(!ui.pedLines||!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',stock:''}];
   box.innerHTML=ui.pedLines.map((l,i)=>{
-    const av=bodegaAvail(ui.pedFinca,l.n);const avail=av?av.q:0;const on=l.useBodega!==false;
-    return `<div class="pedline">
+    const manual=!!l.manual;
+    const uBase=manual?pedBaseU(l.mu||'L'):(l.u||'ml');
+    const av=bodegaAvail(ui.pedFinca,l.n);const avail=(av&&pedBaseU(av.u||'ml')===uBase)?av.q:0;const on=l.useBodega!==false;
+    const sub=manual
+      ? `<input class="input tnum ped-dose" type="number" step="any" value="${esc(l.mq||'')}" placeholder="cantidad" oninput="ui.pedLines[${i}].mq=this.value;pedCalc();persistPedDraft()">
+         <select class="input ped-unit" onchange="ui.pedLines[${i}].mu=this.value;pedRenderLines();pedCalc();persistPedDraft()"><option value="L" ${l.mu==='L'||!l.mu?'selected':''}>L</option><option value="ml" ${l.mu==='ml'?'selected':''}>ml</option><option value="kg" ${l.mu==='kg'?'selected':''}>kg</option><option value="g" ${l.mu==='g'?'selected':''}>g</option></select>`
+      : `<input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
+         <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>`;
+    return `<div class="pedline${manual?' manual':''}">
      <select class="input ped-prod" onchange="pedSetProd(${i},this.value)">
        <option value="">— Elegir producto —</option>
        ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
      </select>
      <div class="ped-sub">
-       <input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
-       <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>
+       ${sub}
        <button class="iconbtn del ped-del" onclick="pedDelLine(${i})">${ic('trash')}</button>
      </div>
-     ${l.n?(avail>0?`<label class="ped-bod on"><input type="checkbox" ${on?'checked':''} onchange="ui.pedLines[${i}].useBodega=this.checked;pedCalc();persistPedDraft()"> Usar disponible en bodega (${qFmt(avail,(av&&av.u)||l.u)})</label>`:`<span class="ped-bod off">Sin stock en bodega de ${esc(ui.pedFinca||'—')}</span>`):''}
+     <div class="ped-flags">
+       <button class="ped-modo${manual?' on':''}" onclick="pedToggleManual(${i})" title="${manual?'Volver a calcular por hectáreas':'Escribir la cantidad a mano'}">${manual?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Cantidad fija':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Por hectáreas'}</button>
+       ${l.n?(avail>0?`<label class="ped-bod on"><input type="checkbox" ${on?'checked':''} onchange="ui.pedLines[${i}].useBodega=this.checked;pedCalc();persistPedDraft()"> Usar bodega (${qFmt(avail,(av&&av.u)||uBase)})</label>`:`<span class="ped-bod off">Sin stock en bodega de ${esc(ui.pedFinca||'—')}</span>`):''}
+     </div>
    </div>`;}).join('');
 }
+function pedToggleManual(i){const l=ui.pedLines[i];l.manual=!l.manual;if(l.manual&&!l.mu)l.mu=(l.u==='g')?'kg':'L';pedRenderLines();pedCalc();persistPedDraft();}
 function pedAddLine(){ui.pedLines.push({n:'',d:'',u:'ml',useBodega:true});pedRenderLines();pedCalc();persistPedDraft();}
 function pedDelLine(i){ui.pedLines.splice(i,1);if(!ui.pedLines.length)ui.pedLines=[{n:'',d:'',u:'ml',useBodega:true}];pedRenderLines();pedCalc();persistPedDraft();}
 function pedSetProd(i,val){const c=pedCatalog().find(x=>x.n===val);ui.pedLines[i].n=val;if(c){if(!ui.pedLines[i].d)ui.pedLines[i].d=c.d;ui.pedLines[i].u=c.u||'ml';}if(ui.pedLines[i].useBodega===undefined)ui.pedLines[i].useBodega=true;pedRenderLines();pedCalc();persistPedDraft();}
@@ -3256,7 +3277,7 @@ function pedCalc(){
   const el=document.getElementById('ped_results');if(!el)return;
   const m=pedCompute();
   if(!m.finca||!m.ha){el.innerHTML=`<div class="card panel"><div class="empty" style="padding:26px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Elige la finca y confirma las hectáreas para calcular el pedido.</span></div></div>`;return;}
-  const rows=m.lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${l.d.toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum" style="color:${l.used>0?'var(--green2)':'var(--muted)'}">${l.used>0?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b style="color:${l.order>0?'var(--green2)':'var(--muted)'}">${l.order>0?qFmt(l.order,l.u):'Suficiente'}</b></td></tr>`).join('');
+  const rows=m.lines.map(l=>`<tr><td class="qname">${esc(l.n)}</td><td class="r tnum">${l.manual?'<span class="chip pay">Cantidad fija</span>':(l.d.toLocaleString('es-CO',{maximumFractionDigits:2})+' '+l.u+'/ha')}</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum" style="color:${l.used>0?'var(--green2)':'var(--muted)'}">${l.used>0?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b style="color:${l.order>0?'var(--green2)':'var(--muted)'}">${l.order>0?qFmt(l.order,l.u):'Suficiente'}</b></td></tr>`).join('');
   const usan=m.lines.filter(l=>l.used>0);
   el.innerHTML=`
    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
@@ -3333,7 +3354,7 @@ async function pedGuardar(){
   const m=pedCompute();
   if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}
   if(!m.lines.length){toast('Agrega al menos un producto');return;}
-  PEDIDOS.push({id:pseq++,finca:m.finca,ha:m.ha,f:m.fecha,lines:m.lines.map(l=>({n:l.n,d:l.d,u:l.u,need:l.need,used:l.used,order:l.order}))});
+  PEDIDOS.push({id:pseq++,finca:m.finca,ha:m.ha,f:m.fecha,lines:m.lines.map(l=>({n:l.n,d:l.d,u:l.u,manual:l.manual,mq:l.mq,mu:l.mu,need:l.need,used:l.used,order:l.order}))});
   let deducted=0;
   m.lines.forEach(l=>{if(l.used>0&&CFG.bodega&&CFG.bodega[m.finca]&&CFG.bodega[m.finca][l.n]){const e=CFG.bodega[m.finca][l.n];e.q=Math.max(0,(+e.q||0)-l.used);if(e.q<=0.0001)delete CFG.bodega[m.finca][l.n];deducted++;}});
   await persistPedidos();await persistCfg();renderPedidos();
@@ -3354,10 +3375,10 @@ function pedSavedList(){
       <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="iconbtn" title="Cargar en el calculador" onclick="pedLoad(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="iconbtn" title="PDF" onclick="pedPrintSaved(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="iconbtn del" title="Eliminar" onclick="pedDel(${p.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`;}).join('')}
     </tbody></table></div></div>`;
 }
-function pedLoad(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;ui.pedFinca=p.finca;ui.pedHa=p.ha;ui.pedFecha=p.f;ui.pedLines=(p.lines&&p.lines.length)?p.lines.map(l=>({n:l.n,d:l.d,u:l.u,useBodega:true})):[{n:'',d:'',u:'ml',useBodega:true}];persistPedDraft();renderPedidos();toast('Pedido cargado');}
+function pedLoad(id){const p=PEDIDOS.find(x=>x.id===id);if(!p)return;ui.pedFinca=p.finca;ui.pedHa=p.ha;ui.pedFecha=p.f;ui.pedLines=(p.lines&&p.lines.length)?p.lines.map(l=>({n:l.n,d:l.d,u:l.u,manual:!!l.manual,mq:l.mq,mu:l.mu,useBodega:true})):[{n:'',d:'',u:'ml',useBodega:true}];persistPedDraft();renderPedidos();toast('Pedido cargado');}
 function pedDel(id){const p=PEDIDOS.find(x=>x.id===id);confirmModal('Eliminar pedido',`Se eliminará el pedido de ${p?esc(p.finca):'esta finca'} del ${p?fmtFecha(p.f):''}. (La bodega no se restaura.)`,async()=>{PEDIDOS=PEDIDOS.filter(x=>x.id!==id);await persistPedidos();closeModal();renderPedidos();toast('Pedido eliminado');});}
 function pedStatementHTML(m){
-  const rows=m.lines.map(l=>`<tr><td class="wrap">${esc(l.n)}</td><td class="r tnum">${(+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ${l.u}/ha</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${(+l.used>0)?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b>${(+l.order>0)?qFmt(l.order,l.u):'—'}</b></td></tr>`).join('');
+  const rows=m.lines.map(l=>`<tr><td class="wrap">${esc(l.n)}</td><td class="r tnum">${l.manual?'Cantidad fija':((+l.d||0).toLocaleString('es-CO',{maximumFractionDigits:2})+' '+l.u+'/ha')}</td><td class="r tnum">${qFmt(l.need,l.u)}</td><td class="r tnum">${(+l.used>0)?qFmt(l.used,l.u):'—'}</td><td class="r tnum"><b>${(+l.order>0)?qFmt(l.order,l.u):'—'}</b></td></tr>`).join('');
   const usan=m.lines.filter(l=>(+l.used||0)>0);
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Pedido</div><h2>${esc(m.finca)}</h2><div class="rh-sub">${(+m.ha||0).toLocaleString('es-CO',{maximumFractionDigits:2})} ha · Fecha del pedido ${fmtFecha(m.f||m.fecha)}</div></div><div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b></div></div>
