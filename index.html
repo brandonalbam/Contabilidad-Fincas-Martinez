@@ -3196,6 +3196,15 @@ async function persistPedidos(){if(roGuard())return;await Store.set('pedidos',JS
 async function persistPedDraft(){await Store.set('peddraft',JSON.stringify({finca:ui.pedFinca,ha:ui.pedHa,fecha:ui.pedFecha,lines:ui.pedLines}));Cloud.schedulePush();}
 function pedBaseU(u){return (u==='kg'||u==='g')?'g':'ml';}
 function pedManualBase(l){const q=+l.mq||0;const u=l.mu||'L';return (u==='L'||u==='kg')?q*1000:q;}
+function pedRoundUp(v,u){
+  if(!(v>0))return 0;
+  // Líquidos: pasos de 1 L. Sólidos: pasos de 500 g.
+  // Si el sobrante pasa de 300 (ml/g) sube al siguiente paso; si no, baja.
+  const step=(u==='g')?500:1000;
+  const base=Math.floor(v/step)*step;
+  const rem=v-base;
+  return rem>300?base+step:base;
+}
 function pedCompute(){
   const finca=ui.pedFinca||'';
   const ha=+ui.pedHa||0;
@@ -3207,8 +3216,9 @@ function pedCompute(){
     const av=bodegaAvail(finca,l.n); const avail=(av&&pedBaseU(av.u||'ml')===u)?av.q:0;
     const use=(l.useBodega!==false)&&avail>0;
     const used=use?Math.min(avail,need):0;
-    const order=Math.max(need-used,0);
-    return {n:l.n,d,u,manual,mq:+l.mq||0,mu:l.mu||'L',need,avail,used,order,useBodega:use};
+    const rawOrder=Math.max(need-used,0);
+    const order=manual?rawOrder:pedRoundUp(rawOrder,u);
+    return {n:l.n,d,u,manual,mq:+l.mq||0,mu:l.mu||'L',need,avail,used,rawOrder,order,rounded:(!manual&&Math.abs(order-rawOrder)>0.0001),useBodega:use};
   });
   return {finca,ha,fecha:ui.pedFecha||todayISO(),lines};
 }
@@ -3287,6 +3297,7 @@ function pedCalc(){
    </div>
    ${m.lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedido para ${esc(m.finca)}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Necesario = dosis/ha × ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · A pedir = necesario − lo usado de bodega</p></div>
      <div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">De bodega</th><th class="r">A pedir</th></tr></thead><tbody>${rows}</tbody></table></div>
+     ${m.lines.some(l=>l.rounded)?`<div class="note" style="margin:0 16px 8px">Las cantidades calculadas por hectárea se ajustan a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g. Si el sobrante pasa de 300 ml/g sube al siguiente (5,45 L → 6 L; 4,4 kg → 4,5 kg); si no, baja (5,2 L → 5 L; 4,2 kg → 4 kg). Los productos en «Cantidad fija» se piden exactamente como los escribes.</div>`:''}
      ${usan.length?`<div class="note" style="margin:0 16px 14px">Observación: ${usan.map(l=>`en <b>${esc(l.n)}</b> se usarán ${qFmt(l.used,l.u)} de la bodega de ${esc(m.finca)}`).join('; ')}. Al guardar el pedido, esas cantidades se descuentan de la bodega.</div>`:''}</div>`:'<div class="card" style="margin-top:16px"><div style="padding:18px;color:var(--muted);font-size:13px">Agrega productos para calcular el pedido.</div></div>'}
    ${pedBodegaCard()}`;
 }
@@ -3390,7 +3401,7 @@ function pedStatementHTML(m){
        <tbody>${rows||'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin productos.</td></tr>'}</tbody></table></div></div>
      ${usan.length?`<div class="sec-title" style="margin-top:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Observaciones · uso de bodega<span class="ln"></span></div>
      <div class="card"><div style="padding:14px 16px;font-size:13px;line-height:1.7">${usan.map(l=>`En <b>${esc(l.n)}</b> se utilizarán <b>${qFmt(l.used,l.u)}</b> disponibles en la bodega de ${esc(m.finca)}; solo se piden ${qFmt(l.order,l.u)}.`).join('<br>')}</div></div>`:''}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo usado de la bodega de la finca.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo usado de la bodega, ajustado a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g (sobrante mayor a 300 ml/g sube al siguiente; si no, baja). Los productos con cantidad fija se piden tal como fueron indicados.</div>
    </div>`;
 }
 function pedPrint(){const m=pedCompute();if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}if(!m.lines.length){toast('Agrega productos al pedido');return;}printIsolated(pedStatementHTML(m),'Pedido · '+m.finca);}
