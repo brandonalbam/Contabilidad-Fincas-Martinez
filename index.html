@@ -436,6 +436,12 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .ro-lock .ro-ok{opacity:1;cursor:pointer}
 .ro-banner{display:flex;align-items:center;gap:9px;background:var(--amber-soft);color:#8a5a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
 .ro-banner svg{width:18px;height:18px;flex:0 0 auto}
+/* Respuesta inmediata de botones */
+button,.btn,.iconbtn,a[data-view],.task-check,.pf-choose{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn.is-busy{opacity:.85;pointer-events:none}
+.btn .spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;margin-right:4px;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.tap-ok{transform:scale(.97);transition:transform .08s}
 /* Cosas pendientes */
 .task{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
 .task:last-child{border-bottom:none}
@@ -1346,9 +1352,10 @@ function openPago(id){const m=MOVS.find(x=>x.id===id);const sal=saldo(m);
 }
 function verAbonos(id){
   const m=MOVS.find(x=>x.id===id);if(!m)return;
-  const tot=+m.tot||0;const abs=(Array.isArray(m.abs)?m.abs:[]).slice().sort((a,b)=>(a.f||'').localeCompare(b.f||''));
+  const tot=+m.tot||0;const absRaw=Array.isArray(m.abs)?m.abs:[];
+  const abs=absRaw.map((a,oi)=>({...a,oi})).sort((a,b)=>(a.f||'').localeCompare(b.f||''));
   let acum=0;
-  const rows=abs.map((a,i)=>{acum+=(+a.v||0);return `<tr><td class="tnum">${i+1}</td><td class="tnum">${fmtFecha(a.f)}</td><td class="r tnum" style="color:var(--green2)"><b>${fmt(a.v)}</b></td><td class="r tnum">${fmt(acum)}</td><td class="r tnum" style="color:${Math.max(tot-acum,0)>0?'var(--amber)':'var(--green2)'}">${fmt(Math.max(tot-acum,0))}</td></tr>`;}).join('');
+  const rows=abs.map((a,i)=>{acum+=(+a.v||0);return `<tr><td class="tnum">${i+1}</td><td class="tnum">${fmtFecha(a.f)}</td><td class="r tnum" style="color:var(--green2)"><b>${fmt(a.v)}</b></td><td class="r tnum">${fmt(acum)}</td><td class="r tnum" style="color:${Math.max(tot-acum,0)>0?'var(--amber)':'var(--green2)'}">${fmt(Math.max(tot-acum,0))}</td><td class="r"><div style="display:flex;gap:4px;justify-content:flex-end"><button class="iconbtn" title="Editar abono" onclick="abonoEdit(${m.id},${a.oi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iconbtn del" title="Eliminar abono" onclick="abonoDel(${m.id},${a.oi})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>`;}).join('');
   const regTot=abs.reduce((a,x)=>a+(+x.v||0),0);
   const sinHist=(+m.ab||0)-regTot;
   const pagada=m.e==='P';
@@ -1361,13 +1368,50 @@ function verAbonos(id){
    </div>
    ${pagada?`<div class="chip i" style="margin-bottom:12px">✓ Factura pagada${abs.length?' con '+abs.length+' abono(s)':''}</div>`:`<div class="chip pend" style="margin-bottom:12px">Pendiente · ${abs.length} abono(s) hasta ahora</div>`}
    ${abs.length?`<div class="tablewrap"><table>
-     <thead><tr><th>#</th><th>Fecha</th><th class="r">Abono</th><th class="r">Acumulado</th><th class="r">Saldo restante</th></tr></thead>
+     <thead><tr><th>#</th><th>Fecha</th><th class="r">Abono</th><th class="r">Acumulado</th><th class="r">Saldo restante</th><th></th></tr></thead>
      <tbody>${rows}</tbody></table></div>`
     :`<div class="note" style="margin:0">${pagada?'Esta factura se registró como pagada de contado (sin abonos parciales).':'Aún no se han registrado abonos a esta factura.'}</div>`}
    ${sinHist>0?`<div class="note" style="margin-top:10px">Además hay ${fmt(sinHist)} abonados antes de que existiera el historial de abonos (sin fecha registrada).</div>`:''}`;
   const btns=[{label:'Cerrar',cls:'btn',fn:closeModal}];
   if(m.e==='X'&&saldo(m)>0)btns.unshift({label:'Registrar abono',cls:'btn primary',fn:()=>{closeModal();openPago(m.id);}});
   showModal('Abonos de la factura',body,btns);
+}
+function abonoRecalc(m,sinHist){
+  const sum=(m.abs||[]).reduce((s,x)=>s+(+x.v||0),0);
+  m.ab=Math.max(0,(sinHist||0)+sum);
+  m.e=(m.ab>=(+m.tot||0)&&(+m.tot||0)>0)?'P':'X';
+}
+function abonoEdit(id,oi){
+  const m=MOVS.find(x=>x.id===id);if(!m||!m.abs||!m.abs[oi])return;
+  const a=m.abs[oi];const tot=+m.tot||0;
+  const sinHist=Math.max(0,(+m.ab||0)-m.abs.reduce((s,x)=>s+(+x.v||0),0));
+  const otros=m.abs.reduce((s,x,j)=>j===oi?s:s+(+x.v||0),0)+sinHist;
+  const maxV=Math.max(tot-otros,0);
+  showModal('Editar abono',`
+   <p style="color:var(--muted);margin-bottom:12px">${esc(m.cl||m.co||m.fi)} · ${esc(m.d||m.c)} · Total factura <b>${fmt(tot)}</b></p>
+   <div class="form-grid">
+     <div class="field"><label>Fecha del abono</label><input class="input tnum" type="date" id="ae_f" value="${esc(a.f||todayISO())}"></div>
+     <div class="field"><label>Valor del abono</label><input class="input tnum money" inputmode="numeric" id="ae_v" value="${fmn(a.v)}"></div>
+   </div>
+   <div class="note">Este abono puede ser como máximo <b>${fmt(maxV)}</b> (lo que falta para completar la factura sumando los demás abonos). El saldo y el estado de la factura se recalculan solos.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:()=>{closeModal();verAbonos(id);}},{label:'Guardar cambios',cls:'btn primary',fn:async()=>{
+     const v=Math.round(num(document.getElementById('ae_v').value));const f=document.getElementById('ae_f').value||todayISO();
+     if(v<=0){toast('El valor debe ser mayor a cero');return;}
+     if(v>maxV){toast('El abono supera lo que falta de la factura ('+fmt(maxV)+')');return;}
+     a.f=f;a.v=v;m.abs.sort((x,y)=>(x.f||'').localeCompare(y.f||''));
+     abonoRecalc(m,sinHist);
+     await persistMovs();closeModal();render();verAbonos(id);toast('Abono actualizado');
+   }}]);
+}
+function abonoDel(id,oi){
+  const m=MOVS.find(x=>x.id===id);if(!m||!m.abs||!m.abs[oi])return;
+  const a=m.abs[oi];
+  const sinHist=Math.max(0,(+m.ab||0)-m.abs.reduce((s,x)=>s+(+x.v||0),0));
+  showModal('Eliminar abono',`<p style="color:var(--muted);line-height:1.6">Se eliminará el abono de <b>${fmt(a.v)}</b> del <b>${fmtFecha(a.f)}</b>. El saldo de la factura aumentará en ese valor y, si estaba pagada, volverá a quedar pendiente.</p>`,
+   [{label:'Cancelar',cls:'btn',fn:()=>{closeModal();verAbonos(id);}},{label:'Eliminar',cls:'btn primary',fn:async()=>{
+     m.abs.splice(oi,1);abonoRecalc(m,sinHist);
+     await persistMovs();closeModal();render();verAbonos(id);toast('Abono eliminado');
+   }}]);
 }
 
 /* ===== RESUMEN POR FINCA ===== */
@@ -3203,7 +3247,8 @@ function pedRoundUp(v,u){
   const step=(u==='g')?500:1000;
   const base=Math.floor(v/step)*step;
   const rem=v-base;
-  return rem>300?base+step:base;
+  const r=rem>300?base+step:base;
+  return r>0?r:step; // mínimo: 1 L en líquidos, 500 g en sólidos
 }
 function pedCompute(){
   const finca=ui.pedFinca||'';
@@ -3297,7 +3342,7 @@ function pedCalc(){
    </div>
    ${m.lines.length?`<div class="card" style="margin-top:16px"><div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Pedido para ${esc(m.finca)}</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">Necesario = dosis/ha × ${m.ha.toLocaleString('es-CO',{maximumFractionDigits:2})} ha · A pedir = necesario − lo usado de bodega</p></div>
      <div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Dosis/ha</th><th class="r">Necesita</th><th class="r">De bodega</th><th class="r">A pedir</th></tr></thead><tbody>${rows}</tbody></table></div>
-     ${m.lines.some(l=>l.rounded)?`<div class="note" style="margin:0 16px 8px">Las cantidades calculadas por hectárea se ajustan a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g. Si el sobrante pasa de 300 ml/g sube al siguiente (5,45 L → 6 L; 4,4 kg → 4,5 kg); si no, baja (5,2 L → 5 L; 4,2 kg → 4 kg). Los productos en «Cantidad fija» se piden exactamente como los escribes.</div>`:''}
+     ${m.lines.some(l=>l.rounded)?`<div class="note" style="margin:0 16px 8px">Las cantidades calculadas por hectárea se ajustan a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g. Si el sobrante pasa de 300 ml/g sube al siguiente (5,45 L → 6 L; 4,4 kg → 4,5 kg); si no, baja (5,2 L → 5 L; 4,2 kg → 4 kg). Si la cantidad es muy pequeña se pide el mínimo: 1 L o 500 g. Los productos en «Cantidad fija» se piden exactamente como los escribes.</div>`:''}
      ${usan.length?`<div class="note" style="margin:0 16px 14px">Observación: ${usan.map(l=>`en <b>${esc(l.n)}</b> se usarán ${qFmt(l.used,l.u)} de la bodega de ${esc(m.finca)}`).join('; ')}. Al guardar el pedido, esas cantidades se descuentan de la bodega.</div>`:''}</div>`:'<div class="card" style="margin-top:16px"><div style="padding:18px;color:var(--muted);font-size:13px">Agrega productos para calcular el pedido.</div></div>'}
    ${pedBodegaCard()}`;
 }
@@ -3401,7 +3446,7 @@ function pedStatementHTML(m){
        <tbody>${rows||'<tr><td colspan="5" style="padding:16px;color:var(--muted)">Sin productos.</td></tr>'}</tbody></table></div></div>
      ${usan.length?`<div class="sec-title" style="margin-top:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Observaciones · uso de bodega<span class="ln"></span></div>
      <div class="card"><div style="padding:14px 16px;font-size:13px;line-height:1.7">${usan.map(l=>`En <b>${esc(l.n)}</b> se utilizarán <b>${qFmt(l.used,l.u)}</b> disponibles en la bodega de ${esc(m.finca)}; solo se piden ${qFmt(l.order,l.u)}.`).join('<br>')}</div></div>`:''}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo usado de la bodega, ajustado a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g (sobrante mayor a 300 ml/g sube al siguiente; si no, baja). Los productos con cantidad fija se piden tal como fueron indicados.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Necesario = dosis por hectárea × hectáreas de la finca. A pedir = necesario menos lo usado de la bodega, ajustado a unidades de compra: líquidos en litros enteros y sólidos en pasos de 500 g (sobrante mayor a 300 ml/g sube al siguiente; si no, baja; mínimo 1 L o 500 g). Los productos con cantidad fija se piden tal como fueron indicados.</div>
    </div>`;
 }
 function pedPrint(){const m=pedCompute();if(!m.finca||!m.ha){toast('Elige la finca y las hectáreas');return;}if(!m.lines.length){toast('Agrega productos al pedido');return;}printIsolated(pedStatementHTML(m),'Pedido · '+m.finca);}
@@ -4070,7 +4115,21 @@ function showModal(title,bodyHTML,actions){
   ov.innerHTML=`<div class="modal"><div class="modal-h"><h3>${title}</h3><button class="iconbtn" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
    <div class="modal-b">${bodyHTML}</div>
    <div class="modal-f">${actions.map((a,i)=>`<button class="${a.cls}" data-act="${i}">${a.label}</button>`).join('')}</div></div>`;
-  ov.querySelectorAll('[data-act]').forEach((b,i)=>b.onclick=actions[i].fn);
+  ov.querySelectorAll('[data-act]').forEach((b,i)=>{
+    b.onclick=async ev=>{
+      const a=actions[i];if(!a||typeof a.fn!=='function')return;
+      if(ov._busy)return;
+      const isCancel=a.fn===closeModal;
+      if(isCancel){closeModal();return;}
+      ov._busy=true;
+      const btns=ov.querySelectorAll('.modal-f button');btns.forEach(x=>x.disabled=true);
+      const orig=b.innerHTML;b.classList.add('is-busy');b.innerHTML='<span class="spin"></span>'+orig;
+      if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+      await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+      try{await a.fn(ev);}catch(err){console.error(err);toast('No se pudo completar la acción. Intenta de nuevo.');}
+      finally{ov._busy=false;if(b.isConnected){b.classList.remove('is-busy');b.innerHTML=orig;btns.forEach(x=>{if(x.isConnected)x.disabled=false;});}}
+    };
+  });
   ov.classList.add('show');
   ov.onclick=e=>{if(e.target===ov)closeModal();};
 }
@@ -4089,6 +4148,14 @@ document.addEventListener('input',e=>{
   const digits=el.value.replace(/[^\d]/g,'');
   el.dataset.raw=digits;
   el.value=digits?(+digits).toLocaleString('es-CO'):'';
+},true);
+document.addEventListener('click',e=>{
+  const b=e.target&&e.target.closest?e.target.closest('button.btn.primary,button.btn.sm'):null;
+  if(!b||b.closest('.modal-f'))return;
+  const now=Date.now();
+  if(b._lastClick&&now-b._lastClick<700){e.stopImmediatePropagation();e.preventDefault();return;}
+  b._lastClick=now;
+  b.classList.add('tap-ok');setTimeout(()=>b.classList.remove('tap-ok'),220);
 },true);
 init();
 </script>
