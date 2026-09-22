@@ -294,6 +294,8 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 /* toast + empty */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(160deg,#2f8f57,#26794a);border:none;color:#fff;padding:13px 22px;border-radius:99px;font-weight:500;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:100;opacity:0;transition:opacity .25s var(--ease),transform .25s var(--ease);display:flex;align-items:center;gap:9px}
 .toast.show{opacity:1;transform:translateX(-50%)}
+.toast{pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.warn{background:linear-gradient(160deg,#d08a2c,#b8741c)}
 .toast svg{width:17px;height:17px;color:#fff}
 .empty{text-align:center;padding:46px 20px;color:var(--muted)}
 .empty svg{width:42px;height:42px;color:var(--line);margin-bottom:10px}
@@ -4157,7 +4159,7 @@ async function setFincaHa(f,c,v){if(!CFG.fincaHa[f])CFG.fincaHa[f]={};const n=+v
 async function delFincaHa(f,c){if(CFG.fincaHa[f])delete CFG.fincaHa[f][c];await persistCfg();renderConfig();}
 async function addFincaHa(f,fi){const cs=document.getElementById('fha_c_'+fi),vs=document.getElementById('fha_v_'+fi);if(!cs)return;const c=cs.value;const v=+(vs?vs.value:0)||0;if(!c)return;if(!CFG.fincaHa[f])CFG.fincaHa[f]={};CFG.fincaHa[f][c]=v;await persistCfg();renderConfig();toast('Hectáreas guardadas');}
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
-let toastT;function toast(msg){const t=document.getElementById('toast');t.innerHTML=ic('check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+let toastT;function toast(msg){const t=document.getElementById('toast');const warn=/^(Indica|Elige|Escribe|Agrega|Marca|Completa|No |Sin |El valor|El abono|El total|Tu perfil|PIN|Este |Esta |Primero|Debes|Selecciona)/i.test(String(msg||''));t.classList.toggle('warn',warn);t.innerHTML=(warn?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:0 0 auto"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>':ic('check'))+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),warn?3600:2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
 window.addEventListener('afterprint',()=>{document.body.classList.remove('printing');const pa=document.getElementById('printArea');if(pa){pa.innerHTML='';if(pa._t){document.title=pa._t;pa._t=null;}}});
