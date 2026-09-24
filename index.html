@@ -212,7 +212,7 @@ td.r,th.r{text-align:right}
 .addrow input{flex:1}
 /* Preparación de químicos */
 .mixline{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;align-items:center}
-.mixline .mix-chem{flex:2 1 200px;min-width:0}
+.mixline .mix-chem{flex:1 1 100%;min-width:0}
 .mixline .mix-dose{flex:1 1 90px;min-width:0;text-align:right}
 .mixline .mix-unit{flex:0 0 auto;width:86px}
 .mixline .mixdel{flex:0 0 auto}
@@ -229,7 +229,7 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .pedline .ped-unit{flex:0 0 auto;width:82px}
 .pedline .ped-stock{flex:1 1 80px;min-width:0;text-align:right}
 .pedline .ped-del{flex:0 0 auto}
-@media(min-width:760px){.pedline .ped-prod{flex:2 1 200px}.pedline .ped-sub{flex:3 1 auto}}
+@media(min-width:760px){.pedline .ped-sub{flex:3 1 auto}}
 .ped-bod{flex:1 1 100%;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--green2);margin-top:2px}
 .ped-bod input{width:auto;flex:0 0 auto}
 .ped-bod.off{color:var(--faint)}
@@ -429,6 +429,8 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .perfil-bar .pf-switch svg{width:18px;height:18px}
 .secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px 12px;margin-top:4px}
 .secgrid2{display:grid;grid-template-columns:1fr;gap:7px;margin-top:2px}
+.mix-chem,.ped-prod,#pb_p{text-overflow:ellipsis;white-space:normal}
+.mix-chem option,.ped-prod option,#pb_p option{white-space:normal}
 .seccheck{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
 .secrow{display:flex;align-items:center;gap:10px}
 .secrow .secname{flex:1;font-size:13px;min-width:0}
@@ -707,7 +709,7 @@ function applyCloud(d){
   CFG=d.config;MOVS=d.movimientos||[];NOMINAS=d.nominas||[];
   if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
   ui.needLogin=perfiles().length>0&&!perfilActivo();
-  migrateDronAyu();migrateFincaFact();
+  migrateDronAyu();migrateFincaFact();quimSortCat();
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
@@ -821,6 +823,7 @@ async function init(){
   if(!CFG.fincaHa){CFG.fincaHa={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.frutaCalidades){CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.quimicos){CFG.quimicos=[];await Store.set('config',JSON.stringify(CFG));}
+  if(quimSortCat())await Store.set('config',JSON.stringify(CFG));
   if(!CFG.fincaHaTot){CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.bodega){CFG.bodega={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.fincaFact){CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};await Store.set('config',JSON.stringify(CFG));}
@@ -2707,6 +2710,12 @@ function dronStatementHTML(){
 function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
 
 /* ===== PREPARACIÓN DE QUÍMICOS ===== */
+function quimSortCat(){
+  if(!Array.isArray(CFG.quimicos))return false;
+  const before=CFG.quimicos.map(c=>c&&c.n).join('|');
+  CFG.quimicos.sort((x,y)=>String((x&&x.n)||'').localeCompare(String((y&&y.n)||''),'es',{sensitivity:'base',numeric:true}));
+  return before!==CFG.quimicos.map(c=>c&&c.n).join('|');
+}
 function quimCatalog(){return CFG.quimicos||[];}
 async function persistMix(){await Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines,applyK:ui.cronoApplyK||'',applyId:ui.cronoApplyId||0}));Cloud.schedulePush();}
 function qFmt(v,u){v=+v||0;const n=x=>x.toLocaleString('es-CO',{maximumFractionDigits:2});if(u==='g'){return v>=1000?n(v/1000)+' kg':n(v)+' g';}return v>=1000?n(v/1000)+' L':n(v)+' ml';}
@@ -2772,7 +2781,7 @@ function quimRenderLines(){
   const cat=quimCatalog();const ab=ui.mixMode==='ab';
   if(!ui.mixLines||!ui.mixLines.length)ui.mixLines=[{n:'',d:'',u:ab?'g':'ml'}];
   box.innerHTML=ui.mixLines.map((l,i)=>`<div class="mixline">
-     <select class="input mix-chem" onchange="quimSetLineChem(${i},this.value)">
+     <select class="input mix-chem" title="${esc(l.n||'Elegir producto')}" onchange="quimSetLineChem(${i},this.value)">
        <option value="">— Elegir ${ab?'producto':'químico'} —</option>
        ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
      </select>
@@ -2876,8 +2885,8 @@ function quimCatalogPanel(){
     <div class="note">La dosis/ha del catálogo se usa como valor inicial al elegir el químico en la mezcla; puedes ajustarla en cada preparación sin cambiar el catálogo.</div>
   </div>`;
 }
-async function quimAddCat(){const n=(document.getElementById('qc_n').value||'').trim();const d=num(document.getElementById('qc_d').value);const u=document.getElementById('qc_u').value||'ml';if(!n){toast('Escribe el nombre del químico');return;}if(!CFG.quimicos)CFG.quimicos=[];CFG.quimicos.push({n,d,u});await persistCfg();renderQuimicos();toast('Químico agregado');}
-async function quimSetCat(i,field,val){if(!CFG.quimicos)CFG.quimicos=[];if(field==='d')CFG.quimicos[i].d=num(val);else if(field==='u')CFG.quimicos[i].u=val;else CFG.quimicos[i].n=(val||'').trim();await persistCfg();renderQuimicos();}
+async function quimAddCat(){const n=(document.getElementById('qc_n').value||'').trim();const d=num(document.getElementById('qc_d').value);const u=document.getElementById('qc_u').value||'ml';if(!n){toast('Escribe el nombre del químico');return;}if(!CFG.quimicos)CFG.quimicos=[];CFG.quimicos.push({n,d,u});quimSortCat();await persistCfg();renderQuimicos();toast('Químico agregado');}
+async function quimSetCat(i,field,val){if(!CFG.quimicos)CFG.quimicos=[];if(field==='d')CFG.quimicos[i].d=num(val);else if(field==='u')CFG.quimicos[i].u=val;else {CFG.quimicos[i].n=(val||'').trim();quimSortCat();}await persistCfg();renderQuimicos();}
 async function quimDelCat(i){CFG.quimicos.splice(i,1);await persistCfg();renderQuimicos();}
 
 /* ===== CRONOGRAMA (Fumigadas / Abonadas) ===== */
@@ -3331,7 +3340,7 @@ function pedRenderLines(){
       : `<input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
          <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>`;
     return `<div class="pedline${manual?' manual':''}">
-     <select class="input ped-prod" onchange="pedSetProd(${i},this.value)">
+     <select class="input ped-prod" title="${esc(l.n||'Elegir producto')}" onchange="pedSetProd(${i},this.value)">
        <option value="">— Elegir producto —</option>
        ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
      </select>
@@ -3385,7 +3394,7 @@ function pedBodegaCard(){
     <div class="ph"><div><h2>Bodega por finca</h2><p>Agrega existencias que luego se usan solas en los pedidos de esa finca</p></div></div>
     <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
       <div class="field"><label>Finca (bodega)</label><select class="input" id="pb_fi">${fincas.map(f=>`<option ${ui.pedFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
-      <div class="field"><label>Producto</label><select class="input" id="pb_p">${cat.length?cat.map(c=>`<option data-u="${c.u||'ml'}">${esc(c.n)}</option>`).join(''):'<option value="">(catálogo vacío)</option>'}</select></div>
+      <div class="field full"><label>Producto</label><select class="input" id="pb_p">${cat.length?cat.map(c=>`<option data-u="${c.u||'ml'}">${esc(c.n)}</option>`).join(''):'<option value="">(catálogo vacío)</option>'}</select></div>
       <div class="field"><label>Cantidad</label><input class="input tnum" id="pb_q" type="number" step="any" placeholder="0"></div>
       <div class="field"><label>Unidad</label><select class="input" id="pb_u"><option value="ml">ml</option><option value="L">L</option><option value="g">g</option><option value="kg">kg</option></select></div>
     </div>
