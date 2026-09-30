@@ -245,6 +245,20 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .fact-box .fb-info b{font-family:var(--display);font-size:14px;display:block;line-height:1.3}
 .fact-box .fb-info span{font-size:12.5px;color:var(--muted)}
 .fact-box.empty .fb-info b{color:var(--ink)}
+/* Abonos recibidos (clientes/comercios) */
+.abo-list{padding:4px 16px 14px}
+.abo-row{border-bottom:1px solid var(--line);padding:10px 0}
+.abo-row:last-child{border-bottom:none}
+.abo-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.abo-meta{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.abo-meta b{font-family:var(--display);font-size:13.5px}
+.abo-meta span{font-size:11.5px;color:var(--muted)}
+.abo-tot{font-family:var(--display);font-size:15px;color:var(--green2)}
+.abo-dets{margin-top:6px;display:flex;flex-direction:column;gap:5px}
+.abo-det{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;background:var(--surface2);border-radius:10px;padding:7px 10px}
+.abo-det .abo-fac{color:var(--muted);flex:1;min-width:0}
+.abo-det b{white-space:nowrap}
+.abo-det .chip{font-size:10px;padding:1px 8px}
 /* Cronograma */
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .cal-title{font-family:var(--display);font-size:16px;font-weight:700;text-transform:capitalize}
@@ -2271,9 +2285,10 @@ async function smartAbonoApply(clName){
   if(amount<=0){toast('Escribe el monto del abono');return;}
   const{plan}=smartAbonoPlan(clName,amount);
   if(!plan.length){toast('El cliente no tiene cuentas pendientes');return;}
+  const bid='b'+Date.now().toString(36);
   plan.forEach(({m,ap})=>{
     m.abs=Array.isArray(m.abs)?m.abs:[];
-    m.abs.push({f,v:Math.round(ap),auto:1});
+    m.abs.push({f,v:Math.round(ap),auto:1,b:bid});
     m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
     m.ab=(+m.ab||0)+ap;
     if(m.ab>=(+m.tot||0))m.e='P';
@@ -2281,6 +2296,39 @@ async function smartAbonoApply(clName){
   const aplicado=plan.reduce((a,p)=>a+p.ap,0);
   await persistMovs();closeModal();render();
   toast(`Abono de ${fmt(aplicado)} distribuido en ${plan.length} factura(s)`);
+}
+function cliAbonoGroups(movs){
+  const g={};
+  (movs||[]).forEach(m=>{(m.abs||[]).forEach((a,ix)=>{
+    const key=a.b?('b:'+a.b):(a.auto?('a:'+(a.f||'')):('m:'+m.id+':'+ix));
+    if(!g[key])g[key]={f:a.f||'',total:0,items:[]};
+    g[key].total+=(+a.v||0);
+    if(!g[key].f||(a.f||'')<g[key].f)g[key].f=a.f||g[key].f;
+    g[key].items.push({m,v:+a.v||0});
+  });});
+  return Object.values(g).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
+}
+function abonosSection(movs,key){
+  const groups=cliAbonoGroups(movs);
+  if(!groups.length)return '';
+  const total=groups.reduce((a,g)=>a+g.total,0);
+  const rows=groups.map((g,gi)=>{
+    const multi=g.items.length>1;
+    const det=g.items.map(it=>`<div class="abo-det"><span class="fdot"><i style="background:${fincaColor(it.m.fi)}"></i>${esc(it.m.fi)}</span><span class="abo-fac">${it.m.fa?('Factura '+esc(it.m.fa)):esc(it.m.d||it.m.c||'—')} · ${fmtFecha(it.m.f)}</span><b class="tnum">${fmt(it.v)}</b><span class="chip ${saldo(it.m)>0?'pend':'i'}">${saldo(it.m)>0?('queda '+fmt(saldo(it.m))):'saldada'}</span></div>`).join('');
+    return `<div class="abo-row">
+      <div class="abo-head">
+        <div class="abo-meta"><b class="tnum">${fmtFecha(g.f)}</b><span>${multi?(g.items.length+' facturas'):'1 factura'}</span></div>
+        <b class="tnum abo-tot">${fmt(g.total)}</b>
+      </div>
+      <div class="abo-dets">${det}</div>
+    </div>`;}).join('');
+  return `
+      <div class="cli-paghead" onclick="const x=document.getElementById('abo_${key}');const c=document.getElementById('abochev_${key}');const o=x.style.display==='none';x.style.display=o?'':'none';if(c)c.classList.toggle('open',o)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <b>Abonos recibidos (${groups.length})</b><span style="color:var(--muted);font-size:12px">· ${fmt(total)}</span>
+        <span style="flex:1"></span><span class="chev" id="abochev_${key}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+      <div id="abo_${key}" style="display:none"><div class="abo-list">${rows}</div></div>`;
 }
 function cliCard(d,i){
   const initial=d.cl.trim().charAt(0).toUpperCase()||'·';
@@ -2297,6 +2345,7 @@ function cliCard(d,i){
     <div class="cli-detail" id="cli_${i}" style="display:none">
       <div style="padding:12px 16px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="printCliente('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button>${d.deuda>0?`<button class="btn sm primary" onclick="smartAbono('${esc(d.cl).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abono inteligente</button>`:''}</div>
       ${d.pend.length?detailTable(d.pend):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin deudas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
+      ${abonosSection(d.movs,'c'+i)}
       ${pagadasSection(d.pagadas,i,'cobrados')}
     </div></div>`;
 }
