@@ -2065,8 +2065,70 @@ tr[style*="border-top"] td{font-weight:700;background:#fff!important;color:#0f2a
 @media(max-width:600px){.payslip-weeks{grid-template-columns:1fr}.rep-head{flex-direction:column}.rh-meta{text-align:left}}
 `;
 function closePreview(){const w=document.getElementById('pvWrap');if(w)w.remove();document.body.style.overflow='';}
+/* ===== FORMATO EJECUTIVO para todos los PDF ===== */
+const EXEC_GENERIC_CSS=`
+.report-sec{padding:18px 34px 10px}
+.ex-h{margin-top:4px}
+.grid.kpis{gap:10px!important}
+.kpi{border:1px solid #c9d3cd!important;border-left:3px solid #2f8f57!important;border-radius:0!important;padding:10px 12px!important;background:#fff!important;box-shadow:none!important;break-inside:avoid}
+.kpi .lab{font-size:9.5px!important;letter-spacing:1px!important;color:#55645b!important;font-weight:700!important}
+.kpi .val{letter-spacing:-.2px;color:#16201a}
+.kpi .meta{color:#6b7a71!important;font-size:10px!important}
+.kpi.lead{background:#0f2a1b!important;border-color:#0f2a1b!important;border-left-color:#c9a227!important}
+.kpi.lead .lab{color:#e2c35a!important}
+.kpi.lead .val,.kpi.lead .meta{color:#fff!important}
+.card:not(.kpi){border:none!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}
+.card.panel:not(.kpi){padding:0!important}
+.tablewrap{border:none!important;border-radius:0!important;overflow:visible!important}
+table{width:100%;border-collapse:collapse}
+thead{display:table-header-group}
+th{background:#0f2a1b!important;color:#fff!important;font-size:9.5px!important;letter-spacing:.8px!important;font-weight:700!important;padding:7px 9px!important;border:none!important}
+td{padding:6px 9px!important;border-bottom:1px solid #d5ddd8!important;font-size:11px;background:#fff;color:#1b2620}
+tr{break-inside:avoid}
+tr[style*="border-top"] td{border-top:2px solid #0f2a1b!important;border-bottom:3px double #0f2a1b!important;background:#fff!important;color:#0f2a1b;font-weight:700}
+.note{font-size:10px!important;color:#33423a!important;background:#fff!important;border:1px solid #c9d3cd!important;border-left:3px solid #c9a227!important;border-radius:0!important;padding:10px 14px!important;margin:14px 0 4px!important;break-inside:avoid}
+.chip{border-radius:3px!important;font-size:9px!important;font-weight:700!important;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px!important}
+.fdot i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{.report-sec{padding:14px 6px 6px}.kpi.lead{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+`;
+function execifyHTML(bodyHTML){
+  const host=document.createElement('div');host.innerHTML=bodyHTML;
+  const docN='FL-'+todayISO().replace(/-/g,'')+'-'+String(Date.now()%100000).padStart(5,'0');
+  let emitted=fmtFecha(todayISO());
+  host.querySelectorAll('.rep-head').forEach(rh=>{
+    const brandEl=rh.querySelector('.rh-brand');
+    let kicker=brandEl?brandEl.textContent.replace(/\s+/g,' ').trim():'';
+    kicker=kicker.replace(/^Frutas La Estrella\s*·?\s*/i,'').trim()||'Informe de gestión';
+    const h2=rh.querySelector('h2');const title=h2?h2.innerHTML:'';
+    const sub=rh.querySelector('.rh-sub');const subH=sub?sub.innerHTML:'';
+    const meta=rh.querySelector('.rh-meta');
+    let rows=`<div><span>Documento</span><b>${docN}</b></div>`;
+    if(meta){
+      const b=meta.querySelector('b');if(b)emitted=b.textContent.trim();
+      const parts=meta.innerHTML.split(/<br\s*\/?>/i).map(s=>s.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim()).filter(Boolean);
+      let lab='';parts.forEach(p=>{if(/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(p)&&p.length<22&&!lab){lab=p;return;}rows+=`<div><span>${esc(lab||'')}</span><b>${esc(p)}</b></div>`;lab='';});
+    }else rows+=`<div><span>Emitido</span><b>${emitted}</b></div>`;
+    const cover=document.createElement('header');cover.className='ex-cover';
+    cover.innerHTML=`<div class="ex-top"><div class="ex-brand">${REP_MARK}<div><b>FRUTAS LA ESTRELLA</b><span>Desde 1970 · Gestión agrícola</span></div></div><div class="ex-meta">${rows}</div></div>
+      <div class="ex-title"><div class="ex-kicker">${esc(kicker)}</div><h1>${title}</h1>${subH?`<div class="ex-period">${subH}</div>`:''}</div>`;
+    rh.replaceWith(cover);
+  });
+  let n=0;
+  host.querySelectorAll('.sec-title').forEach(st=>{
+    n++;const t=st.textContent.replace(/\s+/g,' ').trim();
+    const d=document.createElement('div');d.className='ex-h';
+    if(st.style&&st.style.marginTop)d.style.marginTop=st.style.marginTop;
+    d.innerHTML=`<span class="ex-n">${String(n).padStart(2,'0')}</span><div><h3>${esc(t)}</h3></div>`;
+    st.replaceWith(d);
+  });
+  const foot=document.createElement('footer');foot.className='ex-foot';
+  foot.textContent=`Frutas La Estrella · ${docN} · Documento de uso interno · Generado el ${emitted}`;
+  host.appendChild(foot);
+  return host.innerHTML;
+}
 function printIsolated(bodyHTML,title,extraCSS){
   title=title||'Documento · Frutas La Estrella';
+  if(typeof EXEC_CSS!=='undefined'&&extraCSS!==EXEC_CSS){try{bodyHTML=execifyHTML(bodyHTML);}catch(e){console.error(e);}extraCSS=EXEC_CSS+EXEC_GENERIC_CSS+(extraCSS||'');}
   const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="only light"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+(extraCSS||'')+'</style></head><body><div class="sheet">'+bodyHTML+'</div></body></html>';
   closePreview();
   const w=document.createElement('div');w.id='pvWrap';
