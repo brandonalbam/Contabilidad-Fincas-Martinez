@@ -1043,7 +1043,7 @@ function applyCloud(d){
   PRESTAMOS=d.prestamos||[];PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});Store.set('prestamos',JSON.stringify(PRESTAMOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.cronoApplyK=j.applyK||'';ui.cronoApplyId=+j.applyId||0;ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
-  normalizeNominaMonths();
+  normalizeNominaMonths();snapshotNominaTarifas();
   if(migrateFincaNames()){Store.set('dron',JSON.stringify(DRON));Store.set('crono',JSON.stringify(CRONO));Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}));}
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
 }
@@ -1133,6 +1133,7 @@ async function init(){
   const nm2=await Store.get('nominas'); NOMINAS=nm2?JSON.parse(nm2):[];
   NOMINAS.forEach(x=>{if(x.id>=nseq)nseq=x.id+1;});
   if(normalizeNominaMonths())await Store.set('nominas',JSON.stringify(NOMINAS));
+  if(snapshotNominaTarifas())await Store.set('nominas',JSON.stringify(NOMINAS));
   const dr2=await Store.get('dron'); DRON=dr2?JSON.parse(dr2):[];
   DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});
   const cr2=await Store.get('crono'); CRONO=cr2?JSON.parse(cr2):[];
@@ -1915,9 +1916,13 @@ async function facturaEditSave(){
 /* ===== NÓMINA ===== */
 async function persistNom(){if(roGuard())return;await Store.set('nominas',JSON.stringify(NOMINAS));Cloud.schedulePush();}
 const jVal=l=>{const j=CFG.jornadas.find(x=>x.l===l);return j?+j.v||0:0;};
-const entryBruto=e=>e.dias.reduce((a,d)=>a+jVal(d.j),0);
+function tarifasSnapshot(){const t={};(CFG.jornadas||[]).forEach(j=>{t[j.l]=+j.v||0;});return t;}
+function nomOfEntry(e){for(const n of NOMINAS){if(n&&n.entries&&n.entries.includes(e))return n;}return null;}
+function nomTar(nom,l){if(nom&&nom.tarifas&&Object.prototype.hasOwnProperty.call(nom.tarifas,l))return +nom.tarifas[l]||0;return jVal(l);}
+function snapshotNominaTarifas(){let ch=false;(NOMINAS||[]).forEach(n=>{if(n&&!n.tarifas){n.tarifas=tarifasSnapshot();ch=true;}});return ch;}
+const entryBruto=e=>{const nom=nomOfEntry(e);return e.dias.reduce((a,d)=>a+nomTar(nom,d.j),0);};
 const entryNeto=e=>Math.max(0,entryBruto(e)-(+e.prestamo||0));
-function nomFincaTotals(nom){const t={};nom.entries.forEach(e=>e.dias.forEach(d=>{if(d.fi)t[d.fi]=(t[d.fi]||0)+jVal(d.j);}));return t;}
+function nomFincaTotals(nom){const t={};nom.entries.forEach(e=>e.dias.forEach(d=>{if(d.fi)t[d.fi]=(t[d.fi]||0)+nomTar(nom,d.j);}));return t;}
 function nomTotals(nom){let bruto=0,prest=0;nom.entries.forEach(e=>{bruto+=entryBruto(e);prest+=+e.prestamo||0;});return{bruto,prest,neto:bruto-prest};}
 function addDaysISO(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
 const DOW=['dom','lun','mar','mié','jue','vie','sáb'];
@@ -1959,7 +1964,7 @@ function newQuincena(){
      const d=document.getElementById('nq_d').value;if(!d){toast('Indica la fecha de inicio');return;}
      const q=+document.getElementById('nq_q').value;
      const hasta=addDaysISO(d,13);
-     const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[]};
+     const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot()};
      NOMINAS.push(nom);await persistNom();ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();closeModal();renderNomina();toast('Quincena creada');
    }}]);
 }
@@ -2047,7 +2052,7 @@ function jShort(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return '
 function jClass(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'j-falta';if(/completa/.test(l))return 'j-full';if(l==='media')return 'j-media';if(/extra/.test(l))return 'j-extra';return '';}
 let wheelCtx=null; // {id,i,day,mode:'j'|'fi'}
 function wheelOptions(mode){
-  if(mode==='j')return jornadasWheel().map(j=>({val:j.l,label:jShort(j.l),sub:j.v?fmt(j.v):''}));
+  if(mode==='j'){const nom=(typeof wheelCtx!=='undefined'&&wheelCtx)?NOMINAS.find(x=>x.id===wheelCtx.id):null;return jornadasWheel().map(j=>{const v=nomTar(nom,j.l);return {val:j.l,label:jShort(j.l),sub:v?fmt(v):''};});}
   return [{val:'',label:'— Sin finca —',sub:''}].concat(CFG.fincas.map(f=>({val:f,label:f,sub:''})));
 }
 function wheelCurVal(){const nom=NOMINAS.find(x=>x.id===wheelCtx.id);const d=nom.entries[wheelCtx.i].dias[wheelCtx.day];return wheelCtx.mode==='j'?(d.j||'No Asistió'):(d.fi||'');}
@@ -2198,7 +2203,7 @@ function nominaConsol(){
 
 function nomWeekTable(nom,e,start,label){
   let rows='';
-  for(let di=start;di<start+7;di++){const d=e.dias[di];const date=addDaysISO(nom.desde,di);const dn=dowOf(date);const val=jVal(d.j);
+  for(let di=start;di<start+7;di++){const d=e.dias[di];const date=addDaysISO(nom.desde,di);const dn=dowOf(date);const val=nomTar(nom,d.j);
     rows+=`<tr class="${dn===0?'sunrow':''}"><td>${DOW[dn]} ${+date.slice(8)}</td><td>${esc(d.j)}</td><td>${esc(d.fi)||'—'}</td><td class="r tnum">${val?fmt(val):'—'}</td></tr>`;}
   return `<table class="mini"><thead><tr><th>${label}</th><th>Jornada</th><th>Finca</th><th class="r">Valor</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -2409,7 +2414,7 @@ function printNomina(id){const nom=NOMINAS.find(x=>x.id===id);if(!nom)return;if(
 function empleadoNominaHTML(nom,e){
   const bruto=entryBruto(e),neto=entryNeto(e),prest=+e.prestamo||0;
   const pago=empPagoOf(e.emp);
-  const rows=e.dias.map((d,di)=>{const date=addDaysISO(nom.desde,di),dn=dowOf(date);const val=jVal(d.j);
+  const rows=e.dias.map((d,di)=>{const date=addDaysISO(nom.desde,di),dn=dowOf(date);const val=nomTar(nom,d.j);
     return `<tr class="${dn===0?'sunrow':''}"><td class="tnum">${fmtFecha(date)}</td><td style="text-transform:capitalize">${DOW[dn]}</td><td>${esc(d.j)}</td><td>${esc(d.fi)||'—'}</td><td class="r tnum">${val?fmt(val):'—'}</td></tr>`;}).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Desprendible de nómina</div>
@@ -4737,10 +4742,11 @@ function renderConfig(){
      </div>
    </div>
    <div class="card panel" style="margin-top:16px">
-     <div class="ph"><div><h2>Tipos de jornada y valor</h2><p>Valor en pesos de cada jornada usada en la nómina</p></div></div>
+     <div class="ph"><div><h2>Tipos de jornada y valor</h2><p>Edita el valor y pulsa fuera del campo para guardar. Aplica solo a nóminas nuevas.</p></div></div>
      <div class="tablewrap" style="border:none"><table><thead><tr><th>Jornada</th><th class="r">Valor</th><th></th></tr></thead>
-       <tbody>${CFG.jornadas.map((j,i)=>`<tr><td>${esc(j.l)}</td><td class="r tnum">${fmt(j.v)}</td><td class="r"><button class="iconbtn del" onclick="delJornada(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join('')}</tbody></table></div>
+       <tbody>${CFG.jornadas.map((j,i)=>`<tr><td>${esc(j.l)}</td><td class="r tnum"><input class="input tnum money" inputmode="numeric" style="width:130px;text-align:right;padding:6px 9px;display:inline-block" value="${fmn(j.v)}" onchange="setJornadaVal(${i},this.value)"></td><td class="r"><button class="iconbtn del" onclick="delJornada(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join('')}</tbody></table></div>
      <div class="addrow"><input class="input" id="jn_l" placeholder="Nombre (ej. Festivo)" style="flex:2"><input class="input tnum money" inputmode="numeric" id="jn_v" placeholder="Valor" style="flex:1"><button class="btn sm primary" onclick="addJornada()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+     <div class="note">Al cambiar una tarifa, las <b>nóminas ya creadas conservan sus valores</b>. El nuevo valor se usa a partir de la próxima quincena que crees.</div>
    </div>
    <div class="card panel" style="margin-top:16px">
      <div class="ph"><div><h2>Sincronización en la nube</h2><p>Accede y edita desde varios dispositivos con los cambios actualizados en todos</p></div>
@@ -4797,8 +4803,15 @@ create policy "acceso" on app_data
 }
 async function addCfg(key){const inp=document.getElementById('add_'+key);let v=inp.value.trim();if(!v)return;if(key==='fincas')v=stripFincaArt(v);if(!CFG[key].includes(v))CFG[key].push(v);await persistCfg();renderConfig();}
 async function delCfg(key,i){CFG[key].splice(i,1);await persistCfg();renderConfig();}
-async function addJornada(){const l=document.getElementById('jn_l').value.trim();const v=num(document.getElementById('jn_v').value);if(!l){toast('Escribe el nombre de la jornada');return;}const ex=CFG.jornadas.find(j=>j.l===l);if(ex)ex.v=v;else CFG.jornadas.push({l,v});await persistCfg();renderConfig();toast('Jornada guardada');}
-async function delJornada(i){CFG.jornadas.splice(i,1);await persistCfg();renderConfig();}
+async function addJornada(){const l=document.getElementById('jn_l').value.trim();const v=num(document.getElementById('jn_v').value);if(!l){toast('Escribe el nombre de la jornada');return;}snapshotNominaTarifas();const ex=CFG.jornadas.find(j=>j.l===l);if(ex)ex.v=v;else CFG.jornadas.push({l,v});await persistCfg();renderConfig();toast('Jornada guardada');}
+async function setJornadaVal(i,val){
+  const j=CFG.jornadas[i];if(!j)return;const v=Math.round(num(val));
+  if(v===(+j.v||0))return;
+  snapshotNominaTarifas();
+  j.v=v;await persistCfg();await Store.set('nominas',JSON.stringify(NOMINAS));
+  renderConfig();toast('Tarifa «'+j.l+'» actualizada a '+fmt(v)+' · aplica a nóminas nuevas');
+}
+async function delJornada(i){snapshotNominaTarifas();await Store.set('nominas',JSON.stringify(NOMINAS));CFG.jornadas.splice(i,1);await persistCfg();renderConfig();}
 async function setEmpPago(name,field,val){if(!CFG.empPago)CFG.empPago={};if(!CFG.empPago[name])CFG.empPago[name]={};CFG.empPago[name][field]=(val||'').trim();await persistCfg();}
 async function delEmpleado(name){CFG.empleados=CFG.empleados.filter(e=>e!==name);if(CFG.empPago)delete CFG.empPago[name];await persistCfg();renderConfig();toast('Empleado eliminado');}
 function empPagoFilter(q){q=(q||'').trim().toLowerCase();document.querySelectorAll('#empPagoList .emp-pago-row').forEach(r=>{r.style.display=(!q||(r.dataset.emp||'').includes(q))?'':'none';});}
