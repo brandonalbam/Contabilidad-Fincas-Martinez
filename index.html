@@ -4808,23 +4808,59 @@ function omrInkRatio(G,H){
   out.sort((a,b)=>a-b);return out.length?out[Math.floor(out.length/2)]:0.2;}
 function omrBoxFill(G,H,cx,cy){let n=0,dark=0;const ref=[];for(const[ox,oy]of[[-3.2,0],[3.2,0],[0,-3.2],[0,3.2]]){const[x,y]=omrMap(H,cx+ox,cy+oy);ref.push(omrPix(G,x,y));}ref.sort((a,b)=>a-b);const white=Math.max(60,ref[ref.length-1]);
   for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++){const[x,y]=omrMap(H,cx+i*0.4,cy+j*0.4);n++;if(omrPix(G,x,y)<white*0.6)dark++;}return dark/n;}
+function omrOutlineScore(G,H,cx,cy,r){let o=0,l=0;for(let a=0;a<12;a++){const t=a/12*2*Math.PI,c=Math.cos(t),s=Math.sin(t);
+  const p=omrMap(H,cx+c*r*1.4,cy+s*r*1.4);o+=omrPix(G,p[0],p[1]);let m=255;for(const rr of[r-0.22,r,r+0.22]){const q=omrMap(H,cx+c*rr,cy+s*rr);const v=omrPix(G,q[0],q[1]);if(v<m)m=v;}l+=m;}
+  return(o-l)/12;}
+function omrCellScore(G,H,r,d,ox,oy){let s=0;for(let k=0;k<7;k++){s+=omrOutlineScore(G,H,omrBX(d,k)+ox,omrBY(r,0)+oy,OMR.bubR);s+=omrOutlineScore(G,H,omrBX(d,k)+ox,omrBY(r,1)+oy,OMR.bubR);}return s/14;}
+function omrRowScore(G,H,r,d,bot,ox,oy){let s=0;for(let k=0;k<7;k++)s+=omrOutlineScore(G,H,omrBX(d,k)+ox,omrBY(r,bot)+oy,OMR.bubR);return s/7;}
+function omrRowRefine(G,H,r,d,bot,ox,oy){let best={ox,oy,s:omrRowScore(G,H,r,d,bot,ox,oy)};for(let x=-0.75;x<=0.75+1e-9;x+=0.25)for(let y=-0.75;y<=0.75+1e-9;y+=0.25){if(!x&&!y)continue;const s=omrRowScore(G,H,r,d,bot,ox+x,oy+y);if(s>best.s*1.04)best={ox:ox+x,oy:oy+y,s};}return best;}
+function omrAlignCell(G,H,r,d,gx,gy,win){
+  let best={ox:gx,oy:gy,s:-1e9};
+  for(let x=-win;x<=win+1e-9;x+=0.5)for(let y=-win;y<=win+1e-9;y+=0.5){const s=omrCellScore(G,H,r,d,gx+x,gy+y);if(s>best.s)best={ox:gx+x,oy:gy+y,s};}
+  const cx=best.ox,cy=best.oy;
+  for(let x=-0.5;x<=0.5+1e-9;x+=0.125)for(let y=-0.5;y<=0.5+1e-9;y+=0.125){const s=omrCellScore(G,H,r,d,cx+x,cy+y);if(s>best.s)best={ox:cx+x,oy:cy+y,s};}
+  return best;}
+function omrAlignGrid(G,H,nRows){
+  const off=[];const scores=[];
+  for(let r=0;r<nRows;r++){off.push([]);for(let d=0;d<7;d++){
+    const ref=[];if(d>0)ref.push(off[r][d-1]);if(r>0)ref.push(off[r-1][d]);if(r>0&&d<6)ref.push(off[r-1][d+1]);
+    const gx=ref.length?ref.reduce((s,o)=>s+o.ox,0)/ref.length:0,gy=ref.length?ref.reduce((s,o)=>s+o.oy,0)/ref.length:0;
+    const a=omrAlignCell(G,H,r,d,gx,gy,(r===0&&d===0)?3:1.75);off[r].push(a);scores.push(a.s);}}
+  const sorted=scores.slice().sort((a,b)=>a-b);const med=sorted[Math.floor(sorted.length/2)]||0;
+  // celdas con alineación débil: usar el promedio de sus vecinas
+  for(let r=0;r<nRows;r++)for(let d=0;d<7;d++){const a=off[r][d];if(a.s<med*0.35){const nb=[];if(d>0)nb.push(off[r][d-1]);if(d<6)nb.push(off[r][d+1]);if(r>0)nb.push(off[r-1][d]);if(r<nRows-1)nb.push(off[r+1][d]);
+    if(nb.length){a.ox=nb.reduce((s,o)=>s+o.ox,0)/nb.length;a.oy=nb.reduce((s,o)=>s+o.oy,0)/nb.length;}}}
+  return{off,med};}
+function omrDecodeAligned(G,H){
+  const bf=(i,ox,oy)=>omrBoxFill(G,H,omrCodeCX(i)+ox,6+oy);
+  const fit=(a,b)=>{let best={ox:0,oy:0,s:-9};for(let x=-3;x<=3+1e-9;x+=0.25)for(let y=-3;y<=3+1e-9;y+=0.25){const s=bf(a,x,y)-bf(b,x,y);if(s>best.s)best={ox:x,oy:y,s};}return best;};
+  const L=fit(0,1),R=fit(13,12);if(L.s<0.35||R.s<0.35)return null;
+  const bits=[];for(let i=0;i<14;i++){const t=i/13;bits.push(bf(i,L.ox+(R.ox-L.ox)*t,L.oy+(R.oy-L.oy)*t)>0.5?1:0);}
+  if(!(bits[0]===1&&bits[1]===0&&bits[12]===0&&bits[13]===1))return null;
+  let id=0;for(let i=2;i<9;i++)id=(id<<1)|bits[i];if(id<1)return null;return{id,week:bits[9],page:(bits[10]<<1)|bits[11]};}
 function omrTryDecode(G,H){const bits=[];for(let i=0;i<14;i++)bits.push(omrBoxFill(G,H,omrCodeCX(i),6)>0.5?1:0);
   if(!(bits[0]===1&&bits[1]===0&&bits[12]===0&&bits[13]===1))return null;
   let id=0;for(let i=2;i<9;i++)id=(id<<1)|bits[i];return{id,week:bits[9],page:(bits[10]<<1)|bits[11]};}
 function omrLocate(G){
   const S=Math.min(1,1000/Math.max(G.w,G.h));const small=S<1?omrScaleGray(G,S):G;
   const bin=omrBinarize(small);const comps=omrComponents(bin,small.w,small.h);
-  const cand=comps.filter(c=>{if(c.touch||c.area<16)return false;const bw=c.maxx-c.minx+1,bh=c.maxy-c.miny+1;const ar=bw/bh;return ar>0.5&&ar<2&&c.area/(bw*bh)>=0.7;}).sort((a,b)=>b.area-a.area).slice(0,12);
+  const cand=comps.filter(c=>{if(c.touch||c.area<16)return false;const bw=c.maxx-c.minx+1,bh=c.maxy-c.miny+1;const ar=bw/bh;return ar>0.45&&ar<2.2&&c.area/(bw*bh)>=0.62;}).sort((a,b)=>b.area-a.area).slice(0,12);
   const K=cand.length;const combos=[];
-  for(let a=0;a<K;a++)for(let b=a+1;b<K;b++)for(let c=b+1;c<K;c++)for(let d=c+1;d<K;d++){const q=[cand[a],cand[b],cand[c],cand[d]];const ar=q.map(x=>x.area);if(Math.max(...ar)/Math.min(...ar)>2.6)continue;combos.push({q,score:ar.reduce((s,x)=>s+x,0)});}
+  for(let a=0;a<K;a++)for(let b=a+1;b<K;b++)for(let c=b+1;c<K;c++)for(let d=c+1;d<K;d++){const q=[cand[a],cand[b],cand[c],cand[d]];const ar=q.map(x=>x.area);if(Math.max(...ar)/Math.min(...ar)>3)continue;combos.push({q,score:ar.reduce((s,x)=>s+x,0)});}
   combos.sort((x,y)=>y.score-x.score);
+  let fallback=null;
   for(const cb of combos.slice(0,160)){
     const pts=cb.q.map(c=>[c.cx/S,c.cy/S]);const mx=pts.reduce((s,p)=>s+p[0],0)/4,my=pts.reduce((s,p)=>s+p[1],0)/4;
     pts.sort((p,q)=>Math.atan2(p[1]-my,p[0]-mx)-Math.atan2(q[1]-my,q[0]-mx));
     const fa=cb.score/4/(S*S);let quad=0;for(let i=0;i<4;i++){const[a1,b1]=pts[i],[a2,b2]=pts[(i+1)%4];quad+=a1*b2-a2*b1;}quad=Math.abs(quad)/2;
     const ratio=fa/quad;if(ratio<0.0003||ratio>0.006)continue;
-    for(let r=0;r<4;r++){const dst=[0,1,2,3].map(i=>pts[(i+r)%4]);const H=omrHomography(OMR.fid,dst);if(!H)continue;const code=omrTryDecode(G,H);if(code)return{H,code,pts:dst};}
+    for(let r=0;r<4;r++){const dst=[0,1,2,3].map(i=>pts[(i+r)%4]);const H=omrHomography(OMR.fid,dst);if(!H)continue;
+      const code=omrDecodeAligned(G,H);if(code&&omrTemplates()[code.id])return{H,code,pts:dst};
+      const g=(omrCellScore(G,H,0,0,0,0)+omrCellScore(G,H,0,3,0,0)+omrCellScore(G,H,0,6,0,0))/3;
+      if(!fallback||g>fallback.g)fallback={H,code,pts:dst,g};}
+    if(fallback&&fallback.g>6)break;
   }
+  if(fallback&&fallback.g>4)return{H:fallback.H,code:null,codeRead:fallback.code,pts:fallback.pts};
   return null;
 }
 function omrScaleGray(G,S){const w=Math.max(1,Math.round(G.w*S)),h=Math.max(1,Math.round(G.h*S));const g=new Uint8ClampedArray(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=G.g[Math.min(G.h-1,Math.round(y/S))*G.w+Math.min(G.w-1,Math.round(x/S))];return{g,w,h};}
@@ -4847,40 +4883,62 @@ function omrReadDay(sc,th,r,d){
 }
 function omrThresholds(sc){
   const v=[];sc.forEach(row=>row.forEach(c=>{v.push(...c.t,...c.b);}));v.sort((a,b)=>a-b);
-  const q=p=>v[Math.min(v.length-1,Math.floor(v.length*p))];
-  const base=q(0.5),spread=Math.max(0.01,q(0.75)-q(0.25));
-  let mk=Math.max(base+0.10,base+7*spread,0.11);
-  const hi=v.filter(x=>x>=mk);if(hi.length){const m=hi[Math.floor(hi.length/2)];mk=Math.min(mk,Math.max(base+0.08,(base+m)*0.42));}
-  return{mk,db:Math.max(base+0.05,mk*0.62),base};
+  const n=v.length;const q=p=>v[Math.min(n-1,Math.floor(n*p))];const base=q(0.5);
+  // Otsu: separación natural entre casillas vacías y marcadas
+  const vc=v.map(x=>Math.min(x,0.42));const pre=[0];for(let i=0;i<n;i++)pre.push(pre[i]+vc[i]);let best=-1,otsu=base+0.1;
+  for(let i=1;i<n;i++){const w0=i/n,w1=1-w0;const m0=pre[i]/i,m1=(pre[n]-pre[i])/(n-i);const bv=w0*w1*(m1-m0)*(m1-m0);if(bv>best){best=bv;otsu=(vc[i-1]+vc[i])/2;}}
+  let mk=Math.min(Math.max(otsu,base+0.07,0.11),base+0.16);
+  return{mk,db:Math.max(base+0.06,mk*0.72),base};
 }
-async function omrProcess(file){
+async function omrProcess(file,forced){
   const img=await omrLoadImage(file);const G=omrGray(img,2000);
-  const loc=omrLocate(G);if(!loc)throw new Error('No se encontraron las 4 marcas negras de las esquinas. Toma la foto de frente, con buena luz y la hoja completa.');
-  const tpl=omrTemplates()[loc.code.id];if(!tpl)throw new Error('La planilla (código '+loc.code.id+') no está registrada. Genérala desde esta app o sincroniza con la nube.');
+  const loc=omrLocate(G);
+  if(!loc)throw new Error('No se encontraron los 4 cuadros negros de las esquinas. Verifica que sea la planilla imprimible generada por la app (la planilla anterior escrita a mano no se puede leer), que se vean las 4 esquinas y que haya buena luz.');
+  if(!loc.code||!omrTemplates()[loc.code.id]){
+    if(forced)return omrFinish(G,img,loc.H,omrTemplates()[forced.id],forced.week,forced.page);
+    const e=new Error('pick');e.pick={G,img,H:loc.H,read:loc.codeRead||null};throw e;}
+  return omrFinish(G,img,loc.H,omrTemplates()[loc.code.id],loc.code.week,loc.code.page);
+}
+function omrFinish(G,img,H,tpl,week,page){
   const pages=Math.max(1,Math.ceil(tpl.slots/OMR.rows));const rows=[];
-  const k=omrInkRatio(G,loc.H);const sc=[];const nR=[];
-  for(let r=0;r<OMR.rows;r++){const idx=loc.code.page*OMR.rows+r;if(idx>=tpl.slots)break;nR.push(idx);
-    const rr=[];for(let d=0;d<7;d++){const t=[],bb=[];for(let q=0;q<7;q++){t.push(omrFill(G,loc.H,omrBX(d,q),omrBY(r,0),OMR.bubR,k));bb.push(omrFill(G,loc.H,omrBX(d,q),omrBY(r,1),OMR.bubR,k));}rr.push({t,b:bb});}sc.push(rr);}
+  const k=omrInkRatio(G,H);const nR=[];
+  for(let r=0;r<OMR.rows;r++){const idx=page*OMR.rows+r;if(idx>=tpl.slots)break;nR.push(idx);}
+  const al=omrAlignGrid(G,H,nR.length);const sc=[];
+  nR.forEach((idx,r)=>{const rr=[];for(let d=0;d<7;d++){const o=al.off[r][d];const ot=omrRowRefine(G,H,r,d,0,o.ox,o.oy),ob=omrRowRefine(G,H,r,d,1,o.ox,o.oy);o.ot=ot;o.ob=ob;const t=[],bb=[];for(let q=0;q<7;q++){t.push(omrFill(G,H,omrBX(d,q)+ot.ox,omrBY(r,0)+ot.oy,OMR.bubR,k));bb.push(omrFill(G,H,omrBX(d,q)+ob.ox,omrBY(r,1)+ob.oy,OMR.bubR,k));}rr.push({t,b:bb});}sc.push(rr);});
   const th=omrThresholds(sc);
   nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(sc,th,r,d));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
-  return{tpl,week:loc.code.week,page:loc.code.page,pages,rows,G,H:loc.H,img,th,k};
+  return{tpl,week,page,pages,rows,G,H,img,th,k,off:al.off};
 }
 function omrReadModal(){
   showModal('Leer planilla desde una foto',`
    <p style="color:var(--muted);line-height:1.6;margin-bottom:12px">Toma la foto de <b>una hoja</b> de la planilla generada por la app (semana 1 o semana 2). La lectura se hace en este dispositivo, sin internet.</p>
-   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Pon la hoja sobre una superficie plana y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente y elige la imagen aquí abajo.</li></ol>
+   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Estira la hoja sobre una mesa (sin dobleces ni curvas) y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente y elige la imagen aquí abajo.</li></ol>
    <input class="input" type="file" accept="image/*" id="omr_file">
    <div id="omr_status" style="margin-top:12px;font-size:13px"></div>`,
    [{label:'Cerrar',cls:'btn',fn:closeModal}]);
   document.getElementById('omr_file').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const st=document.getElementById('omr_status');
     st.innerHTML='<span class="spin" style="display:inline-block;width:13px;height:13px;border:2px solid var(--green);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px"></span>Analizando la planilla…';
     await new Promise(r=>setTimeout(r,30));
-    try{const res=await omrProcess(f);ui._omr=res;omrReview(res);}catch(err){st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';}};
+    try{const res=await omrProcess(f);ui._omr=res;omrReview(res);}catch(err){if(err&&err.pick){omrPickTemplate(st,err.pick);return;}st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';}};
+}
+function omrPickTemplate(st,pk){
+  const list=Object.values(omrTemplates()).sort((a,b)=>(b.created||'').localeCompare(a.created||'')||b.id-a.id);
+  if(!list.length){st.innerHTML='<span style="color:var(--red)">Se encontró la planilla en la foto, pero este dispositivo no tiene planillas registradas. Genera la planilla desde la app (o sincroniza con la nube) e inténtalo de nuevo.</span>';return;}
+  const sug=pk.read&&omrTemplates()[pk.read.id]?pk.read.id:list[0].id;
+  st.innerHTML=`<div class="note" style="margin:0 0 10px">Se encontró la planilla, pero no se pudo leer su código de identificación (la franja de cuadritos de arriba). Elige cuál es para continuar.</div>
+   <div class="form-grid">
+     <div class="field full"><label>Planilla</label><select class="input" id="omr_pk">${list.map(t=>`<option value="${t.id}" ${t.id===sug?'selected':''}>${esc(t.finca)} · desde ${esc(fmtFecha(t.desde))} · ${t.emps.length} empleado(s) · código ${t.id}</option>`).join('')}</select></div>
+     <div class="field"><label>Semana de la hoja</label><select class="input" id="omr_pw"><option value="0">Semana 1</option><option value="1">Semana 2</option></select></div>
+     <div class="field"><label>Número de hoja</label><select class="input" id="omr_pp"><option value="0">Hoja 1</option><option value="1">Hoja 2</option><option value="2">Hoja 3</option></select></div>
+   </div>
+   <button class="btn primary" style="margin-top:12px;width:100%;justify-content:center" id="omr_pgo">Continuar con la lectura</button>`;
+  document.getElementById('omr_pgo').onclick=()=>{const id=+document.getElementById('omr_pk').value,week=+document.getElementById('omr_pw').value,page=+document.getElementById('omr_pp').value;const tpl=omrTemplates()[id];if(!tpl)return;
+    try{const res=omrFinish(pk.G,pk.img,pk.H,tpl,week,page);ui._omr=res;omrReview(res);}catch(e){st.innerHTML='<span style="color:var(--red)">'+esc(e.message||String(e))+'</span>';}};
 }
 function omrOverlay(res){
   const{img,H}=res;const W=img.naturalWidth,Hh=img.naturalHeight;const s=Math.min(1,760/Math.max(W,Hh));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(Hh*s);const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
   const sc=s*(W/res.G.w);
-  res.rows.forEach((row,r)=>row.days.forEach((dy,d)=>{for(let k=0;k<7;k++)for(const bot of[0,1]){const v=(bot?dy.fills.b:dy.fills.t)[k];const[px,py]=omrMap(H,omrBX(d,k),omrBY(r,bot));x.beginPath();x.arc(px*sc,py*sc,Math.max(2,3*sc*(res.G.w/W)*2),0,Math.PI*2);x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(120,120,120,.35)');x.lineWidth=v>=res.th.db?2:1;x.stroke();}}));
+  res.rows.forEach((row,r)=>row.days.forEach((dy,d)=>{for(let k=0;k<7;k++)for(const bot of[0,1]){const v=(bot?dy.fills.b:dy.fills.t)[k];const o0=(res.off&&res.off[r]&&res.off[r][d])||{ox:0,oy:0};const o=(bot?o0.ob:o0.ot)||o0;const[px,py]=omrMap(H,omrBX(d,k)+o.ox,omrBY(r,bot)+o.oy);x.beginPath();x.arc(px*sc,py*sc,Math.max(2,3*sc*(res.G.w/W)*2),0,Math.PI*2);x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(120,120,120,.35)');x.lineWidth=v>=res.th.db?2:1;x.stroke();}}));
   return c.toDataURL('image/jpeg',0.85);
 }
 function omrReview(res){
@@ -4896,6 +4954,7 @@ function omrReview(res){
   const head=[0,1,2,3,4,5,6].map(d=>{const iso=addDaysISO(tpl.desde,base+d);return `<th>${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</th>`;}).join('');
   showModal(`Revisión · ${esc(tpl.finca)} · Semana ${week+1}`,`
    <p style="color:var(--muted);margin-bottom:10px">${esc(fmtFecha(addDaysISO(tpl.desde,base)))} al ${esc(fmtFecha(addDaysISO(tpl.desde,base+6)))} · Hoja ${res.page+1} de ${res.pages}. Revisa y corrige si hace falta antes de aplicar.</p>
+   ${dups>res.rows.length*7*0.25?`<div class="note" style="margin:0 0 10px;border-left-color:var(--red)"><b>La foto parece muy curvada, borrosa o con sombras.</b> Para evitar errores, te recomendamos repetirla con la hoja bien estirada sobre una mesa, de frente y con buena luz.</div>`:''}
    ${dups?`<div class="note" style="margin:0 0 10px">Hay <b>${dups}</b> casilla(s) dudosa(s) resaltadas en amarillo (marca tenue o varias opciones en el mismo día). Verifícalas con la foto.</div>`:''}
    <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:13px">Ver foto con la lectura (verde = marcada, amarillo = dudosa)</summary><img src="${omrOverlay(res)}" style="width:100%;margin-top:8px;border-radius:6px;border:1px solid var(--line)"></details>
    <div class="tablewrap"><table><thead><tr><th>Empleado</th>${head}</tr></thead><tbody>${rowsH||`<tr><td colspan="8">No se detectaron marcas.</td></tr>`}</tbody></table></div>
