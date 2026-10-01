@@ -4880,10 +4880,11 @@ function omrFill(G,H,cx,cy,r,k,ringMax){
   wv.sort((a,b)=>a-b);const white=Math.max(40,wv[Math.floor(wv.length*0.88)]);const black=white*(k==null?0.2:k);const span=Math.max(12,white-black);
   const dk=(x,y)=>{const p=omrMap(H,x,y);const v=(white-omrPix(G,p[0],p[1]))/span;return v<0?0:(v>1?1:v);};
   // 1) tinta dentro del círculo (fracción de puntos con trazo)
-  let n=0,hit=0,acc=0;const R=r*0.8;for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){const dx=i/5*R,dy=j/5*R;if(dx*dx+dy*dy>R*R)continue;const v=dk(cx+dx,cy+dy);n++;acc+=v;if(v>0.42)hit++;}
+  const soft=v=>v;
+  let n=0,hit=0,acc=0;const R=r*0.8;for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){const dx=i/5*R,dy=j/5*R;if(dx*dx+dy*dy>R*R)continue;const v=dk(cx+dx,cy+dy);n++;acc+=soft(v);if(v>0.42)hit++;}
   const inner=n?Math.max(acc/n,hit/n*0.9):0;
   // 2) anillo exterior en 8 sectores: detecta opciones encerradas y descarta marcas vecinas que se salen
-  const sec=[];for(let s=0;s<8;s++){let m=0,c=0;for(let a=0;a<3;a++){const t=(s+a/3+1/6)/8*2*Math.PI;const RM=ringMax||1.52;for(const rr of[1.12,1.12+(RM-1.12)/3,1.12+2*(RM-1.12)/3,RM]){m+=dk(cx+Math.cos(t)*r*rr,cy+Math.sin(t)*r*rr);c++;}}sec.push(m/c);}
+  const sec=[];for(let s=0;s<8;s++){let m=0,c=0;for(let a=0;a<3;a++){const t=(s+a/3+1/6)/8*2*Math.PI;const RM=ringMax||1.52;for(const rr of[1.12,1.12+(RM-1.12)/3,1.12+2*(RM-1.12)/3,RM]){m+=soft(dk(cx+Math.cos(t)*r*rr,cy+Math.sin(t)*r*rr));c++;}}sec.push(m/c);}
   sec.sort((a,b)=>a-b);const ring=(sec[2]+sec[3])/2;
   return Math.max(inner,ring*1.15);}
 function omrInkRatio(G,H){
@@ -4959,9 +4960,9 @@ function omrJLabel(base,mod,h){
 }
 function omrReadDay(geo,f,th){
   const MK=th.mk,DB=th.db,BASE=th.base;const s=f.slice().sort((x,y)=>x-y);const med=s[Math.floor(s.length/2)];
-  const strong=v=>v>=MK||(v>=DB&&v-med>=0.07);const weak=v=>!strong(v)&&v-med>=0.03&&v>=BASE+0.03;
+  const strong=v=>v>=MK||(v>=DB&&v-med>=0.07);const weak=v=>!strong(v)&&v-med>=0.025&&v>=th.wf-0.005;const near=v=>strong(v)&&v<MK*1.08;
   const idx=k=>geo.bub.map((b,i)=>b.kind===k?i:-1).filter(i=>i>=0);
-  const pick=list=>{let best=-1,bv=-1,sv=-1;list.forEach(i=>{const v=f[i];if(v>bv){sv=bv;bv=v;best=i;}else if(v>sv)sv=v;});const ok=best>=0&&strong(bv);return{best,bv,ok,amb:(ok&&(bv<sv+0.05||strong(sv)))||(!ok&&best>=0&&weak(bv))};};
+  const pick=list=>{let best=-1,bv=-1,sv=-1;list.forEach(i=>{const v=f[i];if(v>bv){sv=bv;bv=v;best=i;}else if(v>sv)sv=v;});const ok=best>=0&&strong(bv);return{best,bv,ok,amb:(ok&&(bv<sv+0.05||strong(sv)||near(bv)))||(!ok&&best>=0&&weak(bv))};};
   const iC=idx('C')[0],iM=idx('M')[0];const C=strong(f[iC]),Mm=strong(f[iM]);
   const P=pick(idx('P')),N=pick(idx('N'));
   let doubt=P.amb||N.amb||weak(f[iC])||weak(f[iM]);
@@ -4969,7 +4970,7 @@ function omrReadDay(geo,f,th){
   let mod=null,h=null;
   if(P.ok&&N.ok){doubt=true;if(P.bv>=N.bv){mod='+';h=geo.bub[P.best].h;}else{mod='-';h=geo.bub[N.best].h;}}
   else if(P.ok){mod='+';h=geo.bub[P.best].h;}else if(N.ok){mod='-';h=geo.bub[N.best].h;}
-  if(!base&&mod){base='C';doubt=true;}
+  if(!base&&mod){const sv=mod==='+'?P.bv:N.bv;if(sv>=MK&&sv-med>=0.12){base='C';doubt=true;}else{mod=null;h=null;doubt=true;}}
   return{j:omrJLabel(base,mod,h),doubt,fills:f};
 }
 function omrThresholds(sc){
@@ -4977,8 +4978,13 @@ function omrThresholds(sc){
   const n=v.length;const q=p=>v[Math.min(n-1,Math.floor(n*p))];const base=q(0.5);
   const vc=v.map(x=>Math.min(x,0.42));const pre=[0];for(let i=0;i<n;i++)pre.push(pre[i]+vc[i]);let best=-1,otsu=base+0.1;
   for(let i=1;i<n;i++){const w0=i/n,w1=1-w0;const m0=pre[i]/i,m1=(pre[n]-pre[i])/(n-i);const bv=w0*w1*(m1-m0)*(m1-m0);if(bv>best){best=bv;otsu=(vc[i-1]+vc[i])/2;}}
-  let mk=Math.min(Math.max(otsu,base+0.07,0.11),base+0.16);
-  return{mk,db:Math.max(base+0.06,mk*0.72),base};
+  // ¿hay una separación clara entre casillas vacías y marcadas en esta hoja?
+  const lo=v.filter(x=>x<otsu),hi=v.filter(x=>x>=otsu);
+  if(hi.length>=3&&lo.length>=20){const loTop=lo[Math.floor(lo.length*0.99)],lo90=lo[Math.floor(lo.length*0.9)],hiMed=hi[Math.floor(hi.length/2)],gap=hiMed-loTop;
+    const tight=(loTop-base)<=4*(lo90-base)+0.03;const midCount=v.filter(x=>x>loTop+0.05&&x<hiMed-0.1).length;
+    if(gap>=0.15&&tight&&midCount===0)return{mk:loTop+gap*0.4,db:loTop+gap*0.22,wf:loTop+gap*0.14,base,clear:true};}
+  const mk=Math.min(Math.max(otsu,base+0.07,0.11),base+0.16);
+  return{mk,db:Math.max(base+0.06,mk*0.72),wf:base+0.03,base};
 }
 async function omrProcess(file,forced){
   const img=await omrLoadImage(file);const G=omrGray(img,2000);
@@ -4996,7 +5002,10 @@ function omrFinish(G,img,H,tpl,week,page){
   const al=omrAlignGrid(G,H,geo,nR.length);const sc=[];
   nR.forEach((idx,r)=>{const rr=[];for(let d=0;d<7;d++){const o=al.off[r][d];o.sub=[];for(let s=0;s<geo.subs;s++)o.sub.push(omrSubRefine(G,H,geo,r,d,s,o.ox,o.oy));
     rr.push(geo.bub.map((b,bi)=>{const so=o.sub[b.s];const[x,y]=omrPos(geo,r,d,bi);return omrFill(G,H,x+so.ox,y+so.oy,geo.bubR,k,ringMax);}));}sc.push(rr);});
-  const th=omrThresholds(sc);
+  let th=omrThresholds(sc);
+  // calibración por tipo de círculo: cuánto "marca" cada etiqueta impresa estando vacía
+  if(th.clear){const nb=geo.bub.length,gb=th.base,adj=[];for(let bi=0;bi<nb;bi++){const vals=[];sc.forEach(row=>row.forEach(c=>{if(c[bi]<Math.min(th.db,th.mk*0.6))vals.push(c[bi]);}));vals.sort((a,b)=>a-b);adj.push(vals.length>=3?Math.min(0.1,Math.max(0,vals[Math.floor(vals.length/2)]-gb)):0);}
+   sc.forEach(row=>row.forEach(c=>{for(let bi=0;bi<nb;bi++)c[bi]=Math.max(0,c[bi]-adj[bi]);}));th=omrThresholds(sc);}
   nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(geo,sc[r][d],th));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
   return{tpl,geo,week,page,pages,rows,G,H,img,th,k,off:al.off};
 }
