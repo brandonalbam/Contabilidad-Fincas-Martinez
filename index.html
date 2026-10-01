@@ -3995,7 +3995,7 @@ function renderInforme(){
      <div class="field"><label>Desde</label><input class="input tnum" type="date" value="${from}" onchange="ui.iFrom=this.value;renderInforme()"></div>
      <div class="field"><label>Hasta</label><input class="input tnum" type="date" value="${to}" onchange="ui.iTo=this.value;renderInforme()"></div>
      <div class="field"><label>Desc. admin %</label><input class="input tnum" style="width:80px" type="number" value="${(desc*100).toFixed(0)}" onchange="ui.iDesc=Math.max(0,Math.min(100,+this.value))/100;renderInforme()"></div>
-     <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / PDF</button>
+     <button class="btn primary" onclick="printInforme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF ejecutivo</button>
    </div>`;
 
   const inSel=m=>(selFincas.length===0||selFincas.includes(m.fi))&&inRange(m.f,from,to);
@@ -4094,8 +4094,234 @@ function renderInforme(){
        <tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum pos"><b>${fmt(a.ing)}</b></td><td class="r tnum neg"><b>${fmt(a.egr)}</b></td><td class="r tnum"><b class="${a.uti>=0?'pos':'neg'}">${fmt(a.uti)}</b></td><td class="r tnum">${pct(a.margen)}</td><td class="r tnum">${fmt(a.cobrar)}</td><td class="r tnum">${fmt(a.pagar)}</td></tr>
        </tbody></table></div></div>`):''}
 
-   <div class="note">Informe generado automáticamente el ${fmtFecha(todayISO())}. La <b>utilidad final</b> aplica un descuento administrativo del ${(desc*100).toFixed(0)}% sobre la utilidad bruta del periodo. Cifras en ${esc(CFG.moneda)} (pesos). Usa <b>Imprimir / PDF</b> para entregar este documento.</div>`;
+   <div class="note">Informe generado automáticamente el ${fmtFecha(todayISO())}. La <b>utilidad final</b> aplica un descuento administrativo del ${(desc*100).toFixed(0)}% sobre la utilidad bruta del periodo. Cifras en ${esc(CFG.moneda)} (pesos). Usa <b>PDF ejecutivo</b> para generar la versión formal de este informe.</div>`;
 }
+
+/* ===== INFORME EJECUTIVO (PDF) ===== */
+function exShort(v){const a=Math.abs(+v||0),s=(+v||0)<0?'−':'';if(a>=1e9)return s+(a/1e9).toLocaleString('es-CO',{maximumFractionDigits:1})+' mil M';if(a>=1e6)return s+(a/1e6).toLocaleString('es-CO',{maximumFractionDigits:1})+' M';if(a>=1e3)return s+Math.round(a/1e3).toLocaleString('es-CO')+' mil';return s+Math.round(a).toLocaleString('es-CO');}
+function exNice(max){if(!(max>0))return 1;const raw=max/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/p;const m=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return m*p;}
+function exTrunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;}
+function informeData(){
+  const selFincas=Array.isArray(ui.iFincas)?ui.iFincas.filter(f=>CFG.fincas.includes(f)):[];
+  const from=ui.iFrom,to=ui.iTo,desc=+ui.iDesc||0;
+  const single=selFincas.length===1,finca=single?selFincas[0]:'';
+  const scope=selFincas.length===0?'Consolidado de todas las fincas':single?selFincas[0]:('Consolidado de '+selFincas.length+' fincas');
+  const inSel=m=>(selFincas.length===0||selFincas.includes(m.fi))&&inRange(m.f,from,to);
+  const a=agg(inSel);const utiDesc=a.uti*desc,utiFinal=a.uti-utiDesc;
+  const msMap={};let nTx=0;const egCat={},inCat={};
+  for(const m of MOVS){if(!inSel(m))continue;nTx++;const k=(m.f||'').slice(0,7);if(!msMap[k])msMap[k]={ing:0,egr:0};
+    if(m.t==='I'){msMap[k].ing+=+m.tot||0;inCat[m.c]=(inCat[m.c]||0)+(+m.tot||0);}else{msMap[k].egr+=+m.tot||0;egCat[m.c]=(egCat[m.c]||0)+(+m.tot||0);}}
+  const series=Object.keys(msMap).filter(Boolean).sort().map(k=>({k,...msMap[k],u:msMap[k].ing-msMap[k].egr}));
+  let best=null,worst=null,sum=0;series.forEach(s=>{sum+=s.u;if(!best||s.u>best.u)best=s;if(!worst||s.u<worst.u)worst=s;});
+  const avg=series.length?sum/series.length:0;
+  const egRows=Object.entries(egCat).filter(r=>r[1]).sort((x,y)=>y[1]-x[1]);
+  const inRows=Object.entries(inCat).filter(r=>r[1]).sort((x,y)=>y[1]-x[1]);
+  const topEx=MOVS.filter(m=>inSel(m)&&m.t==='E'&&(+m.tot||0)>0).sort((x,y)=>(+y.tot||0)-(+x.tot||0)).slice(0,10);
+  const cobrar=MOVS.filter(m=>inSel(m)&&m.t==='I'&&m.e==='X'&&saldo(m)>0).sort((x,y)=>saldo(y)-saldo(x));
+  const pagar=MOVS.filter(m=>inSel(m)&&m.t==='E'&&m.e==='X'&&saldo(m)>0).sort((x,y)=>saldo(y)-saldo(x));
+  const compSource=selFincas.length?selFincas:CFG.fincas;
+  const comp=single?[]:compSource.map(fi=>({fi,...agg(m=>m.fi===fi&&inRange(m.f,from,to))})).filter(r=>r.ing||r.egr).sort((x,y)=>y.uti-x.uti);
+  return{selFincas,from,to,desc,single,finca,scope,a,utiDesc,utiFinal,series,best,worst,avg,egRows,inRows,topEx,cobrar,pagar,comp,nTx};
+}
+function exMonthChart(series){
+  if(!series.length)return '<div class="ex-empty">Sin movimientos en el periodo.</div>';
+  const W=760,H=270,pL=66,pR=14,pT=14,pB=40,pw=W-pL-pR,ph=H-pT-pB,n=series.length;
+  const vmax=Math.max(1,...series.map(s=>Math.max(s.ing,s.egr,s.u)));const vmin=Math.min(0,...series.map(s=>s.u));
+  const step=exNice(Math.max(vmax,-vmin));const top=Math.ceil(vmax/step)*step;const bot=vmin<0?Math.floor(vmin/step)*step:0;
+  const y=v=>pT+(top-v)/(top-bot)*ph;const gw=pw/n;const bw=Math.max(3,Math.min(20,gw*0.32));
+  let g='';for(let t=bot;t<=top+1e-6;t+=step){const yy=y(t).toFixed(1);g+=`<line x1="${pL}" x2="${W-pR}" y1="${yy}" y2="${yy}" stroke="${t===0?'#9aa79f':'#e6ebe7'}" stroke-width="${t===0?1:0.8}"/><text x="${pL-8}" y="${(+yy+3.5).toFixed(1)}" text-anchor="end" font-size="9.5" fill="#6b7a71">${exShort(t)}</text>`;}
+  const every=Math.ceil(n/12);let bars='',labs='',pts=[];
+  series.forEach((s,i)=>{const cx=pL+gw*i+gw/2;
+    const yi=y(s.ing),ye=y(s.egr),y0=y(0);
+    bars+=`<rect x="${(cx-bw-1).toFixed(1)}" y="${Math.min(yi,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-yi).toFixed(1)}" fill="#2f8f57" rx="1.5"/>`;
+    bars+=`<rect x="${(cx+1).toFixed(1)}" y="${Math.min(ye,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-ye).toFixed(1)}" fill="#b9c4bd" rx="1.5"/>`;
+    pts.push([cx,y(s.u)]);
+    if(i%every===0)labs+=`<text x="${cx.toFixed(1)}" y="${H-pB+16}" text-anchor="middle" font-size="9.5" fill="#4b5a51">${MES_ABV[+s.k.slice(5)-1]} ${s.k.slice(2,4)}</text>`;});
+  const line=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="#c9a227" stroke-width="2"/>`+pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.8" fill="#fff" stroke="#c9a227" stroke-width="1.6"/>`).join('');
+  return `<svg class="ex-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}${bars}${line}${labs}</svg>
+  <div class="ex-legend"><span><i style="background:#2f8f57"></i>Ingresos</span><span><i style="background:#b9c4bd"></i>Egresos</span><span><i class="ln" style="background:#c9a227"></i>Utilidad</span></div>`;
+}
+function exHBars(rows,total,color,limit){
+  if(!rows.length)return '<div class="ex-empty">Sin datos en el periodo.</div>';
+  let rs=rows.slice(0,limit||8);const rest=rows.slice(limit||8).reduce((s,r)=>s+r[1],0);if(rest>0)rs=rs.concat([['Otros',rest]]);
+  const W=760,rh=27,pT=6,H=pT*2+rs.length*rh,lw=210,vw=150,bwMax=W-lw-vw-16;const max=Math.max(1,...rs.map(r=>r[1]));
+  const body=rs.map(([c,v],i)=>{const yy=pT+i*rh;const w=Math.max(2,v/max*bwMax);
+    return `<text x="0" y="${yy+17}" font-size="11" fill="#22302a">${esc(exTrunc(c,30))}</text>
+      <rect x="${lw}" y="${yy+6}" width="${bwMax}" height="14" fill="#f0f3f1" rx="2"/>
+      <rect x="${lw}" y="${yy+6}" width="${w.toFixed(1)}" height="14" fill="${color}" rx="2"/>
+      <text x="${W}" y="${yy+17}" text-anchor="end" font-size="11" fill="#22302a"><tspan font-weight="700">${fmt(v)}</tspan><tspan fill="#6b7a71">  ${total?(v/total*100).toFixed(1):'0'}%</tspan></text>`;}).join('');
+  return `<svg class="ex-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+}
+function exDonut(rows,total){
+  if(!rows.length||!total)return '<div class="ex-empty">Sin ingresos en el periodo.</div>';
+  const pal=['#1e5631','#2f8f57','#5fb98a','#9fd4b5','#c9a227','#8aa39a'];
+  let rs=rows.slice(0,5);const rest=rows.slice(5).reduce((s,r)=>s+r[1],0);if(rest>0)rs=rs.concat([['Otros',rest]]);
+  const cx=90,cy=90,R=80,r=50;let ang=-Math.PI/2,paths='';
+  rs.forEach(([c,v],i)=>{const frac=v/total;if(frac>=0.9999){paths+=`<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="${pal[i%pal.length]}" stroke-width="${R-r}"/>`;return;}
+    const a2=ang+frac*2*Math.PI;const lg=frac>0.5?1:0;
+    const p=(a,rad)=>[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];
+    const [x1,y1]=p(ang,R),[x2,y2]=p(a2,R),[x3,y3]=p(a2,r),[x4,y4]=p(ang,r);
+    paths+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${x3.toFixed(2)} ${y3.toFixed(2)} A${r} ${r} 0 ${lg} 0 ${x4.toFixed(2)} ${y4.toFixed(2)}Z" fill="${pal[i%pal.length]}" stroke="#fff" stroke-width="1.5"/>`;ang=a2;});
+  const legend=rs.map(([c,v],i)=>`<tr><td><i style="background:${pal[i%pal.length]}"></i>${esc(exTrunc(c,34))}</td><td class="r tnum">${fmt(v)}</td><td class="r tnum ex-mut">${(v/total*100).toFixed(1)}%</td></tr>`).join('');
+  return `<div class="ex-donut"><svg viewBox="0 0 180 180" width="180" height="180" xmlns="http://www.w3.org/2000/svg">${paths}<text x="90" y="86" text-anchor="middle" font-size="10" fill="#6b7a71">Total</text><text x="90" y="103" text-anchor="middle" font-size="13" font-weight="700" fill="#16201a">${exShort(total)}</text></svg>
+    <table class="ex-leg">${legend}</table></div>`;
+}
+function exFincaChart(comp){
+  if(!comp.length)return '';
+  const W=760,rh=26,pT=6,H=pT*2+comp.length*rh,lw=150,vw=130,area=W-lw-vw-10;
+  const maxAbs=Math.max(1,...comp.map(r=>Math.abs(r.uti)));const hasNeg=comp.some(r=>r.uti<0);
+  const zero=hasNeg?lw+area/2:lw;const scale=hasNeg?area/2:area;
+  const body=comp.map((r,i)=>{const yy=pT+i*rh;const w=Math.abs(r.uti)/maxAbs*scale;const x=r.uti>=0?zero:zero-w;
+    return `<text x="0" y="${yy+17}" font-size="11" fill="#22302a">${esc(exTrunc(r.fi,22))}</text>
+      <rect x="${x.toFixed(1)}" y="${yy+6}" width="${Math.max(2,w).toFixed(1)}" height="14" fill="${r.uti>=0?'#2f8f57':'#b23b2e'}" rx="2"/>
+      <text x="${W}" y="${yy+17}" text-anchor="end" font-size="11" font-weight="700" fill="${r.uti>=0?'#1e5631':'#b23b2e'}">${fmt(r.uti)}</text>`;}).join('');
+  return `<svg class="ex-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><line x1="${zero}" x2="${zero}" y1="0" y2="${H}" stroke="#9aa79f" stroke-width="1"/>${body}</svg>`;
+}
+function informeExecHTML(){
+  const D=informeData(),a=D.a,mes=s=>s?(MES_FULL[+s.k.slice(5)-1].replace(/^./,c=>c.toUpperCase())+' '+s.k.slice(0,4)):'—';
+  const periodo=`${D.from?fmtFecha(D.from):'Inicio'} — ${D.to?fmtFecha(D.to):fmtFecha(todayISO())}`;
+  const docN='IF-'+todayISO().replace(/-/g,'')+'-'+String(D.nTx).padStart(4,'0');
+  const pctS=v=>(v*100).toLocaleString('es-CO',{maximumFractionDigits:1})+'%';
+  const ins=[];
+  ins.push(`Los ingresos del periodo sumaron <b>${fmt(a.ing)}</b> frente a egresos por <b>${fmt(a.egr)}</b>, para una utilidad bruta de <b>${fmt(a.uti)}</b> y un margen de <b>${pctS(a.margen)}</b>.`);
+  if(D.desc>0)ins.push(`Aplicando el descuento administrativo del ${(D.desc*100).toFixed(0)}% (${fmt(D.utiDesc)}), la utilidad final es de <b>${fmt(D.utiFinal)}</b>.`);
+  if(D.best&&D.series.length>1)ins.push(`El mejor mes fue <b>${mes(D.best)}</b> (${fmt(D.best.u)}) y el de menor resultado <b>${mes(D.worst)}</b> (${fmt(D.worst.u)}); el promedio mensual fue ${fmt(D.avg)}.`);
+  if(D.egRows.length)ins.push(`La principal partida de gasto fue <b>${esc(D.egRows[0][0])}</b>, con ${pctS(D.egRows[0][1]/(a.egr||1))} del total de egresos.`);
+  if(D.inRows.length)ins.push(`La principal fuente de ingreso fue <b>${esc(D.inRows[0][0])}</b>, con ${pctS(D.inRows[0][1]/(a.ing||1))} del total de ingresos.`);
+  if(D.comp.length>1)ins.push(`La finca con mayor utilidad fue <b>${esc(D.comp[0].fi)}</b> (${fmt(D.comp[0].uti)})${D.comp[D.comp.length-1].uti<0?`; <b>${esc(D.comp[D.comp.length-1].fi)}</b> cerró con pérdida (${fmt(D.comp[D.comp.length-1].uti)})`:''}.`);
+  ins.push(`La cartera por cobrar asciende a <b>${fmt(a.cobrar)}</b> (${D.cobrar.length} cuenta${D.cobrar.length===1?'':'s'}) y las obligaciones por pagar a <b>${fmt(a.pagar)}</b> (${D.pagar.length} cuenta${D.pagar.length===1?'':'s'}).`);
+  let acum=0;
+  const monthRows=D.series.map(s=>{acum+=s.u;return `<tr><td>${mes(s)}</td><td class="r tnum">${fmt(s.ing)}</td><td class="r tnum">${fmt(s.egr)}</td><td class="r tnum ${s.u<0?'neg':''}"><b>${fmt(s.u)}</b></td><td class="r tnum ex-mut">${s.ing?pctS(s.u/s.ing):'—'}</td><td class="r tnum ${acum<0?'neg':''}">${fmt(acum)}</td></tr>`;}).join('');
+  const catRows=(rows,total)=>rows.map(([c,v])=>`<tr><td>${esc(c)}</td><td class="r tnum">${fmt(v)}</td><td class="r tnum ex-mut">${total?pctS(v/total):'—'}</td></tr>`).join('');
+  const sec=(n,t,sub,inner,brk)=>`<section class="ex-sec${brk?' brk':''}"><div class="ex-h"><span class="ex-n">${n}</span><div><h3>${t}</h3>${sub?`<p>${sub}</p>`:''}</div></div>${inner}</section>`;
+  const tbl=(head,rows,foot,cls)=>`<table class="ex-t ${cls||''}"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody>${foot?`<tfoot><tr>${foot}</tr></tfoot>`:''}</table>`;
+  const cartTbl=(arr,total,label)=>arr.length?tbl(`<th>Fecha</th><th>Detalle</th>${D.finca?'':'<th>Finca</th>'}<th class="r">Saldo</th>`,arr.slice(0,10).map(m=>`<tr><td class="tnum">${fmtFecha(m.f)}</td><td>${esc(exTrunc((m.t==='I'?(m.cl?m.cl+' · ':''):(m.co?m.co+' · ':''))+(m.d||m.c),46))}</td>${D.finca?'':`<td>${esc(m.fi)}</td>`}<td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('')+(arr.length>10?`<tr><td colspan="${D.finca?3:4}" class="ex-mut">+ ${arr.length-10} cuenta(s) adicional(es)</td></tr>`:''),`<td colspan="${D.finca?2:3}">Total ${label}</td><td class="r tnum">${fmt(total)}</td>`):`<div class="ex-empty">Sin cuentas ${label}.</div>`;
+  return `
+  <div class="ex-doc">
+   <header class="ex-cover">
+     <div class="ex-top">
+       <div class="ex-brand">${REP_MARK}<div><b>FRUTAS LA ESTRELLA</b><span>Desde 1970 · Gestión agrícola</span></div></div>
+       <div class="ex-meta"><div><span>Documento</span><b>${docN}</b></div><div><span>Emitido</span><b>${fmtFecha(todayISO())}</b></div><div><span>Registros</span><b>${D.nTx.toLocaleString('es-CO')}</b></div></div>
+     </div>
+     <div class="ex-title">
+       <div class="ex-kicker">Informe financiero de gestión</div>
+       <h1>${esc(D.scope)}</h1>
+       <div class="ex-period">Periodo analizado: <b>${periodo}</b></div>
+     </div>
+   </header>
+
+   ${sec('01','Resumen ejecutivo','Indicadores clave del periodo',`
+     <div class="ex-kpis">
+       <div class="ex-kpi hl"><span>Utilidad final</span><b class="tnum">${fmt(D.utiFinal)}</b><em>Tras ${(D.desc*100).toFixed(0)}% de administración</em></div>
+       <div class="ex-kpi"><span>Ingresos</span><b class="tnum">${fmt(a.ing)}</b><em>${D.inRows.length} categoría(s)</em></div>
+       <div class="ex-kpi"><span>Egresos</span><b class="tnum">${fmt(a.egr)}</b><em>${D.egRows.length} categoría(s)</em></div>
+       <div class="ex-kpi"><span>Utilidad bruta</span><b class="tnum ${a.uti<0?'neg':''}">${fmt(a.uti)}</b><em>Margen ${pctS(a.margen)}</em></div>
+       <div class="ex-kpi"><span>Cuentas por cobrar</span><b class="tnum">${fmt(a.cobrar)}</b><em>${D.cobrar.length} cuenta(s)</em></div>
+       <div class="ex-kpi"><span>Cuentas por pagar</span><b class="tnum">${fmt(a.pagar)}</b><em>${D.pagar.length} cuenta(s)</em></div>
+     </div>
+     <div class="ex-insights"><div class="ex-ins-t">Lectura del periodo</div><ul>${ins.map(t=>`<li>${t}</li>`).join('')}</ul></div>`)}
+
+   ${sec('02','Evolución mensual','Ingresos, egresos y utilidad por mes',`<figure class="ex-fig">${exMonthChart(D.series)}</figure>
+     ${D.series.length?tbl('<th>Mes</th><th class="r">Ingresos</th><th class="r">Egresos</th><th class="r">Utilidad</th><th class="r">Margen</th><th class="r">Acumulado</th>',monthRows,`<td>Total del periodo</td><td class="r tnum">${fmt(a.ing)}</td><td class="r tnum">${fmt(a.egr)}</td><td class="r tnum">${fmt(a.uti)}</td><td class="r tnum">${pctS(a.margen)}</td><td class="r tnum">${fmt(a.uti)}</td>`):''}`)}
+
+   ${sec('03','Estructura de egresos','Distribución del gasto por categoría',`<figure class="ex-fig">${exHBars(D.egRows,a.egr,'#7d8f84',8)}</figure>
+     ${D.egRows.length?tbl('<th>Categoría</th><th class="r">Monto</th><th class="r">Participación</th>',catRows(D.egRows,a.egr),`<td>Total egresos</td><td class="r tnum">${fmt(a.egr)}</td><td class="r tnum">100%</td>`):''}`,true)}
+
+   ${sec('04','Composición de ingresos','Fuentes de ingreso del periodo',`<figure class="ex-fig">${exDonut(D.inRows,a.ing)}</figure>
+     ${D.inRows.length?tbl('<th>Categoría</th><th class="r">Monto</th><th class="r">Participación</th>',catRows(D.inRows,a.ing),`<td>Total ingresos</td><td class="r tnum">${fmt(a.ing)}</td><td class="r tnum">100%</td>`):''}`)}
+
+   ${(!D.single&&D.comp.length)?sec('05','Desempeño por finca','Utilidad de cada finca en el periodo',`<figure class="ex-fig">${exFincaChart(D.comp)}</figure>
+     ${tbl('<th>Finca</th><th class="r">Ingresos</th><th class="r">Egresos</th><th class="r">Utilidad</th><th class="r">Margen</th><th class="r">Por cobrar</th><th class="r">Por pagar</th>',D.comp.map(r=>`<tr><td>${esc(r.fi)}</td><td class="r tnum">${fmt(r.ing)}</td><td class="r tnum">${fmt(r.egr)}</td><td class="r tnum ${r.uti<0?'neg':''}"><b>${fmt(r.uti)}</b></td><td class="r tnum ex-mut">${pctS(r.margen)}</td><td class="r tnum">${fmt(r.cobrar)}</td><td class="r tnum">${fmt(r.pagar)}</td></tr>`).join(''),`<td>Total</td><td class="r tnum">${fmt(a.ing)}</td><td class="r tnum">${fmt(a.egr)}</td><td class="r tnum">${fmt(a.uti)}</td><td class="r tnum">${pctS(a.margen)}</td><td class="r tnum">${fmt(a.cobrar)}</td><td class="r tnum">${fmt(a.pagar)}</td>`,'sm')}`,true):''}
+
+   ${sec(D.single||!D.comp.length?'05':'06','Principales egresos','Las 10 erogaciones de mayor valor',D.topEx.length?tbl(`<th>Fecha</th>${D.finca?'':'<th>Finca</th>'}<th>Categoría</th><th>Detalle</th><th>Estado</th><th class="r">Monto</th>`,D.topEx.map(m=>`<tr><td class="tnum">${fmtFecha(m.f)}</td>${D.finca?'':`<td>${esc(m.fi)}</td>`}<td>${esc(m.c)}</td><td>${esc(exTrunc((m.co?m.co+' · ':'')+(m.d||''),40))||'—'}</td><td><span class="ex-tag ${m.e==='P'?'ok':'pend'}">${m.e==='P'?'Pagado':'Pendiente'}</span></td><td class="r tnum"><b>${fmt(m.tot)}</b></td></tr>`).join(''),'','sm'):'<div class="ex-empty">Sin egresos en el periodo.</div>')}
+
+   ${sec(D.single||!D.comp.length?'06':'07','Cartera','Saldos pendientes de cobro y de pago',`
+     <div class="ex-sub">Cuentas por cobrar</div>${cartTbl(D.cobrar,a.cobrar,'por cobrar')}
+     <div class="ex-sub" style="margin-top:16px">Cuentas por pagar</div>${cartTbl(D.pagar,a.pagar,'por pagar')}`,true)}
+
+   <section class="ex-sec ex-close">
+     <div class="ex-notes"><b>Notas metodológicas.</b> Cifras en ${esc(CFG.moneda)} (pesos colombianos), registradas por fecha de causación. Utilidad bruta = ingresos − egresos; margen = utilidad bruta ÷ ingresos. La utilidad final descuenta el ${(D.desc*100).toFixed(0)}% de administración. Los saldos de cartera corresponden a facturas pendientes descontando los abonos registrados.</div>
+     <div class="ex-sign"><div><span></span>Elaborado por</div><div><span></span>Revisado y aprobado por</div></div>
+   </section>
+   <footer class="ex-foot">Frutas La Estrella · ${docN} · Documento de uso interno · Generado el ${fmtFecha(todayISO())}</footer>
+  </div>`;
+}
+const EXEC_CSS=`
+@page{size:A4;margin:13mm 12mm 14mm}
+body{background:#e9edea}
+.sheet{max-width:880px;border-radius:4px;border:1px solid #d6ddd8;box-shadow:0 10px 40px rgba(15,35,25,.12)}
+.ex-doc{color:#1b2620;font-size:11.5px;line-height:1.55}
+.ex-cover{background:#0f2a1b;color:#fff;padding:26px 34px 24px;position:relative}
+.ex-cover:after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#c9a227,#e2c35a 40%,#2f8f57)}
+.ex-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.ex-brand{display:flex;align-items:center;gap:12px}
+.ex-brand .rh-mark{width:44px;height:44px}
+.ex-brand b{display:block;font-size:13px;letter-spacing:2.4px;font-weight:700}
+.ex-brand span{font-size:10px;letter-spacing:1px;color:#a9c7b4;text-transform:uppercase}
+.ex-meta{display:grid;grid-template-columns:auto;gap:4px;font-size:10px;text-align:right;border-left:1px solid rgba(255,255,255,.18);padding-left:16px}
+.ex-meta div{display:flex;justify-content:space-between;gap:18px}
+.ex-meta span{color:#a9c7b4;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.ex-meta b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ex-brand b{white-space:nowrap}
+.ex-leg,.ex-leg td{background:transparent!important}
+.ex-title{margin-top:26px}
+.ex-kicker{font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;color:#e2c35a;font-weight:700}
+.ex-title h1{font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:400;letter-spacing:-.3px;margin-top:6px;line-height:1.15}
+.ex-period{margin-top:8px;font-size:12px;color:#cfe0d5}
+.ex-period b{color:#fff}
+.ex-sec{padding:22px 34px 6px}
+.ex-sec.brk{break-before:auto}
+.ex-h{display:flex;align-items:flex-start;gap:14px;border-bottom:1.5px solid #1b2620;padding-bottom:8px;margin-bottom:14px;break-after:avoid}
+.ex-n{font-family:Georgia,serif;font-size:22px;color:#c9a227;line-height:1;min-width:30px}
+.ex-h h3{font-size:15px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;color:#0f2a1b}
+.ex-h p{font-size:10.5px;color:#6b7a71;margin-top:1px}
+.ex-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ex-kpi{border:1px solid #dde4df;border-left:3px solid #2f8f57;padding:10px 12px;background:#fbfcfb;break-inside:avoid}
+.ex-kpi.hl{background:#0f2a1b;border-color:#0f2a1b;border-left-color:#c9a227;color:#fff}
+.ex-kpi span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#6b7a71;font-weight:700}
+.ex-kpi.hl span{color:#e2c35a}
+.ex-kpi b{display:block;font-size:17px;margin-top:3px;letter-spacing:-.2px}
+.ex-kpi em{display:block;font-style:normal;font-size:10px;color:#7d8b82;margin-top:1px}
+.ex-kpi.hl em{color:#cfe0d5}
+.ex-insights{margin-top:14px;background:#f5f8f6;border:1px solid #e1e8e3;padding:12px 16px;break-inside:avoid}
+.ex-ins-t{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;font-weight:700;color:#2f8f57;margin-bottom:6px}
+.ex-insights ul{padding-left:16px}
+.ex-insights li{margin:3px 0}
+.ex-fig{margin:0 0 12px;break-inside:avoid}
+.ex-chart{width:100%;height:auto;display:block}
+.ex-legend{display:flex;gap:18px;justify-content:center;font-size:10px;color:#4b5a51;margin-top:4px}
+.ex-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.ex-legend i.ln{height:3px;width:14px;vertical-align:2px}
+.ex-donut{display:flex;align-items:center;gap:26px}
+.ex-donut svg{flex:0 0 auto}
+.ex-leg{border-collapse:collapse;flex:1;font-size:11px}
+.ex-leg td{padding:4px 6px;border-bottom:1px solid #eef2ef}
+.ex-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:-1px}
+.ex-t{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:6px}
+.ex-t thead{display:table-header-group}
+.ex-t th{background:#0f2a1b;color:#fff;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;text-align:left;padding:7px 9px}
+.ex-t th.r,.ex-t td.r{text-align:right}
+.ex-t td{padding:6px 9px;border-bottom:1px solid #e7ece9;vertical-align:top}
+.ex-t tbody tr:nth-child(even) td{background:#f7f9f8}
+.ex-t tr{break-inside:avoid}
+.ex-t tfoot td{border-top:2px solid #0f2a1b;border-bottom:3px double #0f2a1b;font-weight:700;background:#eef3ef;padding:7px 9px}
+.ex-t.sm{font-size:10.5px}
+.ex-mut{color:#6b7a71}
+.neg{color:#b23b2e!important}
+.ex-tag{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px}
+.ex-tag.ok{background:#e4f2e8;color:#1e5631}
+.ex-tag.pend{background:#fbefd8;color:#8a5a12}
+.ex-sub{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2f8f57;margin-bottom:6px}
+.ex-empty{padding:12px;color:#7d8b82;font-style:italic;background:#f7f9f8;border:1px dashed #d6ddd8;text-align:center}
+.ex-close{padding-bottom:20px}
+.ex-notes{font-size:10px;color:#4b5a51;background:#f7f9f8;border-left:3px solid #c9a227;padding:10px 14px;break-inside:avoid}
+.ex-sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:46px;break-inside:avoid}
+.ex-sign div{font-size:10px;color:#4b5a51;text-transform:uppercase;letter-spacing:1px;text-align:center}
+.ex-sign span{display:block;border-top:1px solid #1b2620;margin-bottom:6px}
+.ex-foot{border-top:1px solid #dde4df;padding:10px 34px;font-size:9.5px;color:#7d8b82;text-align:center;letter-spacing:.3px}
+@media print{body{background:#fff}.sheet{border:none;box-shadow:none;max-width:none;margin:0}.ex-cover,.ex-kpi.hl,.ex-t th,.ex-t tfoot td,.ex-t tbody tr:nth-child(even) td,.ex-tag,.ex-insights,.ex-notes{-webkit-print-color-adjust:exact;print-color-adjust:exact}.ex-sec{padding:16px 6px 4px}.ex-cover{padding:22px 24px}.ex-foot{padding:10px 6px}}
+`;
+function printInforme(){const D=informeData();printIsolated(informeExecHTML(),'Informe financiero · '+D.scope,EXEC_CSS);}
 
 /* ===== CONFIGURACIÓN ===== */
 function renderConfig(){
