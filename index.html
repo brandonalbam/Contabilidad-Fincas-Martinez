@@ -1948,7 +1948,7 @@ function renderNomina(){
 function nominaList(){
   document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" onclick="omrGenModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Planilla imprimible</button>
-    <button class="btn" onclick="omrReadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Leer planilla (foto)</button>
+    <button class="btn" onclick="omrReadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Leer planilla (foto o PDF)</button>
     <button class="btn" onclick="ui.nomView='consol';renderNomina()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Consolidado anual</button>
     <button class="btn primary" onclick="newQuincena()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva quincena</button></div>`;
   const list=NOMINAS.slice().sort((a,b)=>(b.hasta||'').localeCompare(a.hasta||''));
@@ -4909,18 +4909,70 @@ function omrFinish(G,img,H,tpl,week,page){
   nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(sc,th,r,d));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
   return{tpl,week,page,pages,rows,G,H,img,th,k,off:al.off};
 }
+const PDFJS_VER='3.11.174';
+function omrSpin(){return '<span style="display:inline-block;width:13px;height:13px;border:2px solid var(--green);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px"></span>';}
+function omrLoadPdfJs(){
+  if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  if(ui._pdfjsP)return ui._pdfjsP;
+  ui._pdfjsP=new Promise((res,rej)=>{const s=document.createElement('script');s.src=`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    s.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc=`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;res(window.pdfjsLib);}catch(e){ui._pdfjsP=null;rej(e);}};
+    s.onerror=()=>{ui._pdfjsP=null;rej(new Error('No se pudo cargar el lector de PDF. Se necesita conexión a internet la primera vez que subes un PDF; luego queda guardado en el navegador.'));};
+    document.head.appendChild(s);});
+  return ui._pdfjsP;}
+async function omrPdfToFiles(file,onProg){
+  const lib=await omrLoadPdfJs();const buf=await file.arrayBuffer();
+  let pdf;try{pdf=await lib.getDocument({data:buf}).promise;}catch(e){throw new Error('No se pudo abrir el PDF. Verifica que el archivo no esté dañado ni protegido con contraseña.');}
+  const out=[];
+  for(let i=1;i<=pdf.numPages;i++){onProg&&onProg(i,pdf.numPages);const page=await pdf.getPage(i);const vp0=page.getViewport({scale:1});
+    const scale=Math.min(4,2400/Math.max(vp0.width,vp0.height));const vp=page.getViewport({scale});const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+    const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);await page.render({canvasContext:ctx,viewport:vp}).promise;
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.92));out.push(new File([blob],`pagina-${i}.jpg`,{type:'image/jpeg'}));}
+  return out;}
+function omrIsPdf(f){return f&&(f.type==='application/pdf'||/\.pdf$/i.test(f.name||''));}
+async function omrStart(f,st){
+  try{
+    let files=[f];
+    if(omrIsPdf(f)){st.innerHTML=omrSpin()+'Abriendo el PDF…';files=await omrPdfToFiles(f,(i,n)=>{st.innerHTML=omrSpin()+`Preparando página ${i} de ${n}…`;});
+      if(!files.length)throw new Error('El PDF no tiene páginas.');}
+    ui._omrQ={files,idx:0,applied:0,errors:[],lastNom:null};
+    omrRunQueue(st);
+  }catch(err){st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';}
+}
+async function omrRunQueue(st){
+  const Q=ui._omrQ;if(!Q)return;
+  if(!st||!st.isConnected){showModal('Leyendo planilla',`<div id="omr_status" style="font-size:13px"></div>`,[{label:'Cancelar',cls:'btn',fn:()=>{ui._omrQ=null;closeModal();}}]);st=document.getElementById('omr_status');}
+  while(Q.idx<Q.files.length){
+    const i=Q.idx,many=Q.files.length>1,label=many?` · página ${i+1} de ${Q.files.length}`:'';
+    st.innerHTML=omrSpin()+'Analizando la planilla'+(many?` (página ${i+1} de ${Q.files.length})`:'')+'…';
+    await new Promise(r=>setTimeout(r,30));
+    try{const res=await omrProcess(Q.files[i]);res.qLabel=label;ui._omr=res;omrReview(res);return;}
+    catch(err){
+      if(err&&err.pick){err.pick.qLabel=label;omrPickModal(err.pick);return;}
+      if(!many){st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';ui._omrQ=null;return;}
+      Q.errors.push(`Página ${i+1}: no se reconoció una planilla.`);Q.idx++;
+    }
+  }
+  omrQueueDone();
+}
+function omrPickModal(pk){
+  showModal('Elegir planilla'+(pk.qLabel||''),`<div id="omr_status" style="font-size:13px"></div>`,[{label:'Cancelar',cls:'btn',fn:()=>{ui._omrQ=null;closeModal();}}]);
+  omrPickTemplate(document.getElementById('omr_status'),pk);
+}
+function omrSkipPage(){const Q=ui._omrQ;if(!Q)return closeModal();Q.idx++;ui._omr=null;omrRunQueue(null);}
+function omrQueueDone(){
+  const Q=ui._omrQ;ui._omrQ=null;if(!Q)return;
+  if(Q.lastNom){closeModal();ui.view='nomina';ui.nomView='edit';ui.nomId=Q.lastNom;ui.nomExp=new Set();render();
+    toast(`${Q.applied} jornada(s) registradas`+(Q.errors.length?` · ${Q.errors.length} página(s) sin planilla`:''));return;}
+  showModal('Lectura terminada',`<p style="color:var(--muted);line-height:1.6">No se aplicó ninguna hoja.</p>${Q.errors.length?`<ul style="margin:10px 0 0 18px;color:var(--muted);font-size:13px">${Q.errors.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><div class="note">Verifica que el PDF contenga la planilla imprimible generada por la app, con las 4 esquinas negras visibles.</div>`:''}`,[{label:'Cerrar',cls:'btn',fn:closeModal}]);
+}
 function omrReadModal(){
-  showModal('Leer planilla desde una foto',`
-   <p style="color:var(--muted);line-height:1.6;margin-bottom:12px">Toma la foto de <b>una hoja</b> de la planilla generada por la app (semana 1 o semana 2). La lectura se hace en este dispositivo, sin internet.</p>
-   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Estira la hoja sobre una mesa (sin dobleces ni curvas) y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente y elige la imagen aquí abajo.</li></ol>
-   <input class="input" type="file" accept="image/*" id="omr_file">
+  showModal('Leer planilla (foto o PDF)',`
+   <p style="color:var(--muted);line-height:1.6;margin-bottom:12px">Sube una <b>foto</b> de una hoja de la planilla generada por la app, o un <b>PDF escaneado</b> con una o varias hojas (por ejemplo, semana 1 y semana 2). La lectura se hace en este dispositivo.</p>
+   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Estira la hoja sobre una mesa (sin dobleces ni curvas) y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente (o escanéala como PDF) y elige el archivo aquí abajo.</li></ol>
+   <input class="input" type="file" accept="image/*,application/pdf,.pdf" id="omr_file">
    <div id="omr_status" style="margin-top:12px;font-size:13px"></div>`,
    [{label:'Cerrar',cls:'btn',fn:closeModal}]);
-  document.getElementById('omr_file').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const st=document.getElementById('omr_status');
-    st.innerHTML='<span class="spin" style="display:inline-block;width:13px;height:13px;border:2px solid var(--green);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px"></span>Analizando la planilla…';
-    await new Promise(r=>setTimeout(r,30));
-    try{const res=await omrProcess(f);ui._omr=res;omrReview(res);}catch(err){if(err&&err.pick){omrPickTemplate(st,err.pick);return;}st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';}};
-}
+  document.getElementById('omr_file').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;omrStart(f,document.getElementById('omr_status'));};}
 function omrPickTemplate(st,pk){
   const list=Object.values(omrTemplates()).sort((a,b)=>(b.created||'').localeCompare(a.created||'')||b.id-a.id);
   if(!list.length){st.innerHTML='<span style="color:var(--red)">Se encontró la planilla en la foto, pero este dispositivo no tiene planillas registradas. Genera la planilla desde la app (o sincroniza con la nube) e inténtalo de nuevo.</span>';return;}
@@ -4952,7 +5004,7 @@ function omrReview(res){
   const dups=res.rows.reduce((s,r)=>s+r.days.filter(d=>d.doubt).length,0);
   const ex=NOMINAS.find(n=>n.desde===tpl.desde);
   const head=[0,1,2,3,4,5,6].map(d=>{const iso=addDaysISO(tpl.desde,base+d);return `<th>${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</th>`;}).join('');
-  showModal(`Revisión · ${esc(tpl.finca)} · Semana ${week+1}`,`
+  showModal(`Revisión · ${esc(tpl.finca)} · Semana ${week+1}${res.qLabel||''}`,`
    <p style="color:var(--muted);margin-bottom:10px">${esc(fmtFecha(addDaysISO(tpl.desde,base)))} al ${esc(fmtFecha(addDaysISO(tpl.desde,base+6)))} · Hoja ${res.page+1} de ${res.pages}. Revisa y corrige si hace falta antes de aplicar.</p>
    ${dups>res.rows.length*7*0.25?`<div class="note" style="margin:0 0 10px;border-left-color:var(--red)"><b>La foto parece muy curvada, borrosa o con sombras.</b> Para evitar errores, te recomendamos repetirla con la hoja bien estirada sobre una mesa, de frente y con buena luz.</div>`:''}
    ${dups?`<div class="note" style="margin:0 0 10px">Hay <b>${dups}</b> casilla(s) dudosa(s) resaltadas en amarillo (marca tenue o varias opciones en el mismo día). Verifícalas con la foto.</div>`:''}
@@ -4963,7 +5015,7 @@ function omrReview(res){
      <div class="field" id="omr_qwrap"${ex?' style="display:none"':''}><label>Número de quincena (si es nueva)</label><select class="input" id="omr_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
    </div>
    <div class="note">Los días marcados se registran en la finca <b>${esc(tpl.finca)}</b>. Los días sin marca no borran lo que el empleado tenga registrado en otra finca.</div>`,
-   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Aplicar a la nómina',cls:'btn primary',fn:()=>omrApply()}]);
+   [{label:'Cancelar',cls:'btn',fn:()=>{ui._omrQ=null;closeModal();}}].concat(ui._omrQ&&ui._omrQ.files.length>1?[{label:'Omitir esta hoja',cls:'btn',fn:()=>omrSkipPage()}]:[]).concat([{label:'Aplicar a la nómina',cls:'btn primary',fn:()=>omrApply()}]));
   const m=document.querySelector('#overlay .modal');if(m)m.style.maxWidth='1080px';
   const tg=document.getElementById('omr_target');if(tg)tg.onchange=()=>{document.getElementById('omr_qwrap').style.display=tg.value==='new'?'':'none';};
 }
@@ -4984,8 +5036,10 @@ async function omrApply(){
       if(!/asist/i.test(j)){e.dias[di]={j,fi:tpl.finca};applied++;}
       else if(e.dias[di]&&e.dias[di].fi===tpl.finca){e.dias[di]={j:noAs,fi:''};}});
   });
-  await persistNom();closeModal();ui._omr=null;
-  ui.view='nomina';ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();render();
+  await persistNom();ui._omr=null;
+  const Q=ui._omrQ;
+  if(Q){Q.applied+=applied;Q.lastNom=nom.id;Q.idx++;if(Q.idx<Q.files.length){toast(`Hoja aplicada (${applied} jornadas) · siguiente página…`);return omrRunQueue(null);}return omrQueueDone();}
+  closeModal();ui.view='nomina';ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();render();
   toast(`${applied} jornada(s) registradas desde la planilla`+(skipped?` · ${skipped} fila(s) sin empleado omitidas`:''));
 }
 
