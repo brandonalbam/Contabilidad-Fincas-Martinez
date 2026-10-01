@@ -809,8 +809,10 @@ img{max-width:100%}
   .modal-h{background:#0f2a1b}
   .empty b{color:#e9f0eb}
   .mark.logo-estrella{background:rgba(255,255,255,.07)!important}
-  #pvWrap{background:#0a140f}
-  #pvWrap .pv-bar{background:var(--surface)}
+  #pvWrap{background:#e9edea}
+  #pvWrap .pv-bar{background:#ffffff;color:#0f2a1b;color-scheme:light}
+  #pvWrap .pv-bar .btn:not(.primary){background:#fff;color:#0f2a1b;border-color:#cdd6d0}
+  #pvWrap iframe{background:#e9edea;color-scheme:light}
   .scrim{background:rgba(0,0,0,.6)}
   ::-webkit-scrollbar-thumb{background:#2a3d32}
   ::-webkit-scrollbar-thumb:hover{background:#365043}
@@ -4701,7 +4703,7 @@ async function printInforme(){
 /* ===== PLANILLA DE NÓMINA CON LECTURA ÓPTICA (sin internet ni API) ===== */
 const OMR={W:281,H:194,F:8,fid:[[6,6],[275,6],[275,188],[6,188]],
   nameX0:14,daysX0:60,dayW:30,rowY0:46,rowH:11.5,rows:12,bubR:1.55,bubP:4.0,
-  top:['A','+½','+1','+1½','+2','+2½','+3'],bot:['M','−½','−1','−1½','−2','−2½','−3'],hrs:['0.5','1','1.5','2','2.5','3']};
+  top:['C','0.5','1','1.5','2','2.5','3'],bot:['M','-0.5','-1','-1.5','-2','-2.5','-3'],hrs:['0.5','1','1.5','2','2.5','3']};
 function omrCodeCX(i){return 110.6+i*4.6;}
 function omrBX(d,k){return OMR.daysX0+d*OMR.dayW+3+k*OMR.bubP;}
 function omrBY(r,bottom){return OMR.rowY0+r*OMR.rowH+3.1+(bottom?4.6:0);}
@@ -4719,13 +4721,13 @@ function omrPageSVG(tpl,week,page,pages){
   s+=`<text x="14" y="17" font-size="5" font-weight="700" fill="#0f2a1b">PLANILLA DE NÓMINA · ${esc(tpl.finca)}</text>`;
   s+=`<text x="14" y="22.6" font-size="3.1" fill="#333">Semana ${week+1}: ${esc(fmtFecha(d0))} al ${esc(fmtFecha(d6))} · Hoja ${page+1} de ${pages} · Código ${tpl.id}</text>`;
   s+=`<text x="268" y="17" font-size="3.1" text-anchor="end" fill="#333">Administrador: ________________________</text>`;
-  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo. Arriba: A = asistió jornada completa · +h = horas extra.  Abajo: M = media jornada · −h = horas de menos. Una sola opción de horas por día.</text>`;
-  s+=`<rect x="14" y="31" width="44" height="13" fill="#eef2ef"/><text x="16" y="39" font-size="3.2" font-weight="700" fill="#0f2a1b">EMPLEADO</text>`;
+  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo. Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.</text>`;
+  s+=`<rect x="14" y="31" width="44" height="14" fill="#fff" stroke="#8f9a93" stroke-width="0.25"/><text x="16" y="39.4" font-size="3.2" font-weight="700" fill="#0f2a1b">EMPLEADO</text>`;
   const used=Math.max(1,Math.min(O.rows,tpl.slots-page*O.rows));
   for(let d=0;d<7;d++){const x0=O.daysX0+d*O.dayW,iso=addDaysISO(tpl.desde,week*7+d);
-    s+=`<rect x="${x0+0.3}" y="31" width="${O.dayW-0.6}" height="13" fill="#eef2ef"/>`;
-    s+=`<text x="${x0+O.dayW/2}" y="36.4" font-size="3.3" font-weight="700" fill="#0f2a1b" text-anchor="middle">${omrDow(iso)}</text>`;
-    s+=`<text x="${x0+O.dayW/2}" y="41.4" font-size="2.7" fill="#555" text-anchor="middle">${iso.slice(8,10)}/${iso.slice(5,7)}</text>`;
+    s+=`<rect x="${x0+0.3}" y="31" width="${O.dayW-0.6}" height="14" fill="#fff" stroke="#8f9a93" stroke-width="0.25"/>`;
+    s+=`<text x="${x0+O.dayW/2}" y="35" font-size="3.1" font-weight="700" fill="#0f2a1b" text-anchor="middle">${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</text>`;
+    for(let k=0;k<7;k++){s+=`<text x="${omrBX(d,k)}" y="39.6" font-size="1.45" fill="#333" text-anchor="middle">${O.top[k]}</text><text x="${omrBX(d,k)}" y="43.2" font-size="1.45" fill="#333" text-anchor="middle">${O.bot[k]}</text>`;}
     s+=`<line x1="${x0}" y1="31" x2="${x0}" y2="${O.rowY0+used*O.rowH}" stroke="#c9d1cb" stroke-width="0.2"/>`;}
   for(let r=0;r<O.rows;r++){
     const idx=page*O.rows+r;if(idx>=tpl.slots)break;
@@ -4733,7 +4735,7 @@ function omrPageSVG(tpl,week,page,pages){
     s+=name?`<text x="15" y="${yt+6.9}" font-size="3.3" fill="#111">${esc(omrTrunc(name,25))}</text>`:`<text x="15" y="${yt+6.9}" font-size="2.8" fill="#777">Otro: ____________</text>`;
     for(let d=0;d<7;d++)for(let k=0;k<7;k++)for(const bot of [0,1]){
       const cx=omrBX(d,k),cy=omrBY(r,bot),lab=(bot?O.bot:O.top)[k];
-      s+=`<circle cx="${cx}" cy="${cy}" r="${O.bubR}" fill="#fff" stroke="#444" stroke-width="0.22"/><text x="${cx}" y="${cy+0.55}" font-size="1.55" fill="#c4c4c4" text-anchor="middle">${lab}</text>`;}
+      const fs=lab.length<=1?1.55:(lab.length<=2?1.35:(lab.length<=3?1.15:0.95));s+=`<circle cx="${cx}" cy="${cy}" r="${O.bubR}" fill="#fff" stroke="#444" stroke-width="0.22"/><text x="${cx}" y="${cy+fs*0.35}" font-size="${fs}" fill="#c4c4c4" text-anchor="middle">${lab}</text>`;}
     s+=`<line x1="14" y1="${yt+O.rowH}" x2="270" y2="${yt+O.rowH}" stroke="#b9c2bc" stroke-width="0.2"/>`;}
   s+=`<text x="140.5" y="191" font-size="2.4" fill="#888" text-anchor="middle">Frutas La Estrella · Tome la foto con buena luz, la hoja completa y las 4 marcas negras visibles. No escriba sobre las marcas.</text>`;
   return s+'</svg>';
@@ -4741,7 +4743,7 @@ function omrPageSVG(tpl,week,page,pages){
 function omrPrint(tpl){
   const pages=Math.max(1,Math.ceil(tpl.slots/OMR.rows));let html='';
   for(let w=0;w<2;w++)for(let p=0;p<pages;p++)html+=omrPageSVG(tpl,w,p,pages);
-  const css='@page{size:A4 landscape;margin:8mm}body{background:#fff}.sheet{border:none!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;margin:0 auto!important;background:#fff}.omr-page{display:block;margin:0 auto 12px;break-after:page;page-break-after:always}@media print{.omr-page{margin:0}}';
+  const css='@page{size:A4 landscape;margin:8mm}html,body{background:#fff!important;color-scheme:only light}.sheet{border:none!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;margin:0 auto!important;background:#fff}.omr-page{display:block;margin:0 auto 12px;break-after:page;page-break-after:always}@media print{.omr-page{margin:0}}';
   printIsolated(html,'Planilla nómina · '+tpl.finca,css,{raw:true});
 }
 function omrSuggest(finca){
