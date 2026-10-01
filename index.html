@@ -4721,7 +4721,7 @@ function omrPageSVG(tpl,week,page,pages){
   s+=`<text x="14" y="17" font-size="5" font-weight="700" fill="#0f2a1b">PLANILLA DE NÓMINA · ${esc(tpl.finca)}</text>`;
   s+=`<text x="14" y="22.6" font-size="3.1" fill="#333">Semana ${week+1}: ${esc(fmtFecha(d0))} al ${esc(fmtFecha(d6))} · Hoja ${page+1} de ${pages} · Código ${tpl.id}</text>`;
   s+=`<text x="268" y="17" font-size="3.1" text-anchor="end" fill="#333">Administrador: ________________________</text>`;
-  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo. Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.</text>`;
+  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo (evite el chulito ✓). Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.</text>`;
   s+=`<rect x="14" y="31" width="44" height="14" fill="#fff" stroke="#8f9a93" stroke-width="0.25"/><text x="16" y="39.4" font-size="3.2" font-weight="700" fill="#0f2a1b">EMPLEADO</text>`;
   const used=Math.max(1,Math.min(O.rows,tpl.slots-page*O.rows));
   for(let d=0;d<7;d++){const x0=O.daysX0+d*O.dayW,iso=addDaysISO(tpl.desde,week*7+d);
@@ -4795,10 +4795,17 @@ function omrHomography(src,dst){const A=[],b=[];for(let i=0;i<4;i++){const[x,y]=
 function omrMap(H,x,y){const d=H[6]*x+H[7]*y+H[8];return[(H[0]*x+H[1]*y+H[2])/d,(H[3]*x+H[4]*y+H[5])/d];}
 function omrPix(G,x,y){const xi=Math.min(G.w-1,Math.max(0,Math.round(x))),yi=Math.min(G.h-1,Math.max(0,Math.round(y)));return G.g[yi*G.w+xi];}
 function omrFill(G,H,cx,cy,r,k){
-  const ring=[];for(let a=0;a<28;a++){const t=a/28*2*Math.PI;const[x,y]=omrMap(H,cx+Math.cos(t)*r*1.33,cy+Math.sin(t)*r*1.33);ring.push(omrPix(G,x,y));}
-  ring.sort((a,b)=>a-b);const white=Math.max(40,ring[Math.floor(ring.length*0.85)]);const black=white*(k==null?0.2:k);const span=Math.max(12,white-black);
-  let n=0,acc=0;const R=r*0.66;for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++){const dx=i/4*R,dy=j/4*R;if(dx*dx+dy*dy>R*R)continue;const[x,y]=omrMap(H,cx+dx,cy+dy);n++;const v=(white-omrPix(G,x,y))/span;acc+=v<0?0:(v>1?1:v);}
-  return n?acc/n:0;}
+  // blanco del papel: percentil alto en un área amplia alrededor del círculo
+  const wv=[];for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++){const p=omrMap(H,cx+i*r*0.47,cy+j*r*0.47);wv.push(omrPix(G,p[0],p[1]));}
+  wv.sort((a,b)=>a-b);const white=Math.max(40,wv[Math.floor(wv.length*0.88)]);const black=white*(k==null?0.2:k);const span=Math.max(12,white-black);
+  const dk=(x,y)=>{const p=omrMap(H,x,y);const v=(white-omrPix(G,p[0],p[1]))/span;return v<0?0:(v>1?1:v);};
+  // 1) tinta dentro del círculo (fracción de puntos con trazo)
+  let n=0,hit=0,acc=0;const R=r*0.8;for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){const dx=i/5*R,dy=j/5*R;if(dx*dx+dy*dy>R*R)continue;const v=dk(cx+dx,cy+dy);n++;acc+=v;if(v>0.42)hit++;}
+  const inner=n?Math.max(acc/n,hit/n*0.9):0;
+  // 2) anillo exterior en 8 sectores: detecta opciones encerradas y descarta marcas vecinas que se salen
+  const sec=[];for(let s=0;s<8;s++){let m=0,c=0;for(let a=0;a<3;a++){const t=(s+a/3+1/6)/8*2*Math.PI;for(const rr of[1.14,1.27,1.4,1.52]){m+=dk(cx+Math.cos(t)*r*rr,cy+Math.sin(t)*r*rr);c++;}}sec.push(m/c);}
+  sec.sort((a,b)=>a-b);const ring=(sec[2]+sec[3])/2;
+  return Math.max(inner,ring*1.15);}
 function omrInkRatio(G,H){
   const out=[];const dirs=[[1,1],[-1,1],[-1,-1],[1,-1]];
   OMR.fid.forEach(([fx,fy],i)=>{const[sx,sy]=dirs[i];const blk=[],wht=[];
@@ -4873,12 +4880,23 @@ function omrJLabel(kind,h){
   return (J.find(j=>/asist/i.test(j.l))||{l:'No Asistió'}).l;
 }
 function omrReadDay(sc,th,r,d){
-  const MK=th.mk,DB=th.db;const t=sc[r][d].t,b=sc[r][d].b;
-  const all=t.concat(b);let doubt=all.some(v=>v>=DB&&v<MK);
-  const pick=arr=>{let best=-1,bv=0,cnt=0;arr.forEach((v,i)=>{if(v>=MK){cnt++;if(v>bv){bv=v;best=i;}}});return{best,cnt};};
-  const plus=pick(t.slice(1)),minus=pick(b.slice(1));const A=t[0]>=MK,M=b[0]>=MK;
-  if(plus.cnt>1||minus.cnt>1)doubt=true;if((plus.cnt&&minus.cnt)||(M&&plus.cnt))doubt=true;
-  let j;if(M&&!plus.cnt&&!minus.cnt)j=omrJLabel('M');else if(plus.cnt)j=omrJLabel('+',OMR.hrs[plus.best]);else if(minus.cnt)j=omrJLabel('-',OMR.hrs[minus.best]);else if(A)j=omrJLabel('A');else j=omrJLabel('N');
+  const t=sc[r][d].t,b=sc[r][d].b,MK=th.mk,DB=th.db,BASE=th.base;
+  const med=a=>{const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)];};
+  const tm=med(t.slice(1)),bm=med(b.slice(1));
+  const strong=(v,m)=>v>=MK||(v>=DB&&v-m>=0.07);
+  const weak=(v,m)=>!strong(v,m)&&v-m>=0.03&&v>=BASE+0.03;
+  const pick=(arr,m)=>{let best=-1,bv=-1,sv=-1;arr.forEach((v,i)=>{if(v>bv){sv=bv;bv=v;best=i;}else if(v>sv)sv=v;});
+    const ok=strong(bv,m);return{best,ok,amb:(ok&&(bv<sv+0.05||strong(sv,m)))||(!ok&&weak(bv,m))};};
+  const P=pick(t.slice(1),tm),N=pick(b.slice(1),bm);
+  const C=strong(t[0],tm),Mm=strong(b[0],bm);
+  let doubt=P.amb||N.amb||weak(t[0],tm)||weak(b[0],bm);
+  if((P.ok&&N.ok)||(Mm&&P.ok)||(Mm&&N.ok))doubt=true;
+  let j;
+  if(P.ok)j=omrJLabel('+',OMR.hrs[P.best]);
+  else if(N.ok)j=omrJLabel('-',OMR.hrs[N.best]);
+  else if(Mm)j=omrJLabel('M');
+  else if(C)j=omrJLabel('A');
+  else j=omrJLabel('N');
   return{j,doubt,fills:{t,b}};
 }
 function omrThresholds(sc){
@@ -4987,6 +5005,24 @@ function omrPickTemplate(st,pk){
   document.getElementById('omr_pgo').onclick=()=>{const id=+document.getElementById('omr_pk').value,week=+document.getElementById('omr_pw').value,page=+document.getElementById('omr_pp').value;const tpl=omrTemplates()[id];if(!tpl)return;
     try{const res=omrFinish(pk.G,pk.img,pk.H,tpl,week,page);ui._omr=res;omrReview(res);}catch(e){st.innerHTML='<span style="color:var(--red)">'+esc(e.message||String(e))+'</span>';}};
 }
+function omrCellCrop(res,ri,di){
+  const{img,H,G}=res;const sc=img.naturalWidth/G.w;const o0=(res.off&&res.off[ri]&&res.off[ri][di])||{ox:0,oy:0};
+  const x0=OMR.daysX0+di*OMR.dayW-1,x1=x0+OMR.dayW+2,y0=OMR.rowY0+ri*OMR.rowH-1,y1=y0+OMR.rowH+2;
+  const pts=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([x,y])=>omrMap(H,x+o0.ox,y+o0.oy));
+  const xs=pts.map(p=>p[0]*sc),ys=pts.map(p=>p[1]*sc);const bx=Math.max(0,Math.min(...xs)),by=Math.max(0,Math.min(...ys)),bw=Math.min(img.naturalWidth,Math.max(...xs))-bx,bh=Math.min(img.naturalHeight,Math.max(...ys))-by;
+  const W=420,Hh=Math.max(60,Math.round(W*bh/Math.max(1,bw)));const c=document.createElement('canvas');c.width=W;c.height=Hh;const x=c.getContext('2d');x.drawImage(img,bx,by,bw,bh,0,0,W,Hh);
+  const f=W/bw;const row=res.rows[ri].days[di];const pxmm=Math.hypot(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1])/(x1-x0);const rad=OMR.bubR*1.3*pxmm*sc*f;
+  for(let k=0;k<7;k++)for(const bot of[0,1]){const o=(bot?o0.ob:o0.ot)||o0;const[px,py]=omrMap(H,omrBX(di,k)+o.ox,omrBY(ri,bot)+o.oy);const v=(bot?row.fills.b:row.fills.t)[k];
+    x.beginPath();x.arc((px*sc-bx)*f,(py*sc-by)*f,rad,0,Math.PI*2);
+    x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(150,150,150,.5)');x.lineWidth=v>=res.th.db?3:1;x.stroke();}
+  return c.toDataURL('image/jpeg',0.9);
+}
+function omrZoom(ri,di){
+  const res=ui._omr;if(!res)return;const box=document.getElementById('omr_zoom');if(!box)return;
+  const row=res.rows[ri],iso=addDaysISO(res.tpl.desde,res.week*7+di);
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap"><b style="font-size:13px">${esc(row.name||'Fila en blanco')} · ${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</b><span style="font-size:11.5px;color:var(--muted)">Verde = leída como marcada · Amarillo = dudosa</span></div><img src="${omrCellCrop(res,ri,di)}" style="width:100%;max-width:420px;border-radius:6px;border:1px solid var(--line);background:#fff">`;
+  box.style.display='';
+}
 function omrOverlay(res){
   const{img,H}=res;const W=img.naturalWidth,Hh=img.naturalHeight;const s=Math.min(1,760/Math.max(W,Hh));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(Hh*s);const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
   const sc=s*(W/res.G.w);
@@ -5000,7 +5036,7 @@ function omrReview(res){
   const rowsH=res.rows.map((row,ri)=>{
     const any=row.days.some(d=>!/asist/i.test(d.j));if(row.blank&&!any)return '';
     return `<tr><td style="min-width:150px">${row.blank?`<select class="input omr-emp" data-r="${ri}" style="padding:5px 7px">${empOpts}</select>`:`<b>${esc(row.name)}</b>`}</td>`+
-      row.days.map((d,di)=>`<td style="${d.doubt?'background:rgba(201,162,39,.18)':''}"><select class="input omr-j" data-r="${ri}" data-d="${di}" style="padding:5px 6px;font-size:12px;min-width:92px">${opts(d.j)}</select></td>`).join('')+'</tr>';}).join('');
+      row.days.map((d,di)=>`<td style="${d.doubt?'background:rgba(201,162,39,.18)':''}"><div style="display:flex;align-items:center;gap:3px"><select class="input omr-j" data-r="${ri}" data-d="${di}" style="padding:5px 6px;font-size:12px;min-width:88px">${opts(d.j)}</select><button type="button" class="iconbtn" title="Ver en la foto" style="width:26px;height:26px;flex:0 0 auto" onclick="omrZoom(${ri},${di})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></div></td>`).join('')+'</tr>';}).join('');
   const dups=res.rows.reduce((s,r)=>s+r.days.filter(d=>d.doubt).length,0);
   const ex=NOMINAS.find(n=>n.desde===tpl.desde);
   const head=[0,1,2,3,4,5,6].map(d=>{const iso=addDaysISO(tpl.desde,base+d);return `<th>${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</th>`;}).join('');
@@ -5009,7 +5045,9 @@ function omrReview(res){
    ${dups>res.rows.length*7*0.25?`<div class="note" style="margin:0 0 10px;border-left-color:var(--red)"><b>La foto parece muy curvada, borrosa o con sombras.</b> Para evitar errores, te recomendamos repetirla con la hoja bien estirada sobre una mesa, de frente y con buena luz.</div>`:''}
    ${dups?`<div class="note" style="margin:0 0 10px">Hay <b>${dups}</b> casilla(s) dudosa(s) resaltadas en amarillo (marca tenue o varias opciones en el mismo día). Verifícalas con la foto.</div>`:''}
    <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:13px">Ver foto con la lectura (verde = marcada, amarillo = dudosa)</summary><img src="${omrOverlay(res)}" style="width:100%;margin-top:8px;border-radius:6px;border:1px solid var(--line)"></details>
+   <div id="omr_zoom" class="card" style="padding:10px 12px;margin-bottom:10px;display:none"></div>
    <div class="tablewrap"><table><thead><tr><th>Empleado</th>${head}</tr></thead><tbody>${rowsH||`<tr><td colspan="8">No se detectaron marcas.</td></tr>`}</tbody></table></div>
+   <p style="font-size:12px;color:var(--muted);margin-top:6px">Toca la lupa de cualquier día para ver cómo quedó esa parte de la foto.</p>
    <div class="form-grid" style="margin-top:12px">
      <div class="field full"><label>Aplicar a</label><select class="input" id="omr_target">${ex?`<option value="ex">Quincena existente: ${esc(MES_FULL[ex.mes])} ${ex.year} · Q${ex.q} (desde ${esc(fmtFecha(ex.desde))})</option>`:''}<option value="new" ${ex?'':'selected'}>Crear nueva quincena desde ${esc(fmtFecha(tpl.desde))}</option></select></div>
      <div class="field" id="omr_qwrap"${ex?' style="display:none"':''}><label>Número de quincena (si es nueva)</label><select class="input" id="omr_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
@@ -5017,6 +5055,7 @@ function omrReview(res){
    <div class="note">Los días marcados se registran en la finca <b>${esc(tpl.finca)}</b>. Los días sin marca no borran lo que el empleado tenga registrado en otra finca.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{ui._omrQ=null;closeModal();}}].concat(ui._omrQ&&ui._omrQ.files.length>1?[{label:'Omitir esta hoja',cls:'btn',fn:()=>omrSkipPage()}]:[]).concat([{label:'Aplicar a la nómina',cls:'btn primary',fn:()=>omrApply()}]));
   const m=document.querySelector('#overlay .modal');if(m)m.style.maxWidth='1080px';
+  {let f=null;res.rows.forEach((row,ri)=>row.days.forEach((d,di)=>{if(!f&&d.doubt)f=[ri,di];}));if(f)omrZoom(f[0],f[1]);}
   const tg=document.getElementById('omr_target');if(tg)tg.onchange=()=>{document.getElementById('omr_qwrap').style.display=tg.value==='new'?'':'none';};
 }
 async function omrApply(){
