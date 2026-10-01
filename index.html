@@ -4721,7 +4721,7 @@ function omrPageSVG(tpl,week,page,pages){
   s+=`<text x="14" y="17" font-size="5" font-weight="700" fill="#0f2a1b">PLANILLA DE NÓMINA · ${esc(tpl.finca)}</text>`;
   s+=`<text x="14" y="22.6" font-size="3.1" fill="#333">Semana ${week+1}: ${esc(fmtFecha(d0))} al ${esc(fmtFecha(d6))} · Hoja ${page+1} de ${pages} · Código ${tpl.id}</text>`;
   s+=`<text x="268" y="17" font-size="3.1" text-anchor="end" fill="#333">Administrador: ________________________</text>`;
-  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo (evite el chulito ✓). Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.</text>`;
+  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo (no use chulito). Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.</text>`;
   s+=`<rect x="14" y="31" width="44" height="14" fill="#fff" stroke="#8f9a93" stroke-width="0.25"/><text x="16" y="39.4" font-size="3.2" font-weight="700" fill="#0f2a1b">EMPLEADO</text>`;
   const used=Math.max(1,Math.min(O.rows,tpl.slots-page*O.rows));
   for(let d=0;d<7;d++){const x0=O.daysX0+d*O.dayW,iso=addDaysISO(tpl.desde,week*7+d);
@@ -4745,6 +4745,69 @@ function omrPrint(tpl){
   for(let w=0;w<2;w++)for(let p=0;p<pages;p++)html+=omrPageSVG(tpl,w,p,pages);
   const css='@page{size:A4 landscape;margin:8mm}html,body{background:#fff!important;color-scheme:only light}.sheet{border:none!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;margin:0 auto!important;background:#fff}.omr-page{display:block;margin:0 auto 12px;break-after:page;page-break-after:always}@media print{.omr-page{margin:0}}';
   printIsolated(html,'Planilla nómina · '+tpl.finca,css,{raw:true});
+}
+const JSPDF_VER='2.5.1';
+function omrLoadJsPDF(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
+  if(ui._jspdfP)return ui._jspdfP;
+  ui._jspdfP=new Promise((res,rej)=>{const s=document.createElement('script');s.src=`https://cdnjs.cloudflare.com/ajax/libs/jspdf/${JSPDF_VER}/jspdf.umd.min.js`;
+    s.onload=()=>{if(window.jspdf&&window.jspdf.jsPDF)res(window.jspdf.jsPDF);else{ui._jspdfP=null;rej(new Error('jsPDF no disponible'));}};
+    s.onerror=()=>{ui._jspdfP=null;rej(new Error('Sin conexión para cargar el generador de PDF'));};document.head.appendChild(s);});
+  return ui._jspdfP;}
+async function omrBuildPdf(tpl){
+  const jsPDF=await omrLoadJsPDF();const O=OMR,M=8,PT=2.8346;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+  doc.setProperties({title:'Planilla de nómina · '+tpl.finca,subject:'Frutas La Estrella',creator:'Frutas La Estrella'});
+  const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const T=(str,x,y,mm,col,opt={})=>{doc.setFont('helvetica',opt.bold?'bold':'normal');let fs=mm*PT;doc.setFontSize(fs);
+    if(opt.maxW){while(doc.getTextWidth(str)>opt.maxW&&fs>4){fs-=0.2;doc.setFontSize(fs);}}
+    doc.setTextColor(...hex(col));doc.text(String(str),x+M,y+M,{align:opt.align||'left',baseline:'alphabetic'});};
+  const RECT=(x,y,w,h,fill,stroke,lw)=>{if(fill)doc.setFillColor(...hex(fill));if(stroke){doc.setDrawColor(...hex(stroke));doc.setLineWidth(lw||0.2);}doc.rect(x+M,y+M,w,h,fill&&stroke?'FD':(fill?'F':'S'));};
+  const LINE=(x1,y1,x2,y2,col,lw)=>{doc.setDrawColor(...hex(col));doc.setLineWidth(lw);doc.line(x1+M,y1+M,x2+M,y2+M);};
+  const pages=Math.max(1,Math.ceil(tpl.slots/O.rows));let first=true;
+  for(let week=0;week<2;week++)for(let page=0;page<pages;page++){
+    if(!first)doc.addPage('a4','landscape');first=false;
+    doc.setFillColor(255,255,255);doc.rect(0,0,297,210,'F');
+    O.fid.forEach(([x,y])=>RECT(x-O.F/2,y-O.F/2,O.F,O.F,'#000000'));
+    omrBits(tpl.id,week,page).forEach((bit,i)=>{const cx=omrCodeCX(i);if(bit)RECT(cx-1.8,4.2,3.6,3.6,'#000000');else RECT(cx-1.8,4.2,3.6,3.6,null,'#d6d6d6',0.2);});
+    const d0=addDaysISO(tpl.desde,week*7),d6=addDaysISO(tpl.desde,week*7+6);
+    T('PLANILLA DE NÓMINA · '+tpl.finca,14,17,5,'#0f2a1b',{bold:true,maxW:150});
+    T(`Semana ${week+1}: ${fmtFecha(d0)} al ${fmtFecha(d6)} · Hoja ${page+1} de ${pages} · Código ${tpl.id}`,14,22.6,3.1,'#333333',{maxW:150});
+    T('Administrador: ________________________',268,17,3.1,'#333333',{align:'right'});
+    T('Use bolígrafo negro o azul. Marque con X o rellene el círculo (no use chulito). Arriba: C = día completo · 0.5 a 3 = horas extra.  Abajo: M = medio día · -0.5 a -3 = horas de menos. Una sola opción de horas por día.',14,28,2.5,'#555555',{maxW:254});
+    RECT(14,31,44,14,'#ffffff','#8f9a93',0.25);T('EMPLEADO',16,39.4,3.2,'#0f2a1b',{bold:true});
+    const used=Math.max(1,Math.min(O.rows,tpl.slots-page*O.rows));
+    for(let d=0;d<7;d++){const x0=O.daysX0+d*O.dayW,iso=addDaysISO(tpl.desde,week*7+d);
+      RECT(x0+0.3,31,O.dayW-0.6,14,'#ffffff','#8f9a93',0.25);
+      T(`${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}`,x0+O.dayW/2,35,3.1,'#0f2a1b',{bold:true,align:'center'});
+      for(let k=0;k<7;k++){T(O.top[k],omrBX(d,k),39.6,1.45,'#333333',{align:'center'});T(O.bot[k],omrBX(d,k),43.2,1.45,'#333333',{align:'center'});}
+      LINE(x0,31,x0,O.rowY0+used*O.rowH,'#c9d1cb',0.2);}
+    for(let r=0;r<O.rows;r++){const idx=page*O.rows+r;if(idx>=tpl.slots)break;
+      const yt=O.rowY0+r*O.rowH,name=tpl.emps[idx];
+      if(name)T(omrTrunc(name,25),15,yt+6.9,3.3,'#111111',{maxW:43});else T('Otro: ____________',15,yt+6.9,2.8,'#777777');
+      doc.setLineWidth(0.22);doc.setDrawColor(68,68,68);doc.setFillColor(255,255,255);
+      for(let d=0;d<7;d++)for(let k=0;k<7;k++)for(const bot of[0,1]){const cx=omrBX(d,k),cy=omrBY(r,bot),lab=(bot?O.bot:O.top)[k];
+        doc.setLineWidth(0.22);doc.setDrawColor(68,68,68);doc.setFillColor(255,255,255);doc.circle(cx+M,cy+M,O.bubR,'FD');
+        const fs=lab.length<=1?1.55:(lab.length<=2?1.35:(lab.length<=3?1.15:0.95));T(lab,cx,cy+fs*0.35,fs,'#c4c4c4',{align:'center'});}
+      LINE(14,yt+O.rowH,270,yt+O.rowH,'#b9c2bc',0.2);}
+    T('Frutas La Estrella · Tome la foto con buena luz, la hoja completa y las 4 marcas negras visibles. No escriba sobre las marcas.',140.5,191,2.4,'#888888',{align:'center',maxW:240});
+  }
+  return doc;
+}
+async function omrPdfDownload(tpl){
+  let doc;
+  try{doc=await omrBuildPdf(tpl);}catch(e){toast('No se pudo crear el PDF directo; se abre la versión para imprimir');return omrPrint(tpl);}
+  const name=`Planilla ${tpl.finca} ${tpl.desde}.pdf`.replace(/[\\/:*?"<>|]/g,'-');
+  const blob=doc.output('blob');const file=new File([blob],name,{type:'application/pdf'});const url=URL.createObjectURL(blob);
+  const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  const download=()=>{const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Planilla descargada');};
+  download();
+  showModal('Planilla lista',`
+   <p style="color:var(--muted);line-height:1.6">Se descargó <b>${esc(name)}</b>: ${Math.max(1,Math.ceil(tpl.slots/OMR.rows))*2} hoja(s) en tamaño A4 horizontal, siempre en blanco y negro (no le afecta el modo oscuro).</p>
+   <div class="note">Al imprimir, usa tamaño real o 100 % si tu impresora lo permite. Si no aparece la descarga, usa el botón «Descargar de nuevo».</div>`,
+   [{label:'Cerrar',cls:'btn',fn:closeModal}]
+     .concat(canShare?[{label:'Compartir',cls:'btn',fn:async()=>{try{await navigator.share({files:[file],title:name});}catch(e){}}}]:[])
+     .concat([{label:'Abrir',cls:'btn',fn:()=>{window.open(url,'_blank');}},{label:'Descargar de nuevo',cls:'btn primary',fn:()=>download()}]));
 }
 function omrSuggest(finca){
   const noms=NOMINAS.slice().sort((a,b)=>(b.hasta||'').localeCompare(a.hasta||''));
@@ -4771,7 +4834,7 @@ function omrGenModal(){
      const blanks=+document.getElementById('omr_b').value||0;
      if(!emps.length&&!blanks){toast('Marca al menos un empleado o agrega filas en blanco');return;}
      const id=omrNewId();const tpl={id,finca,desde,emps,slots:emps.length+blanks,created:todayISO()};
-     omrTemplates()[id]=tpl;await persistCfg();closeModal();omrPrint(tpl);
+     omrTemplates()[id]=tpl;await persistCfg();closeModal();await omrPdfDownload(tpl);
    }}]);
 }
 /* ---- Lectura de la foto ---- */
