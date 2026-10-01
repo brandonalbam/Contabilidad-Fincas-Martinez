@@ -4136,14 +4136,23 @@ function exMonthChart(series){
   series.forEach((s,i)=>{const cx=pL+gw*i+gw/2;
     const yi=y(s.ing),ye=y(s.egr),y0=y(0);
     bars+=`<rect x="${(cx-bw-1).toFixed(1)}" y="${Math.min(yi,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-yi).toFixed(1)}" fill="#2f8f57" rx="1.5"/>`;
-    bars+=`<rect x="${(cx+1).toFixed(1)}" y="${Math.min(ye,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-ye).toFixed(1)}" fill="#b9c4bd" rx="1.5"/>`;
+    bars+=`<rect x="${(cx+1).toFixed(1)}" y="${Math.min(ye,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-ye).toFixed(1)}" fill="#c8443a" rx="1.5"/>`;
     pts.push([cx,y(s.u)]);
     if(i%every===0)labs+=`<text x="${cx.toFixed(1)}" y="${H-pB+16}" text-anchor="middle" font-size="9.5" fill="#22302a">${MES_ABV[+s.k.slice(5)-1]} ${s.k.slice(2,4)}</text>`;});
-  const line=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="#c9a227" stroke-width="2"/>`+pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.8" fill="#fff" stroke="#c9a227" stroke-width="1.6"/>`).join('');
-  const ly=H-12,lx=W/2-150;
+  const yz=y(0);let segs='';
+  for(let i=1;i<pts.length;i++){
+    const [x1,y1]=pts[i-1],[x2,y2]=pts[i],u1=series[i-1].u,u2=series[i].u;
+    const col=u=>u<0?'#c8443a':'#c9a227';
+    if((u1<0)!==(u2<0)&&u1!==u2){const t=u1/(u1-u2);const xm=x1+(x2-x1)*t;
+      segs+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xm.toFixed(1)}" y2="${yz.toFixed(1)}" stroke="${col(u1)}" stroke-width="2.2"/><line x1="${xm.toFixed(1)}" y1="${yz.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col(u2)}" stroke-width="2.2"/>`;}
+    else segs+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col(u1<0&&u2<0?-1:1)}" stroke-width="2.2"/>`;
+  }
+  const line=segs+pts.map((p,i)=>{const neg=series[i].u<0;return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${neg?3.4:2.8}" fill="${neg?'#c8443a':'#fff'}" stroke="${neg?'#c8443a':'#c9a227'}" stroke-width="1.6"/>`;}).join('');
+  const ly=H-12,lx=W/2-210;
   const leg=`<rect x="${lx}" y="${ly-9}" width="11" height="11" rx="2" fill="#2f8f57"/><text x="${lx+16}" y="${ly}" font-size="10.5" fill="#22302a">Ingresos</text>
-    <rect x="${lx+100}" y="${ly-9}" width="11" height="11" rx="2" fill="#b9c4bd"/><text x="${lx+116}" y="${ly}" font-size="10.5" fill="#22302a">Egresos</text>
-    <line x1="${lx+196}" x2="${lx+214}" y1="${ly-4}" y2="${ly-4}" stroke="#c9a227" stroke-width="2.5"/><circle cx="${lx+205}" cy="${ly-4}" r="2.8" fill="#fff" stroke="#c9a227" stroke-width="1.6"/><text x="${lx+220}" y="${ly}" font-size="10.5" fill="#22302a">Utilidad</text>`;
+    <rect x="${lx+100}" y="${ly-9}" width="11" height="11" rx="2" fill="#c8443a"/><text x="${lx+116}" y="${ly}" font-size="10.5" fill="#22302a">Egresos</text>
+    <line x1="${lx+196}" x2="${lx+214}" y1="${ly-4}" y2="${ly-4}" stroke="#c9a227" stroke-width="2.5"/><circle cx="${lx+205}" cy="${ly-4}" r="2.8" fill="#fff" stroke="#c9a227" stroke-width="1.6"/><text x="${lx+220}" y="${ly}" font-size="10.5" fill="#22302a">Utilidad</text>
+    <line x1="${lx+290}" x2="${lx+308}" y1="${ly-4}" y2="${ly-4}" stroke="#c8443a" stroke-width="2.5"/><circle cx="${lx+299}" cy="${ly-4}" r="3.2" fill="#c8443a"/><text x="${lx+314}" y="${ly}" font-size="10.5" fill="#22302a">Utilidad negativa</text>`;
   return `<svg class="ex-chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Roboto,Helvetica,Arial,sans-serif"><rect width="${W}" height="${H}" fill="#ffffff"/>${g}${bars}${line}${labs}${leg}</svg>`;
 }
 function exHBars(rows,total,color,limit){
@@ -4178,7 +4187,7 @@ function exFincaChart(comp){
   const zero=hasNeg?lw+area/2:lw;const scale=hasNeg?area/2:area;
   const body=comp.map((r,i)=>{const yy=pT+i*rh;const w=Math.abs(r.uti)/maxAbs*scale;const x=r.uti>=0?zero:zero-w;
     return `<text x="0" y="${yy+17}" font-size="11" fill="#22302a">${esc(exTrunc(r.fi,22))}</text>
-      <rect x="${x.toFixed(1)}" y="${yy+6}" width="${Math.max(2,w).toFixed(1)}" height="14" fill="${r.uti>=0?'#2f8f57':'#b23b2e'}" rx="2"/>
+      <rect x="${x.toFixed(1)}" y="${yy+6}" width="${Math.max(2,w).toFixed(1)}" height="14" fill="${r.uti>=0?'#2f8f57':'#c8443a'}" rx="2"/>
       <text x="${W}" y="${yy+17}" text-anchor="end" font-size="11" font-weight="700" fill="${r.uti>=0?'#1e5631':'#b23b2e'}">${fmt(r.uti)}</text>`;}).join('');
   return `<svg class="ex-chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Roboto,Helvetica,Arial,sans-serif"><rect width="${W}" height="${H}" fill="#ffffff"/><line x1="${zero}" x2="${zero}" y1="0" y2="${H}" stroke="#9aa79f" stroke-width="1"/>${body}</svg>`;
 }
@@ -4229,7 +4238,7 @@ function informeExecHTML(){
    ${sec('02','Evolución mensual','Ingresos, egresos y utilidad por mes',`<figure class="ex-fig">${exMonthChart(D.series)}</figure>
      ${D.series.length?tbl('<th>Mes</th><th class="r">Ingresos</th><th class="r">Egresos</th><th class="r">Utilidad</th><th class="r">Margen</th><th class="r">Acumulado</th>',monthRows,`<td>Total del periodo</td><td class="r tnum">${fmt(a.ing)}</td><td class="r tnum">${fmt(a.egr)}</td><td class="r tnum">${fmt(a.uti)}</td><td class="r tnum">${pctS(a.margen)}</td><td class="r tnum">${fmt(a.uti)}</td>`):''}`)}
 
-   ${sec('03','Estructura de egresos','Distribución del gasto por categoría',`<figure class="ex-fig">${exHBars(D.egRows,a.egr,'#7d8f84',8)}</figure>
+   ${sec('03','Estructura de egresos','Distribución del gasto por categoría',`<figure class="ex-fig">${exHBars(D.egRows,a.egr,'#c8443a',8)}</figure>
      ${D.egRows.length?tbl('<th>Categoría</th><th class="r">Monto</th><th class="r">Participación</th>',catRows(D.egRows,a.egr),`<td>Total egresos</td><td class="r tnum">${fmt(a.egr)}</td><td class="r tnum">100%</td>`):''}`,true)}
 
    ${sec('04','Composición de ingresos','Fuentes de ingreso del periodo',`<figure class="ex-fig">${exDonut(D.inRows,a.ing)}</figure>
