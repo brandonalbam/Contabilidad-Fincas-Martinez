@@ -455,6 +455,13 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .ro-lock .ro-ok{opacity:1;cursor:pointer}
 .ro-banner{display:flex;align-items:center;gap:9px;background:var(--amber-soft);color:#8a5a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
 .ro-banner svg{width:18px;height:18px;flex:0 0 auto}
+/* Campos de fecha en formato día/mes/año, sin importar el idioma del navegador */
+.dmy-wrap{position:relative;display:block;width:100%;min-width:0}
+.dmy-wrap>input[type=date]{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent;cursor:pointer}
+.dmy-wrap>input[type=date]::-webkit-datetime-edit{color:transparent}
+.dmy-txt{position:absolute;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink);font:inherit;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;right:34px}
+.dmy-txt.ph{color:var(--faint)}
+.dmy-wrap>input[type=date]:disabled+.dmy-txt{color:var(--faint)}
 /* Respuesta inmediata de botones */
 button,.btn,.iconbtn,a[data-view],.task-check,.pf-choose{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn.is-busy{opacity:.85;pointer-events:none}
@@ -1112,7 +1119,7 @@ const saldo=m=>Math.max((+m.tot||0)-(+m.ab||0),0);
 const daysBetween=(iso)=>{if(!iso)return 0;const d=new Date(iso+'T00:00:00');return Math.floor((Date.now()-d.getTime())/86400000);};
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.split('-');return `${+d} ${MES_C[+m-1]} ${y}`;}
+function fmtFecha(iso){if(!iso)return '—';const p=String(iso).slice(0,10).split('-');if(p.length<3)return String(iso);const[y,m,d]=p;return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`;}
 function fincaColor(name){let h=0;for(const c of name)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 46% 46%)`;}
 function inRange(iso,from,to){return iso&&iso>=from&&iso<=to;}
 
@@ -1593,7 +1600,7 @@ function rowHTML(m){
   if(m.e==='X'){const d=daysBetween(m.f);const cls=d>=CFG.umbral?'late':(d>=0?'warn':'ok');sem=`<span class="sem ${cls}"><i></i>${d>=0?d+' d':'futuro'}</span>`;}
   else if(m.e==='P')sem=`<span class="sem ok"><i></i>al día</span>`;
   return `<tr>
-    <td class="tnum">${esc(m.f)}</td>
+    <td class="tnum">${fmtFecha(m.f)}</td>
     <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
     <td><span class="chip ${m.t==='I'?'i':'e'}">${m.t==='I'?'Ingreso':'Egreso'}</span></td>
     <td>${esc(m.c)}</td>
@@ -4814,7 +4821,7 @@ async function omrBuildPdf(tpl){
 async function omrPdfDownload(tpl){
   let doc;
   try{doc=await omrBuildPdf(tpl);}catch(e){toast('No se pudo crear el PDF directo; se abre la versión para imprimir');return omrPrint(tpl);}
-  const name=`Planilla ${tpl.finca} ${tpl.desde}.pdf`.replace(/[\\/:*?"<>|]/g,'-');
+  const name=`Planilla ${tpl.finca} ${fmtFecha(tpl.desde).replace(/\//g,'-')}.pdf`.replace(/[\\/:*?"<>|]/g,'-');
   const blob=doc.output('blob');const file=new File([blob],name,{type:'application/pdf'});const url=URL.createObjectURL(blob);
   const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
   const download=()=>{const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Planilla descargada');};
@@ -5310,7 +5317,7 @@ function cloudPullNow(){if(!Cloud.cfg.enabled){toast('Activa la nube primero');r
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function exportCSV(){
   const H=['Fecha','Año','Mes','Finca','Tipo','Categoria','Cliente','Descripcion','Unidad','Cantidad','PrecioUnit','Total','Estado','AbonoParcial','SaldoPendiente','Factura','Comercio'];
-  const rows=MOVS.slice().sort((a,b)=>(a.f||'').localeCompare(b.f||'')).map(m=>[m.f,(m.f||'').slice(0,4),MES_FULL[+(m.f||'01-01-01').slice(5,7)-1]||'',m.fi,m.t==='I'?'Ingreso':'Egreso',m.c,m.cl||'',m.d,m.u,m.q,m.pu,m.tot,m.e==='P'?'Pagado/Recibido':m.e==='X'?'Pendiente':'',m.ab||0,saldo(m),m.fa,m.co]
+  const rows=MOVS.slice().sort((a,b)=>(a.f||'').localeCompare(b.f||'')).map(m=>[fmtFecha(m.f),(m.f||'').slice(0,4),MES_FULL[+(m.f||'01-01-01').slice(5,7)-1]||'',m.fi,m.t==='I'?'Ingreso':'Egreso',m.c,m.cl||'',m.d,m.u,m.q,m.pu,m.tot,m.e==='P'?'Pagado/Recibido':m.e==='X'?'Pendiente':'',m.ab||0,saldo(m),m.fa,m.co]
     .map(x=>{x=x==null?'':String(x);return /[",;\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;}).join(';'));
   dl('movimientos_fincas.csv','\uFEFF'+H.join(';')+'\n'+rows.join('\n'),'text/csv;charset=utf-8');
   toast('CSV exportado');
@@ -5363,6 +5370,25 @@ document.addEventListener('input',e=>{
   el.dataset.raw=digits;
   el.value=digits?(+digits).toLocaleString('es-CO'):'';
 },true);
+/* ===== Fechas día/mes/año en todos los campos de fecha ===== */
+function dmyUpdate(inp){const t=inp._dmyTxt;if(!t)return;const v=inp.value;t.textContent=v?fmtFecha(v):'dd/mm/aaaa';t.classList.toggle('ph',!v);}
+function dmyEnhance(root){
+  (root||document).querySelectorAll('input[type=date]:not([data-dmy])').forEach(inp=>{
+    inp.setAttribute('data-dmy','1');
+    const w=document.createElement('span');w.className='dmy-wrap';
+    const cs=getComputedStyle(inp);if(cs.display==='inline-block'||cs.display==='inline'){w.style.display='inline-block';w.style.width=inp.style.width||'auto';}
+    inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    const t=document.createElement('span');t.className='dmy-txt';t.style.left=(parseFloat(cs.paddingLeft)||10)+(parseFloat(cs.borderLeftWidth)||0)+'px';t.style.fontSize=cs.fontSize;w.appendChild(t);inp._dmyTxt=t;
+    const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+    Object.defineProperty(inp,'value',{configurable:true,get(){return desc.get.call(this);},set(v){desc.set.call(this,v);dmyUpdate(this);}});
+    inp.addEventListener('input',()=>dmyUpdate(inp));inp.addEventListener('change',()=>dmyUpdate(inp));
+    const open=()=>{try{if(inp.showPicker&&!inp.disabled)inp.showPicker();}catch(e){}};
+    inp.addEventListener('click',open);
+    inp.addEventListener('keydown',e=>{if(e.key==='Tab'||e.key==='Escape'||e.key==='Enter')return;if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();inp.value='';inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));return;}e.preventDefault();open();});
+    dmyUpdate(inp);
+  });
+}
+{let dmyT=0;new MutationObserver(()=>{if(dmyT)return;dmyT=requestAnimationFrame(()=>{dmyT=0;dmyEnhance(document);});}).observe(document.documentElement,{childList:true,subtree:true});}
 document.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('button.btn.primary,button.btn.sm'):null;
   if(!b||b.closest('.modal-f'))return;
