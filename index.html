@@ -393,6 +393,7 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .day-j.j-media{background:rgba(255,161,108,.14);border-color:rgba(255,161,108,.35);color:var(--ember)}
 .day-j.j-falta{background:#e3ece7;border-color:var(--line);color:var(--muted)}
 .day-j.j-extra{background:rgba(71,159,250,.14);border-color:rgba(71,159,250,.38);color:var(--signal)}
+.day-j.j-menos{background:rgba(200,68,58,.10);border-color:rgba(200,68,58,.35);color:var(--red)}
 .wheel-wrap{position:relative;height:230px;margin:6px 0 2px;-webkit-user-select:none;user-select:none}
 .wheel{height:230px;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;text-align:center;scrollbar-width:none;-webkit-mask:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);mask:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
 .wheel::-webkit-scrollbar{display:none}
@@ -1043,7 +1044,7 @@ function applyCloud(d){
   PRESTAMOS=d.prestamos||[];PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});Store.set('prestamos',JSON.stringify(PRESTAMOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.cronoApplyK=j.applyK||'';ui.cronoApplyId=+j.applyId||0;ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
-  normalizeNominaMonths();snapshotNominaTarifas();
+  normalizeNominaMonths();ensureMenosJornadas();snapshotNominaTarifas();
   if(migrateFincaNames()){Store.set('dron',JSON.stringify(DRON));Store.set('crono',JSON.stringify(CRONO));Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}));}
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
 }
@@ -1125,6 +1126,7 @@ async function init(){
   if(!CFG.empleados){CFG.empleados=SEED_NOM.empleados.slice();await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.empPago){CFG.empPago={};await Store.set('config',JSON.stringify(CFG));}
   if(!CFG.jornadas){CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');await Store.set('config',JSON.stringify(CFG));}
+  if(ensureMenosJornadas())await Store.set('config',JSON.stringify(CFG));
   if(m){MOVS=JSON.parse(m);}else{
     MOVS=SEED_MOVS.map(x=>({...x,id:seq++}));
     await persistMovs();
@@ -1916,6 +1918,12 @@ async function facturaEditSave(){
 /* ===== NÓMINA ===== */
 async function persistNom(){if(roGuard())return;await Store.set('nominas',JSON.stringify(NOMINAS));Cloud.schedulePush();}
 const jVal=l=>{const j=CFG.jornadas.find(x=>x.l===l);return j?+j.v||0:0;};
+function ensureMenosJornadas(){
+  if(!Array.isArray(CFG.jornadas))return false;let ch=false;
+  const comp=CFG.jornadas.find(j=>/completa/i.test(j.l));const base=comp?(+comp.v||60000):60000;
+  ['0.5','1','1.5','2','2.5','3'].forEach(h=>{const l='Menos '+h;if(!CFG.jornadas.some(j=>j.l===l)){CFG.jornadas.push({l,v:Math.max(0,base-parseFloat(h)*10000)});ch=true;}});
+  return ch;
+}
 function tarifasSnapshot(){const t={};(CFG.jornadas||[]).forEach(j=>{t[j.l]=+j.v||0;});return t;}
 function nomOfEntry(e){for(const n of NOMINAS){if(n&&n.entries&&n.entries.includes(e))return n;}return null;}
 function nomTar(nom,l){if(nom&&nom.tarifas&&Object.prototype.hasOwnProperty.call(nom.tarifas,l))return +nom.tarifas[l]||0;return jVal(l);}
@@ -1936,7 +1944,9 @@ function renderNomina(){
   return nominaList();
 }
 function nominaList(){
-  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px">
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" onclick="omrGenModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Planilla imprimible</button>
+    <button class="btn" onclick="omrReadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Leer planilla (foto)</button>
     <button class="btn" onclick="ui.nomView='consol';renderNomina()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Consolidado anual</button>
     <button class="btn primary" onclick="newQuincena()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva quincena</button></div>`;
   const list=NOMINAS.slice().sort((a,b)=>(b.hasta||'').localeCompare(a.hasta||''));
@@ -2047,9 +2057,9 @@ function toggleEmp(i){if(ui.nomExp.has(i))ui.nomExp.delete(i);else ui.nomExp.add
 function nomFilter(q){q=(q||'').trim().toLowerCase();document.querySelectorAll('#content .emp-card').forEach(c=>{c.style.display=(!q||(c.dataset.emp||'').includes(q))?'':'none';});}
 async function setDay(id,i,di,k,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].dias[di][k]=v;await persistNom();renderNomina();}
 const WHEEL_ITEM=46;
-function jornadasWheel(){const rank=j=>{const l=(j.l||'').toLowerCase();if(/completa/.test(l))return 0;if(/asist/.test(l))return 1;if(l==='media')return 2;const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 3+parseFloat(m[1].replace(',','.'));return 100;};return CFG.jornadas.slice().sort((a,b)=>rank(a)-rank(b));}
-function jShort(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'No asistió';if(/completa/.test(l))return 'Completa';if(l==='media')return 'Media';const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 'Extra '+m[1];return j;}
-function jClass(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'j-falta';if(/completa/.test(l))return 'j-full';if(l==='media')return 'j-media';if(/extra/.test(l))return 'j-extra';return '';}
+function jornadasWheel(){const rank=j=>{const l=(j.l||'').toLowerCase();if(/completa/.test(l))return 0;if(/asist/.test(l))return 1;if(l==='media')return 2;const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 3+parseFloat(m[1].replace(',','.'));if(/menos/.test(l)&&m)return 40+parseFloat(m[1].replace(',','.'));return 100;};return CFG.jornadas.slice().sort((a,b)=>rank(a)-rank(b));}
+function jShort(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'No asistió';if(/completa/.test(l))return 'Completa';if(l==='media')return 'Media';const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 'Extra '+m[1];if(/menos/.test(l)&&m)return 'Menos '+m[1];return j;}
+function jClass(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'j-falta';if(/completa/.test(l))return 'j-full';if(l==='media')return 'j-media';if(/extra/.test(l))return 'j-extra';if(/menos/.test(l))return 'j-menos';return '';}
 let wheelCtx=null; // {id,i,day,mode:'j'|'fi'}
 function wheelOptions(mode){
   if(mode==='j'){const nom=(typeof wheelCtx!=='undefined'&&wheelCtx)?NOMINAS.find(x=>x.id===wheelCtx.id):null;return jornadasWheel().map(j=>{const v=nomTar(nom,j.l);return {val:j.l,label:jShort(j.l),sub:v?fmt(v):''};});}
@@ -2383,9 +2393,9 @@ function execifyHTML(bodyHTML){
   host.appendChild(foot);
   return host.innerHTML;
 }
-function printIsolated(bodyHTML,title,extraCSS){
+function printIsolated(bodyHTML,title,extraCSS,opts){
   title=title||'Documento · Frutas La Estrella';
-  if(typeof EXEC_CSS!=='undefined'&&extraCSS!==EXEC_CSS){try{bodyHTML=execifyHTML(bodyHTML);}catch(e){console.error(e);}extraCSS=EXEC_CSS+EXEC_GENERIC_CSS+(extraCSS||'');}
+  if(!(opts&&opts.raw)&&typeof EXEC_CSS!=='undefined'&&extraCSS!==EXEC_CSS){try{bodyHTML=execifyHTML(bodyHTML);}catch(e){console.error(e);}extraCSS=EXEC_CSS+EXEC_GENERIC_CSS+(extraCSS||'');}
   const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="only light"><title>'+esc(title)+'</title><style>'+STATEMENT_CSS+(extraCSS||'')+'</style></head><body><div class="sheet">'+bodyHTML+'</div></body></html>';
   closePreview();
   const w=document.createElement('div');w.id='pvWrap';
@@ -4686,6 +4696,236 @@ async function printInforme(){
   let html=informeExecHTML();
   try{html=await exRasterize(html);}catch(e){}
   printIsolated(html,'Informe financiero · '+D.scope,EXEC_CSS);
+}
+
+/* ===== PLANILLA DE NÓMINA CON LECTURA ÓPTICA (sin internet ni API) ===== */
+const OMR={W:281,H:194,F:8,fid:[[6,6],[275,6],[275,188],[6,188]],
+  nameX0:14,daysX0:60,dayW:30,rowY0:46,rowH:11.5,rows:12,bubR:1.55,bubP:4.0,
+  top:['A','+½','+1','+1½','+2','+2½','+3'],bot:['M','−½','−1','−1½','−2','−2½','−3'],hrs:['0.5','1','1.5','2','2.5','3']};
+function omrCodeCX(i){return 110.6+i*4.6;}
+function omrBX(d,k){return OMR.daysX0+d*OMR.dayW+3+k*OMR.bubP;}
+function omrBY(r,bottom){return OMR.rowY0+r*OMR.rowH+3.1+(bottom?4.6:0);}
+function omrBits(id,week,page){const b=[1,0];for(let i=6;i>=0;i--)b.push((id>>i)&1);b.push(week&1,(page>>1)&1,page&1,0,1);return b;}
+function omrDow(iso){return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(iso+'T00:00:00').getDay()];}
+function omrMonday(iso){const d=new Date(iso+'T00:00:00');const dow=(d.getDay()+6)%7;return addDaysISO(iso,-dow);}
+function omrTemplates(){if(!CFG.omrTpl||typeof CFG.omrTpl!=='object')CFG.omrTpl={};return CFG.omrTpl;}
+function omrNewId(){let id=(+CFG.omrNext||1);if(id<1||id>127)id=1;CFG.omrNext=id>=127?1:id+1;return id;}
+function omrTrunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;}
+function omrPageSVG(tpl,week,page,pages){
+  const O=OMR;let s=`<svg class="omr-page" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${O.W} ${O.H}" width="${O.W}mm" height="${O.H}mm" font-family="Arial,Helvetica,sans-serif"><rect width="${O.W}" height="${O.H}" fill="#fff"/>`;
+  O.fid.forEach(([x,y])=>{s+=`<rect x="${x-O.F/2}" y="${y-O.F/2}" width="${O.F}" height="${O.F}" fill="#000"/>`;});
+  omrBits(tpl.id,week,page).forEach((bit,i)=>{const cx=omrCodeCX(i);s+=bit?`<rect x="${cx-1.8}" y="4.2" width="3.6" height="3.6" fill="#000"/>`:`<rect x="${cx-1.8}" y="4.2" width="3.6" height="3.6" fill="none" stroke="#d6d6d6" stroke-width="0.2"/>`;});
+  const d0=addDaysISO(tpl.desde,week*7),d6=addDaysISO(tpl.desde,week*7+6);
+  s+=`<text x="14" y="17" font-size="5" font-weight="700" fill="#0f2a1b">PLANILLA DE NÓMINA · ${esc(tpl.finca)}</text>`;
+  s+=`<text x="14" y="22.6" font-size="3.1" fill="#333">Semana ${week+1}: ${esc(fmtFecha(d0))} al ${esc(fmtFecha(d6))} · Hoja ${page+1} de ${pages} · Código ${tpl.id}</text>`;
+  s+=`<text x="268" y="17" font-size="3.1" text-anchor="end" fill="#333">Administrador: ________________________</text>`;
+  s+=`<text x="14" y="28" font-size="2.5" fill="#555">Use bolígrafo negro o azul. Marque con X o rellene el círculo. Arriba: A = asistió jornada completa · +h = horas extra.  Abajo: M = media jornada · −h = horas de menos. Una sola opción de horas por día.</text>`;
+  s+=`<rect x="14" y="31" width="44" height="13" fill="#eef2ef"/><text x="16" y="39" font-size="3.2" font-weight="700" fill="#0f2a1b">EMPLEADO</text>`;
+  const used=Math.max(1,Math.min(O.rows,tpl.slots-page*O.rows));
+  for(let d=0;d<7;d++){const x0=O.daysX0+d*O.dayW,iso=addDaysISO(tpl.desde,week*7+d);
+    s+=`<rect x="${x0+0.3}" y="31" width="${O.dayW-0.6}" height="13" fill="#eef2ef"/>`;
+    s+=`<text x="${x0+O.dayW/2}" y="36.4" font-size="3.3" font-weight="700" fill="#0f2a1b" text-anchor="middle">${omrDow(iso)}</text>`;
+    s+=`<text x="${x0+O.dayW/2}" y="41.4" font-size="2.7" fill="#555" text-anchor="middle">${iso.slice(8,10)}/${iso.slice(5,7)}</text>`;
+    s+=`<line x1="${x0}" y1="31" x2="${x0}" y2="${O.rowY0+used*O.rowH}" stroke="#c9d1cb" stroke-width="0.2"/>`;}
+  for(let r=0;r<O.rows;r++){
+    const idx=page*O.rows+r;if(idx>=tpl.slots)break;
+    const yt=O.rowY0+r*O.rowH,name=tpl.emps[idx];
+    s+=name?`<text x="15" y="${yt+6.9}" font-size="3.3" fill="#111">${esc(omrTrunc(name,25))}</text>`:`<text x="15" y="${yt+6.9}" font-size="2.8" fill="#777">Otro: ____________</text>`;
+    for(let d=0;d<7;d++)for(let k=0;k<7;k++)for(const bot of [0,1]){
+      const cx=omrBX(d,k),cy=omrBY(r,bot),lab=(bot?O.bot:O.top)[k];
+      s+=`<circle cx="${cx}" cy="${cy}" r="${O.bubR}" fill="#fff" stroke="#444" stroke-width="0.22"/><text x="${cx}" y="${cy+0.55}" font-size="1.55" fill="#c4c4c4" text-anchor="middle">${lab}</text>`;}
+    s+=`<line x1="14" y1="${yt+O.rowH}" x2="270" y2="${yt+O.rowH}" stroke="#b9c2bc" stroke-width="0.2"/>`;}
+  s+=`<text x="140.5" y="191" font-size="2.4" fill="#888" text-anchor="middle">Frutas La Estrella · Tome la foto con buena luz, la hoja completa y las 4 marcas negras visibles. No escriba sobre las marcas.</text>`;
+  return s+'</svg>';
+}
+function omrPrint(tpl){
+  const pages=Math.max(1,Math.ceil(tpl.slots/OMR.rows));let html='';
+  for(let w=0;w<2;w++)for(let p=0;p<pages;p++)html+=omrPageSVG(tpl,w,p,pages);
+  const css='@page{size:A4 landscape;margin:8mm}body{background:#fff}.sheet{border:none!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;margin:0 auto!important;background:#fff}.omr-page{display:block;margin:0 auto 12px;break-after:page;page-break-after:always}@media print{.omr-page{margin:0}}';
+  printIsolated(html,'Planilla nómina · '+tpl.finca,css,{raw:true});
+}
+function omrSuggest(finca){
+  const noms=NOMINAS.slice().sort((a,b)=>(b.hasta||'').localeCompare(a.hasta||''));
+  for(const n of noms){const s=n.entries.filter(e=>e.dias.some(d=>d.fi===finca)).map(e=>e.emp);if(s.length)return s;}
+  return [];
+}
+function omrDrawEmps(f){const sug=omrSuggest(f);const emps=CFG.empleados.slice().sort((a,b)=>a.localeCompare(b,'es'));
+  return emps.map(e=>`<label class="seccheck"><input type="checkbox" class="omr_e" value="${esc(e)}" ${sug.includes(e)?'checked':''}> ${esc(e)}</label>`).join('')||'<span style="color:var(--muted)">No hay empleados registrados.</span>';}
+function omrGenModal(){
+  const fin=ui.omrFinca||CFG.fincas[0];const draw=omrDrawEmps;
+  showModal('Planilla imprimible de nómina',`
+   <div class="form-grid">
+     <div class="field"><label>Finca</label><select class="input" id="omr_f" onchange="ui.omrFinca=this.value;document.getElementById('omr_list').innerHTML=omrDrawEmps(this.value)">${CFG.fincas.map(f=>`<option ${f===fin?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+     <div class="field"><label>Lunes de la semana 1</label><input class="input tnum" type="date" id="omr_d" value="${omrMonday(todayISO())}"></div>
+     <div class="field"><label>Filas en blanco adicionales</label><select class="input" id="omr_b"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;flex-wrap:wrap;gap:8px"><b style="font-size:12.5px">Empleados que aparecerán en la planilla</b><span style="display:flex;gap:6px"><button class="btn sm" type="button" onclick="document.querySelectorAll('.omr_e').forEach(c=>c.checked=true)">Todos</button><button class="btn sm" type="button" onclick="document.querySelectorAll('.omr_e').forEach(c=>c.checked=false)">Ninguno</button></span></div>
+   <div class="secgrid" id="omr_list" style="max-height:260px;overflow:auto">${draw(fin)}</div>
+   <div class="note">Se marcan por defecto los empleados que trabajaron en esta finca en la última quincena. La planilla trae dos hojas (semana 1 y semana 2) con los nombres impresos, las fechas y las marcas de lectura. Imprímela en tamaño A4 u oficio, sin ajustar a escala si es posible.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Generar planilla',cls:'btn primary',fn:async()=>{
+     const finca=document.getElementById('omr_f').value,desde=document.getElementById('omr_d').value;
+     if(!desde){toast('Elige la fecha del lunes');return;}
+     const emps=[...document.querySelectorAll('.omr_e')].filter(c=>c.checked).map(c=>c.value);
+     const blanks=+document.getElementById('omr_b').value||0;
+     if(!emps.length&&!blanks){toast('Marca al menos un empleado o agrega filas en blanco');return;}
+     const id=omrNewId();const tpl={id,finca,desde,emps,slots:emps.length+blanks,created:todayISO()};
+     omrTemplates()[id]=tpl;await persistCfg();closeModal();omrPrint(tpl);
+   }}]);
+}
+/* ---- Lectura de la foto ---- */
+async function omrLoadImage(file){const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();return img;}finally{setTimeout(()=>URL.revokeObjectURL(url),2000);}}
+function omrGray(img,maxSide){const W=img.naturalWidth||img.width,H=img.naturalHeight||img.height;const s=Math.min(1,maxSide/Math.max(W,H));const w=Math.max(1,Math.round(W*s)),h=Math.max(1,Math.round(H*s));const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,w,h);const d=x.getImageData(0,0,w,h).data;const g=new Uint8ClampedArray(w*h);for(let i=0,j=0;i<g.length;i++,j+=4)g[i]=(d[j]*299+d[j+1]*587+d[j+2]*114)/1000;return{g,w,h,canvas:c};}
+function omrBinarize(G){const{g,w,h}=G;const I=new Float64Array((w+1)*(h+1));for(let y=0;y<h;y++){let row=0;for(let x=0;x<w;x++){row+=g[y*w+x];I[(y+1)*(w+1)+x+1]=I[y*(w+1)+x+1]+row;}}
+  const R=Math.max(12,Math.round(Math.max(w,h)/14));const bin=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){const y0=Math.max(0,y-R),y1=Math.min(h,y+R+1);for(let x=0;x<w;x++){const x0=Math.max(0,x-R),x1=Math.min(w,x+R+1);const sum=I[y1*(w+1)+x1]-I[y0*(w+1)+x1]-I[y1*(w+1)+x0]+I[y0*(w+1)+x0];const m=sum/((x1-x0)*(y1-y0));const v=g[y*w+x];bin[y*w+x]=(v<m*0.72&&v<170)?1:0;}}
+  return bin;}
+function omrComponents(bin,w,h){const lab=new Int32Array(w*h).fill(-1),stack=new Int32Array(w*h),out=[];
+  for(let i=0;i<w*h;i++){if(!bin[i]||lab[i]>=0)continue;const id=out.length;let sp=0;stack[sp++]=i;lab[i]=id;let area=0,minx=w,maxx=0,miny=h,maxy=0,sx=0,sy=0,touch=false;
+    while(sp){const p=stack[--sp];const x=p%w,y=(p/w)|0;area++;sx+=x;sy+=y;if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y;if(x===0||y===0||x===w-1||y===h-1)touch=true;
+      if(x>0){const q=p-1;if(bin[q]&&lab[q]<0){lab[q]=id;stack[sp++]=q;}}if(x<w-1){const q=p+1;if(bin[q]&&lab[q]<0){lab[q]=id;stack[sp++]=q;}}
+      if(y>0){const q=p-w;if(bin[q]&&lab[q]<0){lab[q]=id;stack[sp++]=q;}}if(y<h-1){const q=p+w;if(bin[q]&&lab[q]<0){lab[q]=id;stack[sp++]=q;}}}
+    out.push({area,minx,maxx,miny,maxy,cx:sx/area,cy:sy/area,touch});}
+  return out;}
+function omrHomography(src,dst){const A=[],b=[];for(let i=0;i<4;i++){const[x,y]=src[i],[u,v]=dst[i];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v);}
+  for(let c=0;c<8;c++){let p=c;for(let r=c+1;r<8;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];[b[c],b[p]]=[b[p],b[c]];const piv=A[c][c];if(Math.abs(piv)<1e-12)return null;
+    for(let r=0;r<8;r++){if(r===c)continue;const f=A[r][c]/piv;if(!f)continue;for(let k=c;k<8;k++)A[r][k]-=f*A[c][k];b[r]-=f*b[c];}}
+  return [...b.map((v,i)=>v/A[i][i]),1];}
+function omrMap(H,x,y){const d=H[6]*x+H[7]*y+H[8];return[(H[0]*x+H[1]*y+H[2])/d,(H[3]*x+H[4]*y+H[5])/d];}
+function omrPix(G,x,y){const xi=Math.min(G.w-1,Math.max(0,Math.round(x))),yi=Math.min(G.h-1,Math.max(0,Math.round(y)));return G.g[yi*G.w+xi];}
+function omrFill(G,H,cx,cy,r,k){
+  const ring=[];for(let a=0;a<28;a++){const t=a/28*2*Math.PI;const[x,y]=omrMap(H,cx+Math.cos(t)*r*1.33,cy+Math.sin(t)*r*1.33);ring.push(omrPix(G,x,y));}
+  ring.sort((a,b)=>a-b);const white=Math.max(40,ring[Math.floor(ring.length*0.85)]);const black=white*(k==null?0.2:k);const span=Math.max(12,white-black);
+  let n=0,acc=0;const R=r*0.66;for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++){const dx=i/4*R,dy=j/4*R;if(dx*dx+dy*dy>R*R)continue;const[x,y]=omrMap(H,cx+dx,cy+dy);n++;const v=(white-omrPix(G,x,y))/span;acc+=v<0?0:(v>1?1:v);}
+  return n?acc/n:0;}
+function omrInkRatio(G,H){
+  const out=[];const dirs=[[1,1],[-1,1],[-1,-1],[1,-1]];
+  OMR.fid.forEach(([fx,fy],i)=>{const[sx,sy]=dirs[i];const blk=[],wht=[];
+    for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++){const[x,y]=omrMap(H,fx+a*0.8,fy+b*0.8);blk.push(omrPix(G,x,y));}
+    for(const[ox,oy]of[[6.5,0],[0,6.5],[6.5,6.5],[8,3],[3,8]]){const[x,y]=omrMap(H,fx+sx*ox,fy+sy*oy);wht.push(omrPix(G,x,y));}
+    blk.sort((a,b)=>a-b);wht.sort((a,b)=>a-b);const bl=blk[Math.floor(blk.length/2)],wh=wht[wht.length-1];if(wh>20)out.push(Math.min(0.9,Math.max(0.02,bl/wh)));});
+  out.sort((a,b)=>a-b);return out.length?out[Math.floor(out.length/2)]:0.2;}
+function omrBoxFill(G,H,cx,cy){let n=0,dark=0;const ref=[];for(const[ox,oy]of[[-3.2,0],[3.2,0],[0,-3.2],[0,3.2]]){const[x,y]=omrMap(H,cx+ox,cy+oy);ref.push(omrPix(G,x,y));}ref.sort((a,b)=>a-b);const white=Math.max(60,ref[ref.length-1]);
+  for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++){const[x,y]=omrMap(H,cx+i*0.4,cy+j*0.4);n++;if(omrPix(G,x,y)<white*0.6)dark++;}return dark/n;}
+function omrTryDecode(G,H){const bits=[];for(let i=0;i<14;i++)bits.push(omrBoxFill(G,H,omrCodeCX(i),6)>0.5?1:0);
+  if(!(bits[0]===1&&bits[1]===0&&bits[12]===0&&bits[13]===1))return null;
+  let id=0;for(let i=2;i<9;i++)id=(id<<1)|bits[i];return{id,week:bits[9],page:(bits[10]<<1)|bits[11]};}
+function omrLocate(G){
+  const S=Math.min(1,1000/Math.max(G.w,G.h));const small=S<1?omrScaleGray(G,S):G;
+  const bin=omrBinarize(small);const comps=omrComponents(bin,small.w,small.h);
+  const cand=comps.filter(c=>{if(c.touch||c.area<16)return false;const bw=c.maxx-c.minx+1,bh=c.maxy-c.miny+1;const ar=bw/bh;return ar>0.5&&ar<2&&c.area/(bw*bh)>=0.7;}).sort((a,b)=>b.area-a.area).slice(0,12);
+  const K=cand.length;const combos=[];
+  for(let a=0;a<K;a++)for(let b=a+1;b<K;b++)for(let c=b+1;c<K;c++)for(let d=c+1;d<K;d++){const q=[cand[a],cand[b],cand[c],cand[d]];const ar=q.map(x=>x.area);if(Math.max(...ar)/Math.min(...ar)>2.6)continue;combos.push({q,score:ar.reduce((s,x)=>s+x,0)});}
+  combos.sort((x,y)=>y.score-x.score);
+  for(const cb of combos.slice(0,160)){
+    const pts=cb.q.map(c=>[c.cx/S,c.cy/S]);const mx=pts.reduce((s,p)=>s+p[0],0)/4,my=pts.reduce((s,p)=>s+p[1],0)/4;
+    pts.sort((p,q)=>Math.atan2(p[1]-my,p[0]-mx)-Math.atan2(q[1]-my,q[0]-mx));
+    const fa=cb.score/4/(S*S);let quad=0;for(let i=0;i<4;i++){const[a1,b1]=pts[i],[a2,b2]=pts[(i+1)%4];quad+=a1*b2-a2*b1;}quad=Math.abs(quad)/2;
+    const ratio=fa/quad;if(ratio<0.0003||ratio>0.006)continue;
+    for(let r=0;r<4;r++){const dst=[0,1,2,3].map(i=>pts[(i+r)%4]);const H=omrHomography(OMR.fid,dst);if(!H)continue;const code=omrTryDecode(G,H);if(code)return{H,code,pts:dst};}
+  }
+  return null;
+}
+function omrScaleGray(G,S){const w=Math.max(1,Math.round(G.w*S)),h=Math.max(1,Math.round(G.h*S));const g=new Uint8ClampedArray(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=G.g[Math.min(G.h-1,Math.round(y/S))*G.w+Math.min(G.w-1,Math.round(x/S))];return{g,w,h};}
+function omrJLabel(kind,h){
+  const J=CFG.jornadas||[];const f=t=>(J.find(j=>j.l===t)||{}).l;
+  if(kind==='A')return (J.find(j=>/completa/i.test(j.l))||{l:'Jornada Completa'}).l;
+  if(kind==='M')return (J.find(j=>j.l.toLowerCase()==='media')||{l:'Media'}).l;
+  if(kind==='+')return f('Extra '+h)||('Extra '+h);
+  if(kind==='-')return f('Menos '+h)||('Menos '+h);
+  return (J.find(j=>/asist/i.test(j.l))||{l:'No Asistió'}).l;
+}
+function omrReadDay(sc,th,r,d){
+  const MK=th.mk,DB=th.db;const t=sc[r][d].t,b=sc[r][d].b;
+  const all=t.concat(b);let doubt=all.some(v=>v>=DB&&v<MK);
+  const pick=arr=>{let best=-1,bv=0,cnt=0;arr.forEach((v,i)=>{if(v>=MK){cnt++;if(v>bv){bv=v;best=i;}}});return{best,cnt};};
+  const plus=pick(t.slice(1)),minus=pick(b.slice(1));const A=t[0]>=MK,M=b[0]>=MK;
+  if(plus.cnt>1||minus.cnt>1)doubt=true;if((plus.cnt&&minus.cnt)||(M&&plus.cnt))doubt=true;
+  let j;if(M&&!plus.cnt&&!minus.cnt)j=omrJLabel('M');else if(plus.cnt)j=omrJLabel('+',OMR.hrs[plus.best]);else if(minus.cnt)j=omrJLabel('-',OMR.hrs[minus.best]);else if(A)j=omrJLabel('A');else j=omrJLabel('N');
+  return{j,doubt,fills:{t,b}};
+}
+function omrThresholds(sc){
+  const v=[];sc.forEach(row=>row.forEach(c=>{v.push(...c.t,...c.b);}));v.sort((a,b)=>a-b);
+  const q=p=>v[Math.min(v.length-1,Math.floor(v.length*p))];
+  const base=q(0.5),spread=Math.max(0.01,q(0.75)-q(0.25));
+  let mk=Math.max(base+0.10,base+7*spread,0.11);
+  const hi=v.filter(x=>x>=mk);if(hi.length){const m=hi[Math.floor(hi.length/2)];mk=Math.min(mk,Math.max(base+0.08,(base+m)*0.42));}
+  return{mk,db:Math.max(base+0.05,mk*0.62),base};
+}
+async function omrProcess(file){
+  const img=await omrLoadImage(file);const G=omrGray(img,2000);
+  const loc=omrLocate(G);if(!loc)throw new Error('No se encontraron las 4 marcas negras de las esquinas. Toma la foto de frente, con buena luz y la hoja completa.');
+  const tpl=omrTemplates()[loc.code.id];if(!tpl)throw new Error('La planilla (código '+loc.code.id+') no está registrada. Genérala desde esta app o sincroniza con la nube.');
+  const pages=Math.max(1,Math.ceil(tpl.slots/OMR.rows));const rows=[];
+  const k=omrInkRatio(G,loc.H);const sc=[];const nR=[];
+  for(let r=0;r<OMR.rows;r++){const idx=loc.code.page*OMR.rows+r;if(idx>=tpl.slots)break;nR.push(idx);
+    const rr=[];for(let d=0;d<7;d++){const t=[],bb=[];for(let q=0;q<7;q++){t.push(omrFill(G,loc.H,omrBX(d,q),omrBY(r,0),OMR.bubR,k));bb.push(omrFill(G,loc.H,omrBX(d,q),omrBY(r,1),OMR.bubR,k));}rr.push({t,b:bb});}sc.push(rr);}
+  const th=omrThresholds(sc);
+  nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(sc,th,r,d));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
+  return{tpl,week:loc.code.week,page:loc.code.page,pages,rows,G,H:loc.H,img,th,k};
+}
+function omrReadModal(){
+  showModal('Leer planilla desde una foto',`
+   <p style="color:var(--muted);line-height:1.6;margin-bottom:12px">Toma la foto de <b>una hoja</b> de la planilla generada por la app (semana 1 o semana 2). La lectura se hace en este dispositivo, sin internet.</p>
+   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Pon la hoja sobre una superficie plana y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente y elige la imagen aquí abajo.</li></ol>
+   <input class="input" type="file" accept="image/*" id="omr_file">
+   <div id="omr_status" style="margin-top:12px;font-size:13px"></div>`,
+   [{label:'Cerrar',cls:'btn',fn:closeModal}]);
+  document.getElementById('omr_file').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const st=document.getElementById('omr_status');
+    st.innerHTML='<span class="spin" style="display:inline-block;width:13px;height:13px;border:2px solid var(--green);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px"></span>Analizando la planilla…';
+    await new Promise(r=>setTimeout(r,30));
+    try{const res=await omrProcess(f);ui._omr=res;omrReview(res);}catch(err){st.innerHTML='<span style="color:var(--red)">'+esc(err.message||String(err))+'</span>';}};
+}
+function omrOverlay(res){
+  const{img,H}=res;const W=img.naturalWidth,Hh=img.naturalHeight;const s=Math.min(1,760/Math.max(W,Hh));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(Hh*s);const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
+  const sc=s*(W/res.G.w);
+  res.rows.forEach((row,r)=>row.days.forEach((dy,d)=>{for(let k=0;k<7;k++)for(const bot of[0,1]){const v=(bot?dy.fills.b:dy.fills.t)[k];const[px,py]=omrMap(H,omrBX(d,k),omrBY(r,bot));x.beginPath();x.arc(px*sc,py*sc,Math.max(2,3*sc*(res.G.w/W)*2),0,Math.PI*2);x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(120,120,120,.35)');x.lineWidth=v>=res.th.db?2:1;x.stroke();}}));
+  return c.toDataURL('image/jpeg',0.85);
+}
+function omrReview(res){
+  const{tpl,week}=res;const base=week*7;const J=(CFG.jornadas||[]).map(j=>j.l);
+  const opts=sel=>J.map(l=>`<option value="${esc(l)}" ${l===sel?'selected':''}>${esc(jShort(l))}</option>`).join('');
+  const empOpts=`<option value="">— Omitir fila —</option>`+CFG.empleados.slice().sort((a,b)=>a.localeCompare(b,'es')).map(e=>`<option>${esc(e)}</option>`).join('');
+  const rowsH=res.rows.map((row,ri)=>{
+    const any=row.days.some(d=>!/asist/i.test(d.j));if(row.blank&&!any)return '';
+    return `<tr><td style="min-width:150px">${row.blank?`<select class="input omr-emp" data-r="${ri}" style="padding:5px 7px">${empOpts}</select>`:`<b>${esc(row.name)}</b>`}</td>`+
+      row.days.map((d,di)=>`<td style="${d.doubt?'background:rgba(201,162,39,.18)':''}"><select class="input omr-j" data-r="${ri}" data-d="${di}" style="padding:5px 6px;font-size:12px;min-width:92px">${opts(d.j)}</select></td>`).join('')+'</tr>';}).join('');
+  const dups=res.rows.reduce((s,r)=>s+r.days.filter(d=>d.doubt).length,0);
+  const ex=NOMINAS.find(n=>n.desde===tpl.desde);
+  const head=[0,1,2,3,4,5,6].map(d=>{const iso=addDaysISO(tpl.desde,base+d);return `<th>${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</th>`;}).join('');
+  showModal(`Revisión · ${esc(tpl.finca)} · Semana ${week+1}`,`
+   <p style="color:var(--muted);margin-bottom:10px">${esc(fmtFecha(addDaysISO(tpl.desde,base)))} al ${esc(fmtFecha(addDaysISO(tpl.desde,base+6)))} · Hoja ${res.page+1} de ${res.pages}. Revisa y corrige si hace falta antes de aplicar.</p>
+   ${dups?`<div class="note" style="margin:0 0 10px">Hay <b>${dups}</b> casilla(s) dudosa(s) resaltadas en amarillo (marca tenue o varias opciones en el mismo día). Verifícalas con la foto.</div>`:''}
+   <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:13px">Ver foto con la lectura (verde = marcada, amarillo = dudosa)</summary><img src="${omrOverlay(res)}" style="width:100%;margin-top:8px;border-radius:6px;border:1px solid var(--line)"></details>
+   <div class="tablewrap"><table><thead><tr><th>Empleado</th>${head}</tr></thead><tbody>${rowsH||`<tr><td colspan="8">No se detectaron marcas.</td></tr>`}</tbody></table></div>
+   <div class="form-grid" style="margin-top:12px">
+     <div class="field full"><label>Aplicar a</label><select class="input" id="omr_target">${ex?`<option value="ex">Quincena existente: ${esc(MES_FULL[ex.mes])} ${ex.year} · Q${ex.q} (desde ${esc(fmtFecha(ex.desde))})</option>`:''}<option value="new" ${ex?'':'selected'}>Crear nueva quincena desde ${esc(fmtFecha(tpl.desde))}</option></select></div>
+     <div class="field" id="omr_qwrap"${ex?' style="display:none"':''}><label>Número de quincena (si es nueva)</label><select class="input" id="omr_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
+   </div>
+   <div class="note">Los días marcados se registran en la finca <b>${esc(tpl.finca)}</b>. Los días sin marca no borran lo que el empleado tenga registrado en otra finca.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Aplicar a la nómina',cls:'btn primary',fn:()=>omrApply()}]);
+  const m=document.querySelector('#overlay .modal');if(m)m.style.maxWidth='1080px';
+  const tg=document.getElementById('omr_target');if(tg)tg.onchange=()=>{document.getElementById('omr_qwrap').style.display=tg.value==='new'?'':'none';};
+}
+async function omrApply(){
+  const res=ui._omr;if(!res)return;const{tpl,week}=res;
+  const target=document.getElementById('omr_target').value;let nom;
+  if(target==='ex')nom=NOMINAS.find(n=>n.desde===tpl.desde);
+  if(!nom){const q=+document.getElementById('omr_q').value||1;const hasta=addDaysISO(tpl.desde,13);
+    nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:tpl.desde,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot()};NOMINAS.push(nom);}
+  const noAs=omrJLabel('N');let applied=0,skipped=0;
+  res.rows.forEach((row,ri)=>{
+    let name=row.name;if(row.blank){const sel=document.querySelector(`.omr-emp[data-r="${ri}"]`);name=sel?sel.value:'';}
+    const sels=[...document.querySelectorAll(`.omr-j[data-r="${ri}"]`)];if(!sels.length)return;
+    if(!name){if(sels.some(s=>!/asist/i.test(s.value)))skipped++;return;}
+    let e=nom.entries.find(x=>x.emp===name);
+    if(!e){e={emp:name,prestamo:0,dias:Array.from({length:14},()=>({j:noAs,fi:''}))};nom.entries.push(e);}
+    sels.forEach(s=>{const di=week*7+(+s.dataset.d);const j=s.value;
+      if(!/asist/i.test(j)){e.dias[di]={j,fi:tpl.finca};applied++;}
+      else if(e.dias[di]&&e.dias[di].fi===tpl.finca){e.dias[di]={j:noAs,fi:''};}});
+  });
+  await persistNom();closeModal();ui._omr=null;
+  ui.view='nomina';ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();render();
+  toast(`${applied} jornada(s) registradas desde la planilla`+(skipped?` · ${skipped} fila(s) sin empleado omitidas`:''));
 }
 
 /* ===== CONFIGURACIÓN ===== */
