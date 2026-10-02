@@ -476,6 +476,18 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .nv-row span{color:var(--muted);white-space:nowrap}
 .nv-row b{text-align:right;color:var(--green2)}
 .nv-row.abs b{color:var(--red)}
+.nv-wk{margin-top:6px}
+.nv-wt{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;color:var(--gold,#c9a227);margin:4px 0 3px}
+.nv-tb{width:100%;border-collapse:collapse;font-size:12.5px}
+.nv-tb td{padding:3px 4px;border-top:1px dashed var(--line)}
+.nv-tb tr:first-child td{border-top:none}
+.nv-tb td:first-child{color:var(--muted);white-space:nowrap;width:52px}
+.nv-tb td:nth-child(2){font-weight:700;color:var(--green2)}
+.nv-tb td:nth-child(3){text-align:right;color:var(--muted);font-size:11.5px}
+.nv-tb tr.abs td:nth-child(2){color:var(--red)}
+.nv-tb tr.nd td{color:var(--faint);font-weight:400}
+.nv-now{margin-top:10px;font-size:12.5px;color:var(--ink);background:var(--green-soft);border:1px solid var(--green);border-radius:8px;padding:6px 10px}
+.nv-now:empty{display:none}
 .vz-prods div{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .vz-prods em{font-style:normal;display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--green);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px;font-weight:700;color:var(--ink)}
 .vz-prods em button{border:none;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;border-radius:50%}
@@ -1964,7 +1976,7 @@ function nvScan(seg){
   const D='(lunes|martes|miercoles|jueves|viernes|sabado|domingo)s?';
   const take=(re,fn)=>{for(const m of seg.matchAll(re))fn(m);};
   take(/[,;.](?!\d)/g,m=>add('punct',m.index,1));
-  take(/\b(primer|primero|primera|1|segunda|segundo|2|otra|otro|siguiente|proxima|proximo|ultima|ultimo)\s+semana\b|\bsemana\s+(uno|una|1|dos|2)\b/g,m=>{const w=/primer|^1$|uno|una/.test(m[1]||m[2]||'')&&!/segund|otr|siguiente|proxim|ultim/.test(m[0])?0:1;add('week',m.index,m[0].length,{w});});
+  take(/\bsemana\s+(?:numero\s+)?(uno|una|1|dos|2)\b|\b(primer|primero|primera|segunda|segundo|otra|otro|siguiente|proxima|proximo|ultima|ultimo)\s+semana\b/g,m=>{const k=m[1]||m[2]||'';const w=/^(primer|primero|primera|uno|una|1)$/.test(k)?0:1;add('week',m.index,m[0].length,{w});});
   take(/\b(toda la quincena|la quincena completa|quincena completa|las (?:dos|2) semanas|ambas semanas|todas las semanas|los (?:quince|15) dias|la quincena entera|toda la quincena completa|toda la quincena entera)\b/g,m=>add('day',m.index,m[0].length,{spec:'quincena'}));
   take(/\b(toda la semana|la semana completa|semana completa|la semana entera|toda esa semana|todita la semana)\b/g,m=>add('day',m.index,m[0].length,{spec:'semana'}));
   take(/\bentre semana\b/g,m=>add('day',m.index,m[0].length,{spec:'entresemana'}));
@@ -2000,7 +2012,7 @@ function nvScan(seg){
      if(busy.some(x=>numPos>=x.pos&&numPos<x.end))continue;
      const before=seg.slice(Math.max(0,st-8),st),after=seg.slice(en,en+14);
      if(/\b(?:el|del|al)\s+(?:dia\s+)?$|\bsemana\s*$/.test(before)||/^\s*$/.test(before)&&false)continue;
-     if(/^\s*(?:de\s+)?(semanas?|dias|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|mil|pesos)\b/.test(after))continue;
+     if(/^\s*(?:de\s+)?(semanas|dias|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|mil|pesos)\b/.test(after))continue;
      if(/\b(los|las|ambos|todos los|todas las)\s*$/.test(before)&&/^\s*(lunes|martes|miercoles|jueves|viernes|sabados|domingos)\b/.test(after))continue; // «los 2 sábados» es cantidad de días
      if(/^\s*(sabados|domingos)\b/.test(after))continue;
      let h=parseFloat(m[3])+(m[5]?0.5:0);if(!(h>0&&h<=12))continue;
@@ -2056,7 +2068,9 @@ function nvParse(raw,nom,opts){
   if(n.slice(0,groups[0].c).replace(/[,;. ]/g,'').length>12&&nvScan(n.slice(0,groups[0].c)).some(x=>x.type==='day'))res.warn.push('Hay datos al comienzo sin un empleado identificado; di el nombre antes de los días.');
   // semana indicada antes del primer empleado
   nvScan(n.slice(0,groups[0].c)).forEach(x=>{if(x.type==='week')week=x.w;});
+  const baseWeek=week;let nextWeek=baseWeek;
   groups.forEach((g,gi)=>{
+    week=nextWeek;
     const segTxt=n.slice(g.cEnd,gi+1<groups.length?groups[gi+1].c:n.length);
     const targets=g.names==='ALL'?nom.entries.map(e=>e.emp):g.names;
     if(g.names==='ALL'&&!targets.length){res.warn.push('Dijiste «todos», pero la quincena aún no tiene empleados.');return;}
@@ -2080,6 +2094,8 @@ function nvParse(raw,nom,opts){
         if(u.days.length&&u.attrs.some(a=>a.pos>u.days[u.days.length-1].end)){close();}u.days.push({...x,w:week});return;}
       if(x.type==='attr')u.attrs.push(x);});
     close();
+    {const wk=items.filter(x=>x.type==='week'),dy=items.filter(x=>x.type==='day');const lw=wk[wk.length-1],ld=dy[dy.length-1];
+     nextWeek=(lw&&(!ld||lw.pos>ld.pos))?lw.w:baseWeek;res.curWeek=week;res.curEmp=g.names==='ALL'?'Todos':g.names.join(', ');}
     // atributos sin días: se pegan al día anterior. Una finca sola solo vale para todo el empleado si se dice
     // «todo en …» o si se dice justo después del nombre, antes de cualquier día.
     const isAll=a=>/\btod[oa]s?\b[^,.;]{0,14}$/.test(segTxt.slice(Math.max(0,a.pos-18),a.pos));
@@ -2117,6 +2133,11 @@ function nvParse(raw,nom,opts){
   return res;
 }
 function nvShortJ(j){const l=(j||'').toLowerCase();if(/asist/.test(l))return'Faltó';if(/completa/.test(l))return'Completa';return j;}
+function nvWeekTables(days,map){
+  const out=[];for(let w=0;w<2;w++){const idx=[...Array(7)].map((_,k)=>w*7+k);if(!idx.some(i=>map[i]))continue;
+    out.push(`<div class="nv-wk"><div class="nv-wt">Semana ${w+1} · ${fmtFecha(days[w*7].iso).slice(0,5)} – ${fmtFecha(days[w*7+6].iso).slice(0,5)}</div><table class="nv-tb">${idx.map(i=>{const v=map[i];const d=days[i];
+      return `<tr class="${v?(/asist/i.test(v.j)?'abs':''):'nd'}"><td>${NV_DN[d.dow]} ${String(d.dom).padStart(2,'0')}</td><td>${v?esc(nvShortJ(v.j)):'—'}</td><td>${v&&v.fi?esc(v.fi):''}</td></tr>`;}).join('')}</table></div>`);}
+  return out.join('');}
 function nvGroupDays(days,map){const keys=Object.keys(map).map(Number).sort((a,b)=>a-b);const out=[];
   keys.forEach(i=>{const v=map[i];const last=out[out.length-1];const lab=nvShortJ(v.j)+(v.fi?' · '+v.fi:'');if(last&&last.lab===lab&&last.to===i-1){last.to=i;}else out.push({from:i,to:i,lab,abs:/asist/i.test(v.j)});});
   const dl=i=>`${NV_DN[days[i].dow]} ${String(days[i].dom).padStart(2,'0')}`;
@@ -2126,9 +2147,10 @@ function nvRefresh(){
   const nom=NOMINAS.find(x=>x.id===ui.nomId);const t=document.getElementById('vz_txt');const box=document.getElementById('nv_prev');if(!nom||!t||!box)return;
   const res=nvParse(t.value,nom,nvOpts());ui._nvLast=res;const days=nvDays(nom);
   if(!t.value.trim()){box.innerHTML='<div class="empty" style="padding:14px">Aquí verás lo que va a quedar en cada empleado.</div>';return;}
+  const cw=res.curWeek!=null?res.curWeek:nvOpts().week;const ind=document.getElementById('nv_now');if(ind)ind.innerHTML=res.curEmp?`Dictando ahora: <b>${esc(res.curEmp)}</b> · <b>Semana ${cw+1}</b> (${fmtFecha(days[cw*7].iso).slice(0,5)} – ${fmtFecha(days[cw*7+6].iso).slice(0,5)})`:'';
   box.innerHTML=(res.warn.length?`<div class="note" style="margin:0 0 10px;border-left-color:var(--amber)">${res.warn.map(esc).join('<br>')}</div>`:'')+
     res.order.map(name=>{const e=res.emps[name];const isNew=!nom.entries.some(x=>x.emp===name);
-      return `<div class="nv-emp"><div class="nv-h"><b>${esc(name)}</b>${isNew?'<span class="chip">se agregará a la quincena</span>':''}</div>${nvGroupDays(days,e.days)||'<div class="nv-row"><span>—</span><b>Sin días</b></div>'}${e.prestamo?`<div class="nv-row"><span>Préstamo</span><b>${e.prestamo.add?'+ ':''}${fmt(e.prestamo.v)}</b></div>`:''}</div>`;}).join('');
+      return `<div class="nv-emp"><div class="nv-h"><b>${esc(name)}</b>${isNew?'<span class="chip">se agregará a la quincena</span>':''}</div>${nvWeekTables(days,e.days)||'<div class="nv-row"><span>—</span><b>Sin días</b></div>'}${e.prestamo?`<div class="nv-row"><span>Préstamo</span><b>${e.prestamo.add?'+ ':''}${fmt(e.prestamo.v)}</b></div>`:''}</div>`;}).join('');
 }
 function nomVoiceModal(){
   const nom=NOMINAS.find(x=>x.id===ui.nomId);if(!nom)return;if(roGuard())return;
@@ -2148,9 +2170,10 @@ function nomVoiceModal(){
      <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
    </div>
    <textarea class="input" id="vz_txt" rows="4" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="nvRefresh()" style="resize:vertical;min-height:84px"></textarea>
+   <div id="nv_now" class="nv-now"></div>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Así quedará</div>
    <div id="nv_prev" class="nv-prev"></div>
-   <div class="note"><b>Números:</b> un número solo son <b>horas extra</b> («el lunes 2.5», «el martes 3», «medio día 1»); con «menos» son <b>horas que faltó</b> («el miércoles menos 1», «menos media»). <b>Fincas:</b> los días en que no digas finca quedan con la finca de la casilla «Finca si no la dices». La finca que digas para un día cambia <b>solo ese día</b> («lunes 2.5, martes 3, miércoles 1.5 en la Fortuna»). Para todos los días de un empleado di la finca después de su nombre («Carlos en Frutexcol, lunes 2.5…») o «todo en Placer». Si de un día solo dices la finca, se cambia la finca y se conserva la jornada que ya tenía.</div>
+   <div class="note"><b>Semanas:</b> dicta la semana 1 de un trabajador y luego di «semana 2» para seguir con su segunda semana sin salir de esta ventana; cada semana aparece en su propia tabla. Al pasar a otro trabajador vuelve a la semana de la casilla.<br><b>Números:</b> un número solo son <b>horas extra</b> («el lunes 2.5», «el martes 3», «medio día 1»); con «menos» son <b>horas que faltó</b> («el miércoles menos 1», «menos media»). <b>Fincas:</b> los días en que no digas finca quedan con la finca de la casilla «Finca si no la dices». La finca que digas para un día cambia <b>solo ese día</b> («lunes 2.5, martes 3, miércoles 1.5 en la Fortuna»). Para todos los días de un empleado di la finca después de su nombre («Carlos en Frutexcol, lunes 2.5…») o «todo en Placer». Si de un día solo dices la finca, se cambia la finca y se conserva la jornada que ya tenía.</div>
    <div class="note"><b>Consejos:</b> di primero el nombre (o apodo) del empleado y luego sus días. Entiende: «toda la semana», «de lunes a viernes», «entre semana», «toda la quincena», «los dos sábados», «hasta el jueves», «desde el miércoles», «menos el martes», «los demás días», «el 22», «la segunda semana»; «completo», «medio día», «se quedó dos horas más», «hora y media extra», «salió una hora antes», «le faltó media hora»; «no vino», «faltó», «descansó», «incapacitado», «permiso»; «igual que Carlos», «todos»; y préstamos: «le presté cincuenta mil», «vale de cien mil», «anticipo». Solo cambian los días que menciones.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';nvRefresh();}},
