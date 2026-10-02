@@ -1044,6 +1044,7 @@ function applyCloud(d){
   if(!CFG.clientes)CFG.clientes=[];if(!CFG.empleados)CFG.empleados=SEED_NOM.empleados.slice();if(!CFG.jornadas)CFG.jornadas=SEED_NOM.jornadas.filter(j=>j.l!=='No Asistio');if(!CFG.empPago)CFG.empPago={};if(!CFG.dronSocios)CFG.dronSocios=[];if(!CFG.dronPilotos)CFG.dronPilotos=[];if(!CFG.cultivos)CFG.cultivos=['Naranja','Aguacate','Mandarina','Chocolate','Ganado'];if(!CFG.fincaHa)CFG.fincaHa={};if(!CFG.frutaCalidades)CFG.frutaCalidades=[{n:'Extra',p:0},{n:'Mediana',p:0},{n:'Semi mancha',p:0},{n:'Mancha',p:0},{n:'Pareja limpia',p:0},{n:'Pareja mancha',p:0},{n:'Pipos',p:0},{n:'Parejo',p:0},{n:'Grueso',p:0}];if(!CFG.quimicos)CFG.quimicos=[];if(!CFG.fincaHaTot)CFG.fincaHaTot={ESTRELLA:10,FRUTEXCOL:18,MIRANDA:9,FUTURO:3,FORTUNA:7.5,CUBILLOS:7,PLACER:14,POTRILLOS:6};if(!CFG.bodega)CFG.bodega={};if(!CFG.perfiles)CFG.perfiles=[];if(!CFG.dronAyuPagos)CFG.dronAyuPagos={};if(!CFG.fincaFact)CFG.fincaFact={POTRILLOS:{razon:'Betti Martinez Quiroga',nit:'52028602'}};
   ui.needLogin=perfiles().length>0&&!perfilActivo();
   migrateDronAyu();migrateFincaFact();quimSortCat();
+  {const nf=migrateFertQuim();if(nf){Store.set('movimientos',JSON.stringify(MOVS));Store.set('config',JSON.stringify(CFG));setTimeout(()=>{try{Cloud.schedulePush();}catch(e){}if(ui._migMsg){toast(ui._migMsg);ui._migMsg='';}},400);}}
   DRON=d.dron||[];DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});Store.set('dron',JSON.stringify(DRON));
   CRONO=d.crono||[];CRONO.forEach(x=>{if(x.id>=cseq)cseq=x.id+1;});
   CRONOA=d.cronoab||[];CRONOA.forEach(x=>{if(x.id>=caseq)caseq=x.id+1;});
@@ -1141,6 +1142,7 @@ async function init(){
     await persistMovs();
   }
   MOVS.forEach(x=>{if(x.id>=seq)seq=x.id+1;});
+  {const nf=migrateFertQuim();await Store.set('config',JSON.stringify(CFG));if(nf)await Store.set('movimientos',JSON.stringify(MOVS));}
   const nm2=await Store.get('nominas'); NOMINAS=nm2?JSON.parse(nm2):[];
   NOMINAS.forEach(x=>{if(x.id>=nseq)nseq=x.id+1;});
   if(normalizeNominaMonths())await Store.set('nominas',JSON.stringify(NOMINAS));
@@ -1187,6 +1189,7 @@ async function init(){
   ui.fDesc=CFG.descAdmin; ui.iDesc=CFG.descAdmin;
   await Cloud.load();
   bindNav(); render(); updateCloudBadge();
+  if(ui._migMsg){setTimeout(()=>{toast(ui._migMsg);ui._migMsg='';},600);}
   if(Cloud.cfg.enabled){
     // Al iniciar en cualquier dispositivo: lo primero es descargar la última versión de la nube.
     Cloud.localTs=0;                 // permitir que la nube prevalezca en el arranque
@@ -1936,6 +1939,13 @@ function ensureMenosJornadas(){
   ['0.5','1','1.5','2','2.5','3','3.5','4'].forEach(h=>{const l='Media +'+h;if(!CFG.jornadas.some(j=>j.l===l)){CFG.jornadas.push({l,v:mb+parseFloat(h)*10000});ch=true;}});
   ['0.5','1','1.5','2','2.5'].forEach(h=>{const l='Media -'+h;if(!CFG.jornadas.some(j=>j.l===l)){CFG.jornadas.push({l,v:Math.max(0,mb-parseFloat(h)*10000)});ch=true;}});
   return ch;
+}
+function migrateFertQuim(){
+  if(!CFG||CFG.migFertQuim)return 0;
+  const dest=(CFG.catEgresos||[]).find(c=>/insumos?\s*\/?\s*qu[ií]mic/i.test(c))||'Insumos/Químicos';
+  if(Array.isArray(CFG.catEgresos)&&!CFG.catEgresos.includes(dest))CFG.catEgresos.push(dest);
+  let n=0;(MOVS||[]).forEach(m=>{if(/^\s*fertilizantes?\s*$/i.test(m.c||'')){m.c=dest;n++;}});
+  CFG.migFertQuim=1;if(n)ui._migMsg=`${n} movimiento(s) pasaron de «Fertilizantes» a «${dest}»`;return n;
 }
 function tarifasSnapshot(){const t={};(CFG.jornadas||[]).forEach(j=>{t[j.l]=+j.v||0;});return t;}
 function nomOfEntry(e){for(const n of NOMINAS){if(n&&n.entries&&n.entries.includes(e))return n;}return null;}
