@@ -1992,7 +1992,9 @@ function nvScan(seg){
      if(busy.some(x=>numPos>=x.pos&&numPos<x.end))continue;
      const before=seg.slice(Math.max(0,st-8),st),after=seg.slice(en,en+14);
      if(/\b(?:el|del|al)\s+(?:dia\s+)?$|\bsemana\s*$/.test(before)||/^\s*$/.test(before)&&false)continue;
-     if(/^\s*(?:de\s+)?(lunes|martes|miercoles|jueves|viernes|sabados?|domingos?|semanas?|dias?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|mil|pesos)\b/.test(after))continue;
+     if(/^\s*(?:de\s+)?(semanas?|dias|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|mil|pesos)\b/.test(after))continue;
+     if(/\b(los|las|ambos|todos los|todas las)\s*$/.test(before)&&/^\s*(lunes|martes|miercoles|jueves|viernes|sabados|domingos)\b/.test(after))continue; // «los 2 sábados» es cantidad de días
+     if(/^\s*(sabados|domingos)\b/.test(after))continue;
      let h=parseFloat(m[3])+(m[5]?0.5:0);if(!(h>0&&h<=12))continue;
      const neg=!!(m[1]||m[2]);if(neg)add('attr',st,m[0].length,{mod:'-',h,strong:true});else add('attr',numPos,en-numPos,{mod:'+',h});}}
   // fincas
