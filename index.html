@@ -1896,10 +1896,10 @@ function vzFincaCands(){const out=[];(CFG.fincas||[]).forEach(f=>vzFincaAliases(
 function vzFincaAll(toks,generous){
   const out=[];const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const cands=vzFincaCands();const minSim=generous?0.7:0.76;
   for(let i=0;i<toks.length;i++){
-    if(!ph[i]||/^[,;:.]$/.test(toks[i])||/^\d/.test(toks[i]))continue;
+    if(!ph[i]||/^[,;:.]$/.test(toks[i])||/\d/.test(toks[i]))continue;
     cands.forEach(c=>{
       const maxW=Math.min(toks.length-i,c.toks.length+1);let best=0,bw=0;
-      for(let w=1;w<=maxW;w++){const win=ph.slice(i,i+w).join('');const raw=toks.slice(i,i+w).join(' ');if(VZ_FINCA_BLOCK.has(raw))continue;
+      for(let w=1;w<=maxW;w++){if(/\d|^[,;:.]$/.test(toks[i+w-1]||''))break;const win=ph.slice(i,i+w).join('');const raw=toks.slice(i,i+w).join(' ');if(VZ_FINCA_BLOCK.has(raw))continue;
         let s=vzSim(win,c.full);
         if(s<0.86&&win.length>=5&&c.full.startsWith(win)&&win.length>=0.6*c.full.length)s=0.86;
         if(s>best){best=s;bw=w;}}
@@ -1973,7 +1973,7 @@ function nvScan(seg){
   take(/\bdel?\s+(\d{1,2})\s+(?:al|hasta el)\s+(\d{1,2})\b/g,m=>add('day',m.index,m[0].length,{spec:'drange',a:+m[1],b:+m[2]}));
   take(/\bel\s+(?:dia\s+)?(\d{1,2})\b(?!\s*(?:horas?|mil|h\b))/g,m=>add('day',m.index,m[0].length,{spec:'date',a:+m[1]}));
   take(/\b(hoy|ayer|antier|anteayer)\b/g,m=>add('day',m.index,m[0].length,{spec:'rel',a:m[1]}));
-  take(/\b(menos|excepto|salvo|pero no|sin contar|quitando)\s+(?=(?:el|los|la)?\s*(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo|dia|\d))/g,m=>add('excl',m.index,m[0].length));
+  take(/\b(menos|excepto|salvo|pero no|sin contar|quitando)\s+(?=(?:el|los|la)\s*\d|(?:el|los|la)?\s*(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo|dia\b))/g,m=>add('excl',m.index,m[0].length));
   // atributos de jornada
   take(new RegExp(NV_H+'\\s*(?:extras?|de mas|adicionales|de sobretiempo|de sobre tiempo|mas)\\b','g'),m=>{const h=nvHval(m,1);if(h)add('attr',m.index,m[0].length,{mod:'+',h});});
   take(new RegExp('\\b(?:se quedo|se quedaron|le metio|le meti|le echo|le sumo|le sumaron|metio|hizo|hicieron|trabajo|trabajaron|camello|le agregue|agregale|sumale|ponle|anotale)\\s+(?:otras?\\s+)?'+NV_H+'\\s*(?:mas|extras?|de mas|adicionales)?','g'),m=>{const h=nvHval(m,1);if(h&&/(se quedo|se quedaron|metio|meti|echo|sumo|sumaron|agregue|agregale|sumale)/.test(m[0])||/(mas|extra|adicional)/.test(m[0].slice(-14)))add('attr',m.index,m[0].length,{mod:'+',h});});
@@ -1984,12 +1984,23 @@ function nvScan(seg){
   take(/\b(medio dia|mediodia|media jornada|medio tiempo|mitad del dia|medio jornal|solo (?:en )?la manana|solo (?:por )?la tarde|solo en la tarde|hasta (?:el )?medio ?dia|(?:en|por) la manana nada mas|(?:en|por) la tarde nada mas|trabajo (?:solo )?(?:la|por la|en la) manana|jornada media|la mitad|media jornal)\b/g,m=>add('attr',m.index,m[0].length,{base:'M'}));
   take(/(?<!\by\s)\bmedia\b(?!\s*hora)/g,m=>add('attr',m.index,m[0].length,{base:'M',weak:true}));
   take(/\b(completo|completa|completos|completas|dia completo|jornada completa|todo el dia|el dia entero|dia entero|normal|normalito|jornal completo|todo el jornal)\b/g,m=>add('attr',m.index,m[0].length,{base:'C'}));
+  take(/\bmenos\s+(?:media\s*(?:hora|horita)?|1\/2)\b/g,m=>add('attr',m.index,m[0].length,{mod:'-',h:0.5}));
+  // número dicho solo: horas extra; con «menos» o «-»: horas de menos
+  {const busy=it.slice();
+   for(const m of seg.matchAll(/(?:\b(menos)\s+|(?<![\w.])(-)\s*)?(?<![\w.\/])(\d+(?:\.\d+)?)(\s*(?:horas?|horitas?|h)\b)?(\s*y\s*media\b)?/g)){
+     const st=m.index,en=st+m[0].length,numPos=st+m[0].indexOf(m[3]);
+     if(busy.some(x=>numPos>=x.pos&&numPos<x.end))continue;
+     const before=seg.slice(Math.max(0,st-8),st),after=seg.slice(en,en+14);
+     if(/\b(?:el|del|al)\s+(?:dia\s+)?$|\bsemana\s*$/.test(before)||/^\s*$/.test(before)&&false)continue;
+     if(/^\s*(?:de\s+)?(lunes|martes|miercoles|jueves|viernes|sabados?|domingos?|semanas?|dias?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|mil|pesos)\b/.test(after))continue;
+     let h=parseFloat(m[3])+(m[5]?0.5:0);if(!(h>0&&h<=12))continue;
+     const neg=!!(m[1]||m[2]);if(neg)add('attr',st,m[0].length,{mod:'-',h,strong:true});else add('attr',numPos,en-numPos,{mod:'+',h});}}
   // fincas
   const toks=seg.split(' ');let p=0;const tpos=toks.map(t=>{const i=seg.indexOf(t,p);p=i+t.length;return i;});
   vzFincaAll(toks,false).forEach(h=>add('attr',tpos[h.pos],toks.slice(h.pos,h.pos+h.len).join(' ').length,{fi:h.name}));
   // quitar solapes: se queda el elemento más largo/específico
   it.sort((a,b)=>a.pos-b.pos||(b.end-b.pos)-(a.end-a.pos));const out=[];
-  it.forEach(x=>{if(x.type==='punct'||x.type==='week'){out.push(x);return;}const ov=out.find(y=>y.type===x.type&&x.pos<y.end&&y.pos<x.end);if(ov)return;
+  it.forEach(x=>{if(x.type==='punct'||x.type==='week'){out.push(x);return;}const kind=z=>z.type==='attr'?(z.fi?'fi':'j'):z.type;const ov=out.find(y=>kind(y)===kind(x)&&x.pos<y.end&&y.pos<x.end);if(ov)return;
     if(x.type==='attr'&&x.abs){const mm=out.find(y=>y.type==='attr'&&y.mod==='-'&&y.strong&&x.pos<y.end&&y.pos<x.end);if(mm)return;}
     if(x.type==='attr'&&x.base==='M'&&x.weak&&out.some(y=>y.type==='attr'&&y.mod&&x.pos<y.end&&y.pos<x.end))return;
     if(x.type==='day'&&x.spec==='one'&&out.some(y=>y.type==='day'&&x.pos>=y.pos&&x.end<=y.end))return;
@@ -2071,12 +2082,16 @@ function nvParse(raw,nom,opts){
       const mods=un.attrs.filter(a=>a.mod);let mod=null,h=null;if(mods.length){const m=mods[mods.length-1];mod=m.mod;h=Math.round(m.h*2)/2;}
       const fiA=un.attrs.filter(a=>a.fi);let fi=fiA.length?fiA[fiA.length-1].fi:null;const fiCarry=carryFi;if(fi)carryFi=fi;
       if(mod){const max=mod==='+'?(base==='M'?4:8):(base==='M'?2.5:3);if(h>max){res.warn.push(`${h} horas ${mod==='+'?'extra':'de menos'} no es una opción; se dejaron ${max}.`);h=max;}if(h<=0)mod=null;}
-      idx.forEach(i=>{assigned.add(i);plan[i]={j:abs?noAs:omrJLabel(base,mod,mod?String(h):null),fi:abs?'':fi,_noFi:!fi&&!abs,_carry:fiCarry};});});
+      const onlyFi=!abs&&!baseA.length&&!mods.length&&!!fi;
+      idx.forEach(i=>{assigned.add(i);
+        if(onlyFi){if(plan[i]&&plan[i].j&&!/asist/i.test(plan[i].j)){plan[i].fi=fi;plan[i]._noFi=false;}else plan[i]={j:null,fi,keepJ:true};return;}
+        plan[i]={j:abs?noAs:omrJLabel(base,mod,mod?String(h):null),fi:abs?'':fi,_noFi:!fi&&!abs,_carry:fiCarry};});});
     // finca: la de la unidad, la general del empleado, la elegida por defecto o la que ya tenía ese día
     const segAll=[...new Set(merged.flatMap(un=>un.attrs.filter(a=>a.fi).map(a=>a.fi)))];const segOne=segAll.length===1?segAll[0]:null;
     Object.keys(plan).forEach(i=>{const pl=plan[i];if(pl._noFi){const ent=nom.entries.find(e=>targets.includes(e.emp));const prevFi=ent&&ent.dias[i]&&ent.dias[i].fi;pl.fi=segFi||pl._carry||segOne||opts.finca||prevFi||CFG.fincas[0];}delete pl._noFi;delete pl._carry;});
     targets.forEach(name=>{const r=res.emps[name]||(res.emps[name]={days:{},prestamo:null});if(!res.order.includes(name))res.order.push(name);
-      Object.entries(plan).forEach(([i,v])=>{r.days[i]={...v};});if(prest&&g.names!=='ALL')r.prestamo=prest;});
+      const ent=nom.entries.find(e=>e.emp===name);
+      Object.entries(plan).forEach(([i,v])=>{if(v.keepJ){const prev=r.days[i]&&r.days[i].j&&!/asist/i.test(r.days[i].j)?r.days[i].j:(ent&&ent.dias[i]&&ent.dias[i].j&&!/asist/i.test(ent.dias[i].j)?ent.dias[i].j:null);r.days[i]={j:prev||omrJLabel('C'),fi:v.fi};}else r.days[i]={...v};});if(prest&&g.names!=='ALL')r.prestamo=prest;});
     if(!Object.keys(plan).length&&!prest)res.warn.push(`No se entendieron días para ${g.names==='ALL'?'todos':g.names.join(', ')}.`);
   });
   return res;
@@ -2103,7 +2118,7 @@ function nomVoiceModal(){
   const wl=w=>`Semana ${w+1} (${fmtFecha(days[w*7].iso).slice(0,5)} al ${fmtFecha(days[w*7+6].iso).slice(0,5)})`;
   ui._vzOnUpdate=nvRefresh;
   showModal('Dictar nómina',`
-   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Habla con naturalidad, empleado por empleado. Por ejemplo:<br><i>«Carlos trabajó toda la semana en Frutexcol. Geiner de lunes a viernes en el Placer y el sábado medio día. Arley el jueves no vino y el viernes se quedó dos horas más. Paputa igual que Carlos, y a Luis le presté cincuenta mil.»</i></p>
+   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Habla con naturalidad, empleado por empleado. Por ejemplo:<br><i>«Carlos trabajó toda la semana en Frutexcol. Geiner el lunes 2.5 en la Fortuna, el martes completo en Potrillos y el jueves menos 1 en Frutexcol. Arley el jueves no vino. Paputa igual que Carlos, y a Luis le presté cincuenta mil.»</i></p>
    <div class="form-grid" style="margin-bottom:10px">
      <div class="field" style="margin:0"><label>Semana que vas a dictar</label><select class="input" id="nv_w" onchange="nvRefresh()">${[0,1].map(w=>`<option value="${w}" ${w===wDef?'selected':''}>${wl(w)}</option>`).join('')}</select></div>
      <div class="field" style="margin:0"><label>Finca si no la dices</label><select class="input" id="nv_f" onchange="nvRefresh()">${CFG.fincas.map(f=>`<option ${f===fDef?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
@@ -2115,6 +2130,7 @@ function nomVoiceModal(){
    <textarea class="input" id="vz_txt" rows="4" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="nvRefresh()" style="resize:vertical;min-height:84px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Así quedará</div>
    <div id="nv_prev" class="nv-prev"></div>
+   <div class="note"><b>Números:</b> un número solo son <b>horas extra</b> («el lunes 2.5», «el martes 3», «medio día 1»); con «menos» son <b>horas que faltó</b> («el miércoles menos 1», «menos media»). <b>Fincas:</b> puedes decir una finca distinta para cada día, antes o después del día o de la jornada («el lunes 2.5 en la Fortuna, el martes completo en Potrillos y el jueves en Frutexcol»). Si de un día solo dices la finca, se cambia la finca y se conserva la jornada que ya tenía.</div>
    <div class="note"><b>Consejos:</b> di primero el nombre (o apodo) del empleado y luego sus días. Entiende: «toda la semana», «de lunes a viernes», «entre semana», «toda la quincena», «los dos sábados», «hasta el jueves», «desde el miércoles», «menos el martes», «los demás días», «el 22», «la segunda semana»; «completo», «medio día», «se quedó dos horas más», «hora y media extra», «salió una hora antes», «le faltó media hora»; «no vino», «faltó», «descansó», «incapacitado», «permiso»; «igual que Carlos», «todos»; y préstamos: «le presté cincuenta mil», «vale de cien mil», «anticipo». Solo cambian los días que menciones.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';nvRefresh();}},
