@@ -1684,6 +1684,7 @@ function vzNumbers(t){
   s=s.replace(/(\d),(\d)/g,'$1.$2');
   s=s.replace(/([,;:])/g,' $1 ').replace(/\.(?!\d)/g,' . ');
   s=s.replace(/\bun (total|valor|precio|abono|pago|poco)\b/g,'$1');
+  s=s.replace(/\bmedio millon(es)?\b/g,' 500000 ');
   const toks=s.split(/\s+/).filter(Boolean);const out=[];let i=0;
   const SCALE=w=>w==='mil'||w==='millon'||w==='millones';
   const UNITW=/^(bultos?|kilos?|kilogramos?|litros?|galon(es)?|canastillas?|toneladas?|unidad(es)?|cabezas?|novillos?|garrafas?|canecas?|cajas?|horas?|jornales?|repuestos?|herramientas?|fumigadas?|abonadas?|reses|millon|millones|mil)$/;
@@ -1692,17 +1693,18 @@ function vzNumbers(t){
     const isUn=(w==='un'||w==='una'||w==='uno');
     const startOk=(w in VZ_U&&!isUn)||(isUn&&toks[i+1]&&UNITW.test(toks[i+1]))||/^\d+(\.\d+)?$/.test(w)||(w==='mil'&&toks[i+1]&&(toks[i+1] in VZ_U));
     if(!startOk){out.push(w);i++;continue;}
-    let total=0,cur=0,j=i,used=false,lastScale=0;
+    let total=0,cur=0,j=i,used=false,lastScale=0,millSeen=false,milAfter=false;
     while(j<toks.length){
       const x=toks[j];
       if(x==='y'&&toks[j+1]&&(toks[j+1]==='medio'||toks[j+1]==='media')&&used){if(lastScale===1e6&&cur===0)total+=500000;else if(lastScale===1000&&cur===0)total+=500;else cur+=0.5;j+=2;continue;}
       if(x==='y'&&toks[j+1]&&(toks[j+1] in VZ_U)&&used&&cur%10===0&&cur%100>=20){j++;continue;}
       if(/^\d+(\.\d+)?$/.test(x)){if(used&&cur&&!lastScale)break;cur+=parseFloat(x);used=true;lastScale=0;j++;continue;}
       if(x in VZ_U){const v=VZ_U[x];if(used&&cur>0&&v<100&&cur%100!==0&&!(cur%10===0&&cur%100>=20&&v<10))break;if(used&&v>=100&&cur%1000!==0)break;cur+=v;used=true;lastScale=0;j++;continue;}
-      if(x==='mil'){cur=(used?(cur||1):1)*1000;total+=cur;cur=0;used=true;lastScale=1000;j++;continue;}
-      if(x==='millon'||x==='millones'){total=(total+(cur||1))*1000000;cur=0;used=true;lastScale=1e6;j++;continue;}
+      if(x==='mil'){cur=(used?(cur||1):1)*1000;total+=cur;cur=0;used=true;lastScale=1000;if(millSeen)milAfter=true;j++;continue;}
+      if(x==='millon'||x==='millones'){total=(total+(cur||1))*1000000;cur=0;used=true;lastScale=1e6;millSeen=true;milAfter=false;j++;continue;}
       break;
     }
+    if(millSeen&&!milAfter&&cur>0&&cur<1000)cur*=1000; // «un millón quinientos» = 1.500.000
     out.push(String(Math.round((total+cur)*100)/100));i=j;
   }
   return out.join(' ').replace(/\s+([,;:.])/g,'$1').replace(/\s+/g,' ').trim();
@@ -1768,7 +1770,8 @@ function vzLabels(toks){
     if(!hit)continue;
     const nx=toks[i+hit.len],nx2=toks[i+hit.len+1];
     if(hit.k==='unidad'&&isNum(toks[i-1]))continue;
-    if(hit.k==='abono'&&!(isNum(nx)||(nx==='de'&&isNum(nx2))))continue;
+    if(hit.k==='abono'&&!(isNum(nx)||((nx==='de'||nx==='por')&&isNum(nx2))))continue;
+    if(hit.k==='abono'&&(toks[i-1]==='de'||toks[i-1]==='del')&&!/^(un|hizo|hice|dio|di|con|el|su|otro)$/.test(toks[i-2]||''))continue;
     if(hit.k==='factura'&&nx==='de'&&!isNum(nx2))continue;
     found.push(hit);i+=hit.len-1;
   }
@@ -1926,6 +1929,15 @@ function vzFixProducts(text){
   while(i<words.length)out.push(words[i++]);
   return{text:out.join(' '),found};
 }
+// Toma solo las palabras que forman un nombre (se detiene en verbos, números y palabras comunes)
+const VZ_NONAME=new Set(['hizo','hice','hicieron','dio','di','pago','pague','pagaron','abono','abonaron','abone','quedo','queda','debe','debo','deben','compro','compre','llevo','lleve','trajo','vendio','vendi','recibio','recibi','cancelo','me','nos','le','les','que','se','ya','no','si','de','del','el','la','los','las','un','una','con','por','para','y','en','a','al','es','fue','esta','cada','total','precio','valor','estado','factura','pendiente','pagado','finca']);
+function vzNameToks(t){const out=[];let i=0;while(i<t.length&&/^(el|la|los|las|don|dona|senor|senora)$/.test(t[i])&&out.length===0){if(/^(don|dona|senor|senora)$/.test(t[i]))out.push(t[i]);i++;}
+  const CON=/^(de|del|la|las|los|y|e)$/;const okWord=w=>w&&!/^[,;:.]$/.test(w)&&!/^\d/.test(w)&&!VZ_NONAME.has(w);
+  for(;i<t.length&&out.length<6;i++){const w=t[i];
+    if(CON.test(w)&&out.length&&okWord(t[i+1])){out.push(w);continue;}
+    if(!okWord(w))break;out.push(w);}
+  while(out.length&&CON.test(out[out.length-1]))out.pop();
+  return out.filter(w=>!/^(don|dona|senor|senora)$/.test(w)||out.length>1);}
 function vzParse(raw){
   raw=vzLexFix(vzDedupe(raw));
   const n=vzNumbers(vzNorm(raw));const toks=n.replace(/([,;:])/g,' $1 ').split(/\s+/).filter(Boolean);
@@ -1944,11 +1956,27 @@ function vzParse(raw){
   const qtyHits=[];for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;for(const m of n.matchAll(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,''),'g'))){qtyHits.push(m.index);put('q',parseFloat(m[1]),m.index);put('u',u,m.index);}}
   {const re=/\b(?:a|en|por|de)\s+(\d+(?:\.\d+)?)\s*(?:pesos\s*)?(?:cada uno|cada una|c\/u|cada (?:bulto|kilo|litro|galon|unidad|canastilla|caja|hora)|por (?:unidad|bulto|kilo|litro|galon|canastilla|caja|hora)|el (?:bulto|kilo|litro|galon|unidad)|la (?:unidad|canastilla|caja|hora)|unitario)/g;for(const m of n.matchAll(re))put('pu',parseFloat(m[1]),m.index);}
   {const re=/\b(?:por un total de|por un valor de|costo|costaron|costo de|vale|valio|pague|pagamos|pagaron)\s+(\d+(?:\.\d+)?)/g;for(const m of n.matchAll(re))put('tot',parseFloat(m[1]),m.index);}
-  if(!F.pu&&!F.tot){const ms=[...n.matchAll(/\b(?:por|en|de|a)\s+(\d+(?:\.\d+)?)\s*(?:pesos)?(?=\s|,|\.|$)(?!\s*(?:bultos?|kilos?|litros?|galon|canastillas?|toneladas?|unidad|cajas?|horas?|jornales?|novillos?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/g)].filter(m=>parseFloat(m[1])>=500);if(ms.length){const m=ms[ms.length-1];put('tot',parseFloat(m[1]),m.index);}}
+
   {const mX=lastRe(/pendiente|a credito|fiado|\bdebo\b|por pagar|por cobrar|sin pagar|quede debiendo|queda debiendo/,n),mP=lastRe(/\bpagad[oa]\b|\bcancelad[oa]\b|de contado|ya (se )?pag\w*|recibid[oa]|cobrad[oa]/,n);if(mX)put('e','X',mX.index);if(mP)put('e','P',mP.index);}
-  for(const m of n.matchAll(/\babon(?:o|e|amos|aron)\s+(?:de\s+)?(\d+(?:\.\d+)?)/g))if(parseFloat(m[1])>=100){put('ab',parseFloat(m[1]),m.index);put('e','X',m.index);}
+  const abSpans=[];
+  for(const m of n.matchAll(/\babon(?:o|e|amos|aron)\s+(?:de\s+|por\s+)?(\d+(?:\.\d+)?)/g)){
+    const prev=n.slice(0,m.index).trim().split(/\s+/).slice(-2);const p1=prev[prev.length-1]||'',p2=prev[prev.length-2]||'';
+    if((p1==='de'||p1==='del')&&!/^(un|hizo|hice|dio|di|con|el|su|otro)$/.test(p2))continue; // «compra de abono 250 mil»: abono = fertilizante
+    if(parseFloat(m[1])>=100){abSpans.push([m.index,m.index+m[0].length]);put('ab',parseFloat(m[1]),m.index);put('e','X',m.index);}}
   for(const m of n.matchAll(/\bfactura\s+(?:numero|nro|no\.?|n|#)?\s*([a-z]{0,3}-?\d[\w-]*)/g))put('fa',m[1].toUpperCase(),m.index);
-  {const m=lastRe(/\b(compra|pago|venta|arreglo|reparacion|flete|servicio|mantenimiento|transporte|jornales?|gasto|alquiler|fumigacion)\s+de\s+[^,.]{2,70}/,n);if(m)put('d',{seg:m[0]},m.index);}
+  // montos dichos sin «pesos» ni preposición: cualquier cifra de 1.000 o más que no sea cantidad, factura, fecha ni abono
+  const lbSpans=(()=>{const lb=vzLabels(toks);return lb.map((l,ix)=>{const a=at(l.start);let b=ix+1<lb.length?at(lb[ix+1].start):n.length;const pm=n.slice(a).search(/[,;.](?!\d)/);if(pm>=0)b=Math.min(b,a+pm);return{k:l.k,a,b};}).filter(s=>/^(precio|total|abono|cantidad|factura|fecha)$/.test(s.k));})();
+  if(!F.pu&&!F.tot){let last=null;
+    for(const m of n.matchAll(/(\d+(?:\.\d+)?)(\s*pesos)?/g)){const v=parseFloat(m[1]),i0=m.index;
+      if(v<1000&&!m[2])continue;if(abSpans.some(([a,b])=>i0>=a&&i0<b))continue;if(lbSpans.some(s=>i0>=s.a&&i0<s.b))continue;
+      const before=n.slice(Math.max(0,i0-20),i0),after=n.slice(i0+m[0].length,i0+m[0].length+24);
+      if(/(?:\bfactura|\bnumero|\bnro|\bno\.?|#)\s*$/.test(before))continue;
+      if(/^\s*(?:de\s+)?(bultos?|kilos?|kilogramos?|litros?|galon(es)?|canastillas?|toneladas?|unidad(es)?|cajas?|horas?|jornales?|novillos?|cabezas?|garrafas?|canecas?)\b/.test(after))continue;
+      if(v>=1990&&v<=2100&&/(de|del)\s*$/.test(before))continue;
+      if(/^\/\d/.test(after)||/\d\/$/.test(before))continue;
+      last={v,i0,unit:/\ba\s*$/.test(before)&&!!F.q&&F.q.pos<i0};}
+    if(last){if(last.unit)put('pu',last.v,last.i0);else put('tot',last.v,last.i0);}}
+  {const m=lastRe(/\b(compra|pago|venta|arreglo|reparacion|flete|servicio|mantenimiento|transporte|jornales?|gasto|alquiler|fumigacion)\s+(?:de|del|a la|al|a los|a las)\s+[^,.]{2,70}/,n);if(m)put('d',{seg:m[0]},m.index);}
   // ---- rótulos dichos: «finca …», «comercio …», «precio …» (la palabra del campo no se escribe) ----
   const labels=vzLabels(toks);const segs=vzSegments(toks,labels);
   segs.forEach(sg=>{
@@ -1956,8 +1984,8 @@ function vzParse(raw){
     if(!sg.toks.length)return;
     switch(sg.k){
       case 'finca':{const m=vzFincaIn(txt);if(m)put('fi',m.name,p);break;}
-      case 'comercio':{const m=vzFuzzyIn(CFG.comercios,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('co',m.name,p);else put('co',{newName:sg.toks.slice(0,5)},p);break;}
-      case 'cliente':{const m=vzFuzzyIn(CFG.clientes,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('cl',m.name,p);else put('cl',{newName:sg.toks.slice(0,5)},p);put('t','I',p);break;}
+      case 'comercio':{const m=vzFuzzyIn(CFG.comercios,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('co',m.name,p);else{const nm=vzNameToks(sg.toks);if(nm.length)put('co',{newName:nm},p);}break;}
+      case 'cliente':{const m=vzFuzzyIn(CFG.clientes,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('cl',m.name,p);else{const nm=vzNameToks(sg.toks);if(nm.length)put('cl',{newName:nm},p);}put('t','I',p);break;}
       case 'cantidad':{if(num){put('q',parseFloat(num),p);const after=sg.toks[sg.toks.indexOf(num)+1]||'';for(const[re,u]of VZ_UNITS){if(CFG.unidades.includes(u)&&re.test(after)){put('u',u,p);break;}}}break;}
       case 'precio':if(num)put('pu',parseFloat(num),p+0.1);break;
       case 'total':if(num)put('tot',parseFloat(num),p+0.1);break;
@@ -1985,7 +2013,7 @@ function vzParse(raw){
   if(F.tot){const tot=F.tot.v;if(!F.pu||F.tot.pos>F.pu.pos){if(r.q&&r.q>0)r.pu=Math.round(tot/r.q);else{r.q=1;r.pu=tot;}}}
   if(r.pu&&!r.q)r.q=1;
   if(F.d){let seg=F.d.v.seg;
-    if(!F.d.v.explicit){seg=seg.replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|comercio|en el almacen|donde|el dia|ayer|hoy|antier|precio|cantidad|estado|total)\b.*$/,'').trim();
+    if(!F.d.v.explicit){seg=seg.replace(/\s(?:a|en|por|de)?\s*\d{4,}(?:\.\d+)?\b.*$/,'').replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|comercio|en el almacen|donde|el dia|ayer|hoy|antier|precio|cantidad|estado|total)\b.*$/,'').trim();
       const strip=nm=>{if(!nm)return;seg=seg.replace(new RegExp('\\s(?:en|a|de|donde|del|para)\\s+(?:la\\s+|el\\s+)?(?:finca\\s+)?'+vzNorm(nm).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b.*$'),'').trim();};
       strip(r.co);strip(r.fi);
       {const st=seg.split(' ');const hits=vzFuzzyAll([r.co].filter(Boolean),st).concat(r.fi?vzFincaAll(st,false).filter(h=>h.name===r.fi):[]).filter(h=>h.pos>1);if(hits.length){let cut=Math.min(...hits.map(h=>h.pos));while(cut>1&&/^(en|a|de|del|donde|para|la|el|finca)$/.test(st[cut-1]))cut--;seg=st.slice(0,cut).join(' ');}}
