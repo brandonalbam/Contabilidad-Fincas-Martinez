@@ -2080,9 +2080,20 @@ function nvParse(raw,nom,opts){
         if(u.days.length&&u.attrs.some(a=>a.pos>u.days[u.days.length-1].end)){close();}u.days.push({...x,w:week});return;}
       if(x.type==='attr')u.attrs.push(x);});
     close();
-    // atributos sin días: se pegan a la unidad anterior; si no hay, finca general del empleado
-    const merged=[];units.forEach(un=>{if(!un.days.length){const prev=merged[merged.length-1];if(prev&&un.attrs.every(a=>!a.fi||!prev.attrs.some(b=>b.fi))&&!un.attrs.every(a=>a.fi)){prev.attrs=prev.attrs.concat(un.attrs);return;}
-        un.attrs.forEach(a=>{if(a.fi)segFi=a.fi;});if(prev&&un.attrs.every(a=>a.fi)&&!prev.attrs.some(b=>b.fi))prev.attrs=prev.attrs.concat(un.attrs);else if(!prev)merged.push(un);return;}merged.push(un);});
+    // atributos sin días: se pegan al día anterior. Una finca sola solo vale para todo el empleado si se dice
+    // «todo en …» o si se dice justo después del nombre, antes de cualquier día.
+    const isAll=a=>/\btod[oa]s?\b[^,.;]{0,14}$/.test(segTxt.slice(Math.max(0,a.pos-18),a.pos));
+    // finca dicha después del nombre y antes del primer día = finca del empleado
+    {const firstDay=Math.min(...items.filter(x=>x.type==='day').map(x=>x.pos),Infinity);
+     units.forEach(un=>{un.attrs=un.attrs.filter(a=>{if(a.fi&&a.pos<firstDay){segFi=a.fi;return false;}return true;});});}
+    const merged=[];let lead=[];
+    units.forEach(un=>{
+      if(un.days.length){if(lead.length){un.attrs=lead.concat(un.attrs);lead=[];}merged.push(un);return;}
+      const prev=merged[merged.length-1];
+      un.attrs.forEach(a=>{
+        if(a.fi){if(isAll(a)||!prev)segFi=a.fi;else if(!prev.attrs.some(b=>b.fi))prev.attrs.push(a);}
+        else if(prev)prev.attrs.push(a);else lead.push(a);});
+    });
     let carryFi=null;
     merged.forEach(un=>{if(!un.days.length){un.attrs.forEach(a=>{if(a.fi)segFi=a.fi;});return;}
       let idx=[];un.days.forEach(d=>{idx=idx.concat(nvResolve(d,days,week,assigned));});
@@ -2090,15 +2101,14 @@ function nvParse(raw,nom,opts){
       idx=[...new Set(idx)];if(!idx.length){res.warn.push(`Algunos días mencionados para ${g.names==='ALL'?'todos':g.names.join(', ')} no están en esta quincena.`);return;}
       const abs=un.attrs.some(a=>a.abs);const baseA=un.attrs.filter(a=>a.base);const base=baseA.length?(baseA.some(a=>a.base==='M'&&!a.weak)?'M':baseA[baseA.length-1].base):'C';
       const mods=un.attrs.filter(a=>a.mod);let mod=null,h=null;if(mods.length){const m=mods[mods.length-1];mod=m.mod;h=Math.round(m.h*2)/2;}
-      const fiA=un.attrs.filter(a=>a.fi);let fi=fiA.length?fiA[fiA.length-1].fi:null;const fiCarry=carryFi;if(fi)carryFi=fi;
+      const fiA=un.attrs.filter(a=>a.fi);let fi=fiA.length?fiA[fiA.length-1].fi:null;const fiCarry=null;
       if(mod){const max=mod==='+'?(base==='M'?4:8):(base==='M'?2.5:3);if(h>max){res.warn.push(`${h} horas ${mod==='+'?'extra':'de menos'} no es una opción; se dejaron ${max}.`);h=max;}if(h<=0)mod=null;}
       const onlyFi=!abs&&!baseA.length&&!mods.length&&!!fi;
       idx.forEach(i=>{assigned.add(i);
         if(onlyFi){if(plan[i]&&plan[i].j&&!/asist/i.test(plan[i].j)){plan[i].fi=fi;plan[i]._noFi=false;}else plan[i]={j:null,fi,keepJ:true};return;}
         plan[i]={j:abs?noAs:omrJLabel(base,mod,mod?String(h):null),fi:abs?'':fi,_noFi:!fi&&!abs,_carry:fiCarry};});});
     // finca: la de la unidad, la general del empleado, la elegida por defecto o la que ya tenía ese día
-    const segAll=[...new Set(merged.flatMap(un=>un.attrs.filter(a=>a.fi).map(a=>a.fi)))];const segOne=segAll.length===1?segAll[0]:null;
-    Object.keys(plan).forEach(i=>{const pl=plan[i];if(pl._noFi){const ent=nom.entries.find(e=>targets.includes(e.emp));const prevFi=ent&&ent.dias[i]&&ent.dias[i].fi;pl.fi=segFi||pl._carry||segOne||opts.finca||prevFi||CFG.fincas[0];}delete pl._noFi;delete pl._carry;});
+    Object.keys(plan).forEach(i=>{const pl=plan[i];if(pl._noFi){const ent=nom.entries.find(e=>targets.includes(e.emp));const prevFi=ent&&ent.dias[i]&&ent.dias[i].fi;pl.fi=segFi||opts.finca||prevFi||CFG.fincas[0];}delete pl._noFi;delete pl._carry;});
     targets.forEach(name=>{const r=res.emps[name]||(res.emps[name]={days:{},prestamo:null});if(!res.order.includes(name))res.order.push(name);
       const ent=nom.entries.find(e=>e.emp===name);
       Object.entries(plan).forEach(([i,v])=>{if(v.keepJ){const prev=r.days[i]&&r.days[i].j&&!/asist/i.test(r.days[i].j)?r.days[i].j:(ent&&ent.dias[i]&&ent.dias[i].j&&!/asist/i.test(ent.dias[i].j)?ent.dias[i].j:null);r.days[i]={j:prev||omrJLabel('C'),fi:v.fi};}else r.days[i]={...v};});if(prest&&g.names!=='ALL')r.prestamo=prest;});
@@ -2140,7 +2150,7 @@ function nomVoiceModal(){
    <textarea class="input" id="vz_txt" rows="4" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="nvRefresh()" style="resize:vertical;min-height:84px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Así quedará</div>
    <div id="nv_prev" class="nv-prev"></div>
-   <div class="note"><b>Números:</b> un número solo son <b>horas extra</b> («el lunes 2.5», «el martes 3», «medio día 1»); con «menos» son <b>horas que faltó</b> («el miércoles menos 1», «menos media»). <b>Fincas:</b> puedes decir una finca distinta para cada día, antes o después del día o de la jornada («el lunes 2.5 en la Fortuna, el martes completo en Potrillos y el jueves en Frutexcol»). Si de un día solo dices la finca, se cambia la finca y se conserva la jornada que ya tenía.</div>
+   <div class="note"><b>Números:</b> un número solo son <b>horas extra</b> («el lunes 2.5», «el martes 3», «medio día 1»); con «menos» son <b>horas que faltó</b> («el miércoles menos 1», «menos media»). <b>Fincas:</b> los días en que no digas finca quedan con la finca de la casilla «Finca si no la dices». La finca que digas para un día cambia <b>solo ese día</b> («lunes 2.5, martes 3, miércoles 1.5 en la Fortuna»). Para todos los días de un empleado di la finca después de su nombre («Carlos en Frutexcol, lunes 2.5…») o «todo en Placer». Si de un día solo dices la finca, se cambia la finca y se conserva la jornada que ya tenía.</div>
    <div class="note"><b>Consejos:</b> di primero el nombre (o apodo) del empleado y luego sus días. Entiende: «toda la semana», «de lunes a viernes», «entre semana», «toda la quincena», «los dos sábados», «hasta el jueves», «desde el miércoles», «menos el martes», «los demás días», «el 22», «la segunda semana»; «completo», «medio día», «se quedó dos horas más», «hora y media extra», «salió una hora antes», «le faltó media hora»; «no vino», «faltó», «descansó», «incapacitado», «permiso»; «igual que Carlos», «todos»; y préstamos: «le presté cincuenta mil», «vale de cien mil», «anticipo». Solo cambian los días que menciones.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';nvRefresh();}},
