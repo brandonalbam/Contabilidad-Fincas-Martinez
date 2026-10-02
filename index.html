@@ -1822,7 +1822,7 @@ function vzLexBest(n,L){
   return best;
 }
 function vzLexFix(text){
-  if(!text)return text;const L=vzLexBuild();
+  if(!text)return text;text=vzFincaAliasFix(text);const L=vzLexBuild();
   const parts=String(text).split(/\s+/).filter(Boolean);const out=[];
   const core=t=>{const m=t.match(/^([^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]*)(.*?)([.,;:!?]*)$/);return m?{pre:m[1],w:m[2],post:m[3]}:{pre:'',w:t,post:''};};
   for(let i=0;i<parts.length;i++){
@@ -1860,6 +1860,54 @@ function vzMergeFinals(list){
     acc=(acc+' '+rws.slice(k).join(' ')).trim();});
   return acc;
 }
+// ---- Fincas: sinónimos y variantes que suele escribir el reconocedor de voz ----
+const VZ_FINCA_ALIAS={
+  frutexcol:['frutex col','frutex','frutexco','frutexcoll','frutescol','frutes col','fruteco','frutecol','frute col','fruta excol','frutas excol','fruta ex col','frutas ex col','fruta excel','frutas excel','frutexcel','fruit excol','fruit ex col','fruit excel','frutixcol','frutix col','frutaxcol','fru tex col','frutos col','frutos excol','la frutex','frutex col finca','frutas col','fruta col','frutecs','fruteks','frutexol','frutescol'],
+  placer:['el placer','plaser','pla ser','placeres','plazer'],
+  estrella:['la estrella','estrela','strella','estrellas','la strella'],
+  potrillos:['potrillo','potrios','potrigos','po trillos','potriyos','los potrillos','potrilos'],
+  fortuna:['la fortuna','fortunas'],
+  cubillos:['cubillo','cubiyos','cuvillos','los cubillos','cubilos','cubiyo'],
+  futuro:['el futuro','futuros'],
+  miranda:['la miranda','mi randa','miran da'],
+  ganaderia:['la ganaderia','ganaderias'],
+  gallineta:['la gallineta','gallinetas','gayineta','gallina eta','gallineta finca'],
+  chocolatera:['la chocolatera','chocolate era','chocolateras','chocolatero'],
+  mandarinos:['los mandarinos','mandarino finca','finca mandarinos'],
+  'gastos feny':['gastos feni','gastos fenny','gastos de feny','gastos de feni','gasto feny','gastos fani'],
+  'gastos betti':['gastos betty','gastos beti','gastos de betty','gastos de beti','gasto betty']
+};
+const VZ_FINCA_BLOCK=new Set(['mandarina','mandarinas','ganado','ganadero','naranja','futbol']);
+function vzFincaAliases(f){const k=vzNorm(f).trim();const base=VZ_FINCA_ALIAS[k]||[];const user=String(((CFG.fincaAlias||{})[f])||'').split(',').map(s=>s.trim()).filter(Boolean);return [f].concat(base,user);}
+function vzFincaCands(){const out=[];(CFG.fincas||[]).forEach(f=>vzFincaAliases(f).forEach(a=>{const pt=vzPhon(a).split(' ').filter(Boolean);if(pt.length)out.push({name:f,alias:vzNorm(a),full:pt.join(''),toks:pt});}));return out;}
+// Búsqueda de fincas con más tolerancia: alias, sonido parecido y comienzo del nombre («frutex» → FRUTEXCOL)
+function vzFincaAll(toks,generous){
+  const out=[];const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const cands=vzFincaCands();const minSim=generous?0.7:0.76;
+  for(let i=0;i<toks.length;i++){
+    if(!ph[i]||/^[,;:.]$/.test(toks[i])||/^\d/.test(toks[i]))continue;
+    cands.forEach(c=>{
+      const maxW=Math.min(toks.length-i,c.toks.length+1);let best=0,bw=0;
+      for(let w=1;w<=maxW;w++){const win=ph.slice(i,i+w).join('');const raw=toks.slice(i,i+w).join(' ');if(VZ_FINCA_BLOCK.has(raw))continue;
+        let s=vzSim(win,c.full);
+        if(s<0.86&&win.length>=5&&c.full.startsWith(win)&&win.length>=0.6*c.full.length)s=0.86;
+        if(s>best){best=s;bw=w;}}
+      if(best>=minSim)out.push({name:c.name,pos:i,len:bw,sim:best+0.001*c.full.length});
+    });
+  }
+  return out;
+}
+function vzFincaLast(toks){const a=vzFincaAll(toks,false);if(!a.length)return null;const maxPos=Math.max(...a.map(h=>h.pos));return a.filter(h=>h.pos===maxPos).sort((x,y)=>y.sim-x.sim)[0];}
+function vzFincaIn(text){const toks=vzNorm(text).replace(/([,;:.])/g,' $1 ').split(/\s+/).filter(Boolean);const a=vzFincaAll(toks,true);if(!a.length)return null;a.sort((x,y)=>y.sim-x.sim||x.pos-y.pos);return a[0];}
+// Reemplaza en el texto las variantes exactas de finca por su nombre (para que se vea corregido mientras dictas)
+function vzFincaAliasFix(text){
+  const al=[];(CFG.fincas||[]).forEach(f=>vzFincaAliases(f).slice(1).forEach(a=>{const w=vzNorm(a).split(/\s+/).filter(Boolean);if(w.length)al.push({w,to:f.toLowerCase()});}));
+  al.sort((a,b)=>b.w.length-a.w.length);
+  const parts=String(text||'').split(/\s+/).filter(Boolean);const nk=x=>vzNorm(x).replace(/[^a-z0-9]/g,'');const out=[];
+  for(let i=0;i<parts.length;){let hit=null;for(const a of al){if(a.w.every((x,j)=>nk(parts[i+j]||'')===x.replace(/[^a-z0-9]/g,''))){hit=a;break;}}
+    if(hit){const last=parts[i+hit.w.length-1];const post=(last.match(/[.,;:!?]+$/)||[''])[0];out.push(hit.to+post);i+=hit.w.length;}else{out.push(parts[i]);i++;}}
+  return out.join(' ');
+}
+async function setFincaAlias(f,v){if(!CFG.fincaAlias)CFG.fincaAlias={};CFG.fincaAlias[f]=String(v||'').trim();await persistCfg();toast('Nombres alternativos de '+f+' guardados');}
 function vzProducts(){return [...new Set((CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean))];}
 // Encuentra químicos del catálogo (por cómo suenan, con tolerancia) y devuelve coincidencias sin solaparse
 function vzProdMatches(toks){
@@ -1890,7 +1938,7 @@ function vzParse(raw){
    if(mI)put('t','I',mI.index);if(mE)put('t','E',mE.index);
    const ex=lastRe(/\b(ingreso|egreso)\b/,n);if(ex)put('t',ex[1]==='ingreso'?'I':'E',ex.index+0.5);}
   vzDateAll(n).forEach(([p,iso])=>put('f',iso,p));
-  {const m=vzFuzzyLast(CFG.fincas,toks);if(m)put('fi',m.name,at(m.pos));}
+  {const m=vzFincaLast(toks);if(m)put('fi',m.name,at(m.pos));}
   {const m=vzFuzzyLast(CFG.comercios,toks);if(m)put('co',m.name,at(m.pos));}
   {const m=vzFuzzyLast(CFG.clientes,toks);if(m)put('cl',m.name,at(m.pos));}
   const qtyHits=[];for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;for(const m of n.matchAll(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,''),'g'))){qtyHits.push(m.index);put('q',parseFloat(m[1]),m.index);put('u',u,m.index);}}
@@ -1907,7 +1955,7 @@ function vzParse(raw){
     const p=at(sg.pos)+0.25;const txt=sg.toks.join(' ');const num=(sg.toks.find(w=>/^\d+(\.\d+)?$/.test(w)));
     if(!sg.toks.length)return;
     switch(sg.k){
-      case 'finca':{const m=vzFuzzyIn(CFG.fincas,txt);if(m)put('fi',m.name,p);break;}
+      case 'finca':{const m=vzFincaIn(txt);if(m)put('fi',m.name,p);break;}
       case 'comercio':{const m=vzFuzzyIn(CFG.comercios,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('co',m.name,p);else put('co',{newName:sg.toks.slice(0,5)},p);break;}
       case 'cliente':{const m=vzFuzzyIn(CFG.clientes,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('cl',m.name,p);else put('cl',{newName:sg.toks.slice(0,5)},p);put('t','I',p);break;}
       case 'cantidad':{if(num){put('q',parseFloat(num),p);const after=sg.toks[sg.toks.indexOf(num)+1]||'';for(const[re,u]of VZ_UNITS){if(CFG.unidades.includes(u)&&re.test(after)){put('u',u,p);break;}}}break;}
@@ -1940,7 +1988,7 @@ function vzParse(raw){
     if(!F.d.v.explicit){seg=seg.replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|comercio|en el almacen|donde|el dia|ayer|hoy|antier|precio|cantidad|estado|total)\b.*$/,'').trim();
       const strip=nm=>{if(!nm)return;seg=seg.replace(new RegExp('\\s(?:en|a|de|donde|del|para)\\s+(?:la\\s+|el\\s+)?(?:finca\\s+)?'+vzNorm(nm).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b.*$'),'').trim();};
       strip(r.co);strip(r.fi);
-      {const st=seg.split(' ');const hits=vzFuzzyAll([r.co,r.fi].filter(Boolean),st).filter(h=>h.pos>1);if(hits.length){let cut=Math.min(...hits.map(h=>h.pos));while(cut>1&&/^(en|a|de|del|donde|para|la|el|finca)$/.test(st[cut-1]))cut--;seg=st.slice(0,cut).join(' ');}}
+      {const st=seg.split(' ');const hits=vzFuzzyAll([r.co].filter(Boolean),st).concat(r.fi?vzFincaAll(st,false).filter(h=>h.name===r.fi):[]).filter(h=>h.pos>1);if(hits.length){let cut=Math.min(...hits.map(h=>h.pos));while(cut>1&&/^(en|a|de|del|donde|para|la|el|finca)$/.test(st[cut-1]))cut--;seg=st.slice(0,cut).join(' ');}}
       seg=seg.replace(/\s+(?:de|del|la|el|en|para|a|y|con)(?:\s+(?:la|el))?$/,'').trim();}
     seg=restore(seg);if(seg)r.d=seg.charAt(0).toUpperCase()+seg.slice(1);}
   // químicos del catálogo: autocorrección en la descripción y detección en toda la frase
@@ -5562,6 +5610,10 @@ function renderConfig(){
    </div>
    <div class="cfg-grid">
      ${listBlock('Fincas y centros','fincas','Aparecen en los menús de cada movimiento')}
+     <div class="card panel" style="margin-bottom:16px">
+       <div class="ph"><div><h2>Nombres de fincas para el dictado por voz</h2><p>Si al dictar el celular escribe mal una finca, agrega aquí cómo la escribe (separa con comas). Ya se reconocen muchas variantes automáticamente.</p></div></div>
+       <div class="secgrid2">${(CFG.fincas||[]).map(f=>`<div class="field" style="margin:0"><label>${esc(f)}</label><input class="input" value="${esc((CFG.fincaAlias||{})[f]||'')}" placeholder="Ej: ${esc((VZ_FINCA_ALIAS[vzNorm(f)]||[]).slice(0,2).join(', ')||'otro nombre')}" onchange="setFincaAlias('${esc(f).replace(/'/g,"\\'")}',this.value)"></div>`).join('')}</div>
+     </div>
      ${listBlock('Clientes','clientes','Compradores de tu producto (cartera por cobrar)')}
      ${listBlock('Categorías de ingreso','catIngresos')}
      ${listBlock('Categorías de egreso','catEgresos')}
