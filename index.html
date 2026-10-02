@@ -4738,7 +4738,7 @@ function omrMonday(iso){const d=new Date(iso+'T00:00:00');const dow=(d.getDay()+
 function omrTemplates(){if(!CFG.omrTpl||typeof CFG.omrTpl!=='object')CFG.omrTpl={};return CFG.omrTpl;}
 function omrNewId(){let id=(+CFG.omrNext||1);if(id<1||id>127)id=1;CFG.omrNext=id>=127?1:id+1;return id;}
 function omrTrunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;}
-function omrLegend(geo){if(geo&&geo.v===2)return 'Use bolígrafo negro o azul. Marque con X o rellene el círculo (no use chulito). Marque la base: C = día completo o M = medio día. Si hubo horas de más, marque 0.5 a 4 (filas 2 y 3); si hubo horas de menos, marque -0.5 a -2 (fila 1). Una sola opción de horas por día.';return 'Use bolígrafo negro o azul. Marque con X o rellene el círculo (no use chulito). Marque la base: C = día completo o M = medio día. Horas de más: 0.5 a 4 (renglones 1 y 2). Horas de menos: -0.5 a -2.5 (renglón 3). Una sola opción de horas por día.';}
+function omrLegend(geo){if(geo&&geo.v===2)return 'Use bolígrafo negro o azul y RELLENE COMPLETAMENTE el círculo (no use X ni chulito). Marque la base: C = día completo o M = medio día. Si hubo horas de más, marque 0.5 a 4 (filas 2 y 3); si hubo horas de menos, marque -0.5 a -2 (fila 1). Una sola opción de horas por día.';return 'Use bolígrafo negro o azul y RELLENE COMPLETAMENTE el círculo (no use X ni chulito). Marque la base: C = día completo o M = medio día. Horas de más: 0.5 a 4 (renglones 1 y 2). Horas de menos: -0.5 a -2.5 (renglón 3). Una sola opción de horas por día.';}
 function omrLabFs(geo,lab){const k=geo.v>=2?1.3:1;return k*(lab.length<=1?1.55:(lab.length<=2?1.35:(lab.length<=3?1.15:0.95)));}
 function omrPageSVG(tpl,week,page,pages){
   const O=OMR,G=omrGeo(tpl);let s=`<svg class="omr-page" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${O.W} ${O.H}" width="${O.W}mm" height="${O.H}mm" font-family="Arial,Helvetica,sans-serif"><rect width="${O.W}" height="${O.H}" fill="#fff"/>`;
@@ -4889,10 +4889,16 @@ function omrFill(G,H,cx,cy,r,k,ringMax){
   // 1) tinta dentro del círculo (fracción de puntos con trazo)
   const soft=v=>v;
   let n=0,hit=0,acc=0;const R=r*0.8;for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){const dx=i/5*R,dy=j/5*R;if(dx*dx+dy*dy>R*R)continue;const v=dk(cx+dx,cy+dy);n++;acc+=soft(v);if(v>0.42)hit++;}
+  // relleno: al menos el 80% del interior del círculo debe estar cubierto de tinta oscura (no cuentan X, chulitos, manchas ni sombras)
+  const pts=[];const RG=r*0.7;for(let i=-8;i<=8;i++)for(let j=-8;j<=8;j++){const dx=i/8*RG,dy=j/8*RG;if(dx*dx+dy*dy>RG*RG)continue;pts.push(dk(cx+dx,cy+dy));}
+  const vsorted=pts.slice().sort((a,b)=>a-b);const vmax=vsorted[Math.floor(vsorted.length*0.95)]||0;const lvl=Math.max(0.35,vmax*0.5);
+  const cover=pts.length?pts.filter(v=>v>=lvl).length/pts.length:0;omrFill._cov=vmax>=0.5?cover:0;
+  const innerGate=vmax>=0.5&&cover>=0.8;
   const inner=n?Math.max(acc/n,hit/n*0.9):0;
   // 2) anillo exterior en 8 sectores: detecta opciones encerradas y descarta marcas vecinas que se salen
   const sec=[];for(let s=0;s<8;s++){let m=0,c=0;for(let a=0;a<3;a++){const t=(s+a/3+1/6)/8*2*Math.PI;const RM=ringMax||1.52;for(const rr of[1.12,1.12+(RM-1.12)/3,1.12+2*(RM-1.12)/3,RM]){m+=soft(dk(cx+Math.cos(t)*r*rr,cy+Math.sin(t)*r*rr));c++;}}sec.push(m/c);}
   sec.sort((a,b)=>a-b);const ring=(sec[2]+sec[3])/2;
+  omrFill._g=innerGate;
   return Math.max(inner,ring*1.15);}
 function omrInkRatio(G,H){
   const out=[];const dirs=[[1,1],[-1,1],[-1,-1],[1,-1]];
@@ -4965,20 +4971,26 @@ function omrJLabel(base,mod,h){
   if(base==='C'){if(mod==='+')return 'Extra '+h;if(mod==='-')return 'Menos '+h;return comp;}
   if(mod==='+')return 'Media +'+h;if(mod==='-')return 'Media -'+h;return media;
 }
-function omrReadDay(geo,f,th){
-  const MK=th.mk,DB=th.db,BASE=th.base;const s=f.slice().sort((x,y)=>x-y);const med=s[Math.floor(s.length/2)];
-  const strong=v=>v>=MK||(v>=DB&&v-med>=0.07);const weak=v=>!strong(v)&&v-med>=0.025&&v>=th.wf-0.005;const near=v=>strong(v)&&v<MK*1.08;
+function omrReadDay(geo,f,th,g){
+  const MK=th.mk,DB=th.db;const so=f.slice().sort((x,y)=>x-y);const med=so[Math.floor(so.length/2)];g=g||f.map(()=>true);
+  const cv=i=>typeof g[i]==='number'?g[i]:(g[i]?1:0);
+  const sc=i=>f[i]>=MK||(f[i]>=DB&&f[i]-med>=0.07);           // tinta suficiente
+  const S=i=>sc(i)&&cv(i)>=0.8;                                // y relleno de al menos el 80% del círculo
+  const W=i=>!S(i)&&(sc(i)||cv(i)>=0.45||(f[i]-med>=0.025&&f[i]>=th.wf-0.005));
+  const near=i=>S(i)&&(f[i]<MK*1.08||cv(i)<0.92);
   const idx=k=>geo.bub.map((b,i)=>b.kind===k?i:-1).filter(i=>i>=0);
-  const pick=list=>{let best=-1,bv=-1,sv=-1;list.forEach(i=>{const v=f[i];if(v>bv){sv=bv;bv=v;best=i;}else if(v>sv)sv=v;});const ok=best>=0&&strong(bv);return{best,bv,ok,amb:(ok&&(bv<sv+0.05||strong(sv)||near(bv)))||(!ok&&best>=0&&weak(bv))};};
-  const iC=idx('C')[0],iM=idx('M')[0];const C=strong(f[iC]),Mm=strong(f[iM]);
+  const pick=list=>{let best=-1,bv=-1,second=-1;list.forEach(i=>{if(!S(i))return;if(f[i]>bv){if(best>=0)second=best;bv=f[i];best=i;}else if(second<0||f[i]>f[second])second=i;});
+    const ok=best>=0;const anyW=list.some(i=>W(i));return{best,bv,ok,amb:(ok&&(second>=0&&f[second]>bv-0.05||near(best)))||(!ok&&anyW)||(ok&&anyW&&list.some(i=>W(i)&&f[i]>bv*0.8))};};
+  const iC=idx('C')[0],iM=idx('M')[0];const C=S(iC),Mm=S(iM);
   const P=pick(idx('P')),N=pick(idx('N'));
-  let doubt=P.amb||N.amb||weak(f[iC])||weak(f[iM]);
+  let doubt=P.amb||N.amb||W(iC)||W(iM)||near(iC)||near(iM);
   let base=null;if(C&&Mm){doubt=true;base=f[iC]>=f[iM]?'C':'M';}else if(C)base='C';else if(Mm)base='M';
   let mod=null,h=null;
   if(P.ok&&N.ok){doubt=true;if(P.bv>=N.bv){mod='+';h=geo.bub[P.best].h;}else{mod='-';h=geo.bub[N.best].h;}}
   else if(P.ok){mod='+';h=geo.bub[P.best].h;}else if(N.ok){mod='-';h=geo.bub[N.best].h;}
   if(!base&&mod){const sv=mod==='+'?P.bv:N.bv;if(sv>=MK&&sv-med>=0.12){base='C';doubt=true;}else{mod=null;h=null;doubt=true;}}
-  return{j:omrJLabel(base,mod,h),doubt,fills:f};
+  const inc=f.some((v,i)=>!S(i)&&(sc(i)||cv(i)>=0.45));
+  return{j:omrJLabel(base,mod,h),doubt,inc,fills:f,acc:f.map((v,i)=>S(i)),warn:f.map((v,i)=>W(i))};
 }
 function omrThresholds(sc){
   const v=[];sc.forEach(row=>row.forEach(c=>v.push(...c)));v.sort((a,b)=>a-b);
@@ -5006,14 +5018,14 @@ function omrFinish(G,img,H,tpl,week,page){
   const geo=omrGeo(tpl);const pages=Math.max(1,Math.ceil(tpl.slots/geo.rows));const rows=[];
   const k=omrInkRatio(G,H);const nR=[];const ringMax=Math.min(1.52,(geo.pitch-geo.bubR-0.15)/geo.bubR);
   for(let r=0;r<geo.rows;r++){const idx=page*geo.rows+r;if(idx>=tpl.slots)break;nR.push(idx);}
-  const al=omrAlignGrid(G,H,geo,nR.length);const sc=[];
-  nR.forEach((idx,r)=>{const rr=[];for(let d=0;d<7;d++){const o=al.off[r][d];o.sub=[];for(let s=0;s<geo.subs;s++)o.sub.push(omrSubRefine(G,H,geo,r,d,s,o.ox,o.oy));
-    rr.push(geo.bub.map((b,bi)=>{const so=o.sub[b.s];const[x,y]=omrPos(geo,r,d,bi);return omrFill(G,H,x+so.ox,y+so.oy,geo.bubR,k,ringMax);}));}sc.push(rr);});
+  const al=omrAlignGrid(G,H,geo,nR.length);const sc=[],gates=[];
+  nR.forEach((idx,r)=>{const rr=[],gr=[];for(let d=0;d<7;d++){const o=al.off[r][d];o.sub=[];for(let s=0;s<geo.subs;s++)o.sub.push(omrSubRefine(G,H,geo,r,d,s,o.ox,o.oy));
+    const gv=[];rr.push(geo.bub.map((b,bi)=>{const so=o.sub[b.s];const[x,y]=omrPos(geo,r,d,bi);const s=omrFill(G,H,x+so.ox,y+so.oy,geo.bubR,k,ringMax);gv.push(omrFill._cov);return s;}));gr.push(gv);}sc.push(rr);gates.push(gr);});
   let th=omrThresholds(sc);
   // calibración por tipo de círculo: cuánto "marca" cada etiqueta impresa estando vacía
   if(th.clear){const nb=geo.bub.length,gb=th.base,adj=[];for(let bi=0;bi<nb;bi++){const vals=[];sc.forEach(row=>row.forEach(c=>{if(c[bi]<Math.min(th.db,th.mk*0.6))vals.push(c[bi]);}));vals.sort((a,b)=>a-b);adj.push(vals.length>=3?Math.min(0.1,Math.max(0,vals[Math.floor(vals.length/2)]-gb)):0);}
    sc.forEach(row=>row.forEach(c=>{for(let bi=0;bi<nb;bi++)c[bi]=Math.max(0,c[bi]-adj[bi]);}));th=omrThresholds(sc);}
-  nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(geo,sc[r][d],th));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
+  nR.forEach((idx,r)=>{const days=[];for(let d=0;d<7;d++)days.push(omrReadDay(geo,sc[r][d],th,gates[r][d]));rows.push({idx,name:tpl.emps[idx]||'',blank:!tpl.emps[idx],days});});
   return{tpl,geo,week,page,pages,rows,G,H,img,th,k,off:al.off};
 }
 const PDFJS_VER='3.11.174';
@@ -5075,7 +5087,7 @@ function omrQueueDone(){
 function omrReadModal(){
   showModal('Leer planilla (foto o PDF)',`
    <p style="color:var(--muted);line-height:1.6;margin-bottom:12px">Sube una <b>foto</b> de una hoja de la planilla generada por la app, o un <b>PDF escaneado</b> con una o varias hojas (por ejemplo, semana 1 y semana 2). La lectura se hace en este dispositivo.</p>
-   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que las marcas se hayan hecho con bolígrafo (el lápiz claro no se alcanza a leer).</li><li>Estira la hoja sobre una mesa (sin dobleces ni curvas) y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente (o escanéala como PDF) y elige el archivo aquí abajo.</li></ol>
+   <ol style="margin:0 0 14px 18px;color:var(--muted);line-height:1.7;font-size:13px"><li>Verifica que cada opción esté <b>rellenada completamente</b> con bolígrafo. Las X, chulitos, puntos o rayas no cuentan como marca.</li><li>Estira la hoja sobre una mesa (sin dobleces ni curvas) y con buena luz.</li><li>Encuadra la hoja completa: deben verse las 4 marcas negras de las esquinas.</li><li>Toma la foto de frente (o escanéala como PDF) y elige el archivo aquí abajo.</li></ol>
    <input class="input" type="file" accept="image/*,application/pdf,.pdf" id="omr_file">
    <div id="omr_status" style="margin-top:12px;font-size:13px"></div>`,
    [{label:'Cerrar',cls:'btn',fn:closeModal}]);
@@ -5102,7 +5114,7 @@ function omrCellCrop(res,ri,di){
   const W=420,Hh=Math.max(60,Math.round(W*bh/Math.max(1,bw)));const c=document.createElement('canvas');c.width=W;c.height=Hh;const x=c.getContext('2d');x.drawImage(img,bx,by,bw,bh,0,0,W,Hh);
   const f=W/bw;const row=res.rows[ri].days[di];const pxmm=Math.hypot(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1])/(x1-x0);const rad=geo.bubR*1.3*pxmm*sc*f;
   geo.bub.forEach((b,bi)=>{const so=(o0.sub&&o0.sub[b.s])||o0;const[tx,ty]=omrPos(geo,ri,di,bi);const[px,py]=omrMap(H,tx+so.ox,ty+so.oy);const v=row.fills[bi];
-    x.beginPath();x.arc((px*sc-bx)*f,(py*sc-by)*f,rad,0,Math.PI*2);x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(150,150,150,.5)');x.lineWidth=v>=res.th.db?3:1;x.stroke();});
+    x.beginPath();x.arc((px*sc-bx)*f,(py*sc-by)*f,rad,0,Math.PI*2);const okb=row.acc?row.acc[bi]:v>=res.th.mk,wb=row.warn?row.warn[bi]:v>=res.th.db;x.strokeStyle=okb?'#18a957':(wb?'#e0a020':'rgba(150,150,150,.5)');x.lineWidth=(okb||wb)?3:1;x.stroke();});
   return c.toDataURL('image/jpeg',0.9);
 }
 function omrZoom(ri,di){
@@ -5115,7 +5127,7 @@ function omrOverlay(res){
   const{img,H}=res;const geo=res.geo||OMR_G1;const W=img.naturalWidth,Hh=img.naturalHeight;const s=Math.min(1,760/Math.max(W,Hh));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(Hh*s);const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
   const sc=s*(W/res.G.w);
   res.rows.forEach((row,r)=>row.days.forEach((dy,d)=>{const o0=(res.off&&res.off[r]&&res.off[r][d])||{ox:0,oy:0};geo.bub.forEach((b,bi)=>{const so=(o0.sub&&o0.sub[b.s])||o0;const[tx,ty]=omrPos(geo,r,d,bi);const[px,py]=omrMap(H,tx+so.ox,ty+so.oy);const v=dy.fills[bi];
-    x.beginPath();x.arc(px*sc,py*sc,Math.max(2,3*sc*(res.G.w/W)*2),0,Math.PI*2);x.strokeStyle=v>=res.th.mk?'#18a957':(v>=res.th.db?'#e0a020':'rgba(120,120,120,.35)');x.lineWidth=v>=res.th.db?2:1;x.stroke();});}));
+    x.beginPath();x.arc(px*sc,py*sc,Math.max(2,3*sc*(res.G.w/W)*2),0,Math.PI*2);const okb=dy.acc?dy.acc[bi]:v>=res.th.mk,wb=dy.warn?dy.warn[bi]:v>=res.th.db;x.strokeStyle=okb?'#18a957':(wb?'#e0a020':'rgba(120,120,120,.35)');x.lineWidth=(okb||wb)?2:1;x.stroke();});}));
   return c.toDataURL('image/jpeg',0.85);
 }
 function omrReview(res){
@@ -5131,6 +5143,7 @@ function omrReview(res){
   const head=[0,1,2,3,4,5,6].map(d=>{const iso=addDaysISO(tpl.desde,base+d);return `<th>${omrDow(iso)} ${iso.slice(8,10)}/${iso.slice(5,7)}</th>`;}).join('');
   showModal(`Revisión · ${esc(tpl.finca)} · Semana ${week+1}${res.qLabel||''}`,`
    <p style="color:var(--muted);margin-bottom:10px">${esc(fmtFecha(addDaysISO(tpl.desde,base)))} al ${esc(fmtFecha(addDaysISO(tpl.desde,base+6)))} · Hoja ${res.page+1} de ${res.pages}. Revisa y corrige si hace falta antes de aplicar.</p>
+   ${(()=>{const ni=res.rows.reduce((s,r)=>s+r.days.filter(d=>d.inc).length,0);return ni?`<div class="note" style="margin:0 0 10px;border-left-color:var(--red)"><b>${ni} día(s) tienen marcas que no rellenan el círculo</b> (X, chulito, círculo alrededor o relleno incompleto). Solo cuentan los círculos <b>rellenados al menos en un 80 %</b>, así que esas marcas no se registraron. Revísalas con la lupa y elige la jornada correcta en la lista.</div>`:'';})()}
    ${dups>res.rows.length*7*0.25?`<div class="note" style="margin:0 0 10px;border-left-color:var(--red)"><b>La foto parece muy curvada, borrosa o con sombras.</b> Para evitar errores, te recomendamos repetirla con la hoja bien estirada sobre una mesa, de frente y con buena luz.</div>`:''}
    ${dups?`<div class="note" style="margin:0 0 10px">Hay <b>${dups}</b> casilla(s) dudosa(s) resaltadas en amarillo (marca tenue o varias opciones en el mismo día). Verifícalas con la foto.</div>`:''}
    <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:13px">Ver foto con la lectura (verde = marcada, amarillo = dudosa)</summary><img src="${omrOverlay(res)}" style="width:100%;margin-top:8px;border-radius:6px;border:1px solid var(--line)"></details>
