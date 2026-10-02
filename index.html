@@ -467,6 +467,15 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .vz-it.ok{border-color:var(--green);background:var(--green-soft)}
 .vz-it.ok b{color:var(--ink)}
 .vz-prods{grid-column:1/-1}
+.nv-prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.nv-emp{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface)}
+.nv-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.nv-h b{font-size:13.5px;color:var(--ink)}
+.nv-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;border-top:1px dashed var(--line)}
+.nv-row:first-of-type{border-top:none}
+.nv-row span{color:var(--muted);white-space:nowrap}
+.nv-row b{text-align:right;color:var(--green2)}
+.nv-row.abs b{color:var(--red)}
 .vz-prods div{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .vz-prods em{font-style:normal;display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--green);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px;font-weight:700;color:var(--ink)}
 .vz-prods em button{border:none;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;border-radius:50%}
@@ -1808,7 +1817,7 @@ function vzCatFrom(text,t){
 const VZ_LEX_WORDS="cero uno una dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciséis diecisiete dieciocho diecinueve veinte veintiuno veintidós veintitrés veinticuatro veinticinco veintiséis veintisiete veintiocho veintinueve treinta cuarenta cincuenta sesenta setenta ochenta noventa cien ciento doscientos trescientos cuatrocientos quinientos seiscientos setecientos ochocientos novecientos mil millón millones medio media mitad cuarto tercio docena par pares doble triple enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre lunes martes miércoles jueves viernes sábado domingo hoy ayer antier anteayer mañana tarde noche madrugada semana semanas quincena quincenas mes meses año años fecha día días pasado pasada próximo próxima anterior siguiente último última primero primera segundo segunda tercero tercera fin principio mediados finca fincas centro tipo categoría descripción concepto detalle unidad unidades medida comercio comercios proveedor proveedores almacén almacenes cliente clientes cantidad precio unitario valor total estado factura facturas número abono abonos saldo pendiente pendientes pagado pagada pagados cancelado cancelada contado crédito fiado deuda deudas debo debe debemos cobro cobros recibido recibida egreso egresos ingreso ingresos gasto gastos compra compras venta ventas pago pagos transferencia efectivo consignación consignó nequi daviplata bancolombia banco cheque recibo recibos cuenta cuentas cobrar pagar anticipo anticipos préstamo préstamos descuento descuentos iva retención impuesto impuestos movimiento movimientos registro nota observación remisión cotización pedido pedidos orden domicilio fertilizante fertilizantes urea dap kcl cloruro potasio nitrógeno fósforo calcio magnesio boro zinc azufre cal dolomita foliar foliares orgánico orgánica gallinaza compost humus bocashi lombricompost enmienda micronutrientes elementos menores mayores nutrición nutriente nutrientes herbicida herbicidas fungicida fungicidas insecticida insecticidas acaricida nematicida bactericida coadyuvante coadyuvantes pegante pegantes adherente surfactante glifosato paraquat gramoxone glufosinato mancozeb oxicloruro cobre sulfato clorpirifos imidacloprid abamectina cipermetrina lambda fipronil malatión carbendazim propiconazol tebuconazol azoxistrobina metalaxil fosetil aceite agrícola hormona hormonas enraizador cicatrizante trampa trampas feromona feromonas cebo veneno químico químicos insumo insumos agroquímico agroquímicos producto productos dosis mezcla caldo aplicación aplicaciones aspersión litro litros mililitros centímetros cúbicos naranja naranjas valencia tangelo mandarina mandarinas limón limones tahití aguacate aguacates hass lorena plátano plátanos banano yuca maíz café cacao piña papaya guayaba mango maracuyá lulo tomate pimentón cebolla frijol arroz caña pasto pastos brachiaria kingrass forraje injerto injertos patrón patrones colino colinos plántula plántulas semilla semillas vivero árbol árboles planta plantas mata matas fruto frutos fruta frutas cosecha cosechas cítricos cítrico huerto cultivo cultivos lote lotes potrero potreros cuadra hectárea hectáreas surco surcos calle calles hoja hojas raíz raíces tallo flor flores floración extra mediana mancha pareja pipo pipos grueso parejo calidad descarte fumigación fumigaciones fumigada fumigadas fumigar abonada abonadas abonar poda podas podar plateo platear guadañada guadañar rocería deshierbe desyerba desyerbar siembra sembrar resiembra trasplante riego regar drenaje recolección recoger empaque empacar selección seleccionar cargue cargar descargue descargar transporte transportar flete fletes acarreo mantenimiento reparación reparaciones arreglo arreglos arreglar limpieza limpiar cerca cercas cercado encierro control monitoreo muestreo análisis suelo suelos visita asesoría jornada labor labores trabajo trabajos tarea tareas guadaña guadañas motosierra machete machetes pala palas palín azadón rastrillo carretilla carretillas fumigadora fumigadoras bomba bombas espalda estacionaria manguera mangueras boquilla boquillas tanque tanques caneca canecas garrafa garrafas balde baldes tijera tijeras serrucho escalera escaleras tractor rastra arado remolque moto motos motocarro camión camioneta carro llanta llantas batería baterías filtro filtros cadena cadenas repuesto repuestos rodamiento correa correas tornillo tornillos tuerca tuercas alambre púa grapa grapas puntilla puntillas poste postes varilla varillas tubo tubos tubería codo codos válvula válvulas cemento arena gravilla ladrillo ladrillos teja tejas madera tabla tablas polisombra plástico costal costales lona cabuya piola canastilla canastillas caja cajas estiba estibas báscula balanza herramienta herramientas equipo equipos motor motores bujía carburador cuchilla cuchillas nylon hilo guantes overol botas gorra careta gafas tapabocas mascarilla impermeable uniforme dotación ganado vaca vacas toro toros novillo novillos novilla novillas ternero terneros ternera becerro res reses caballo caballos yegua mula burro cerdo cerdos marrano gallina gallinas pollo pollos pato peces leche carne sal mineralizada concentrado melaza ensilaje heno purgante purga vacuna vacunas vacunación aftosa brucelosis vitamina vitaminas antibiótico ivermectina baño garrapata garrapatas mosca moscas ordeño ordeñador vaquero vaqueros veterinario veterinaria medicamento medicamentos inyección jeringa gasolina acpm diésel lubricante lubricantes grasa galón galones peaje peajes parqueadero lavado combustible combustibles bulto bultos kilo kilos kilogramo kilogramos gramo gramos libra libras arroba arrobas tonelada toneladas mililitro metro metros rollo rollos jornal jornales hora horas viaje viajes carga cargas paquete paquetes frasco frascos sobre sobres cuñete cuñetes bolsa bolsas trabajador trabajadores jornalero jornaleros administrador administradora mayordomo encargado capataz operario operarios conductor conductores ayudante ayudantes piloto pilotos socio socios contador contadora abogado señor señora don doña ingeniero agrónomo técnico empleado empleados obrero obreros cuadrilla dueño nómina sueldo sueldos salario salarios prima cesantías vacaciones liquidación seguridad social eps arl pensión parafiscales extras dominical festivo bonificación subsidio auxilio luz energía agua acueducto internet celular minutos plan recarga arriendo alquiler predial dian cámara notaría seguro seguros póliza soat tecnomecánica licencia papelería fotocopias envío encomienda almuerzo almuerzos refrigerio comida mercado viáticos hospedaje pasaje pasajes taxi bus servicio servicios público públicos ferretería agropecuaria agroinsumos agroveterinaria distribuidora comercializadora tienda droguería estación taller depósito bodega supermercado cooperativa empresa de la el los las en a y con para por del al un unos unas que se su sus es fue son más menos muy ya no sí también cada otro otra otros otras todo toda todos todas entre sin hasta desde hacia cuando donde como porque pero mejor perdón corrijo corrección cambio cambiar quiero necesito compré compramos vendí vendimos pagué pagamos recibí recibimos cobramos quedé quedamos hice hicimos llevé llevamos traje trajimos dejé puse gasté gastamos salió costó costaron valió vale valen cuesta cuestan completo completa entero entera nuevo nueva nuevos viejo usado bueno buena malo mala grande grandes pequeño pequeña poco poca mucho mucha varios varias algún alguna ningún ninguna este esta estos estas ese esa esos esas aquel aquí allá acá ahí luego después antes ahora siempre nunca vez veces solo sola junto juntos aparte además igual favor gracias listo bien mal señal lugar casa cosa cosas parte partes resto vuelta caso tiempo forma dinero plata peso pesos centavos moneda billete billetes suma monto cuota cuotas interés intereses capital ganancia ganancias pérdida pérdidas utilidad costos inversión presupuesto ahorro menor fondo distribuidor vendedor comprador intermediario acopiador mayorista minorista plaza central abastos exportación exportadora empacadora lluvia lluvias verano invierno sequía clima temperatura humedad viento sol tierra barro camino caminos carretera vía puente quebrada río pozo aljibe reservorio represa motobomba electrobomba";
 let vzLexC=null;
 function vzLexBuild(){
-  const dyn=[].concat(CFG.fincas||[],CFG.comercios||[],CFG.clientes||[],CFG.empleados||[],CFG.catEgresos||[],CFG.catIngresos||[],CFG.unidades||[],(CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean));
+  const dyn=[].concat(CFG.fincas||[],CFG.comercios||[],CFG.clientes||[],CFG.empleados||[],String(CFG.empAliasText||'').split(/[=\n;:,]/).map(s=>s.trim()).filter(Boolean),CFG.catEgresos||[],CFG.catIngresos||[],CFG.unidades||[],(CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean));
   const sig=dyn.join('|');if(vzLexC&&vzLexC.sig===sig)return vzLexC;
   const map=new Map(),byPh=new Map(),list=[];
   const add=(w,dynamic)=>{const k=vzNorm(w).replace(/[^a-z0-9]/g,'');if(k.length<2||map.has(k))return;const disp=dynamic?w.toLowerCase():w;map.set(k,disp);const p=vzPhon(k).replace(/ /g,'');if(!byPh.has(p))byPh.set(p,disp);list.push({k,p,disp});};
@@ -1911,6 +1920,220 @@ function vzFincaAliasFix(text){
   return out.join(' ');
 }
 async function setFincaAlias(f,v){if(!CFG.fincaAlias)CFG.fincaAlias={};CFG.fincaAlias[f]=String(v||'').trim();await persistCfg();toast('Nombres alternativos de '+f+' guardados');}
+/* ===== DICTADO DE NÓMINA (habla natural) ===== */
+const NV_DOW={domingo:0,lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6};
+const NV_DN=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function nvDays(nom){return Array.from({length:14},(_,i)=>{const iso=addDaysISO(nom.desde,i);return{i,iso,dow:new Date(iso+'T00:00:00').getDay(),dom:+iso.slice(8,10)};});}
+let NV_STATIC_LEX=null;
+function nvCommon(w){if(!NV_STATIC_LEX){NV_STATIC_LEX=new Set(VZ_LEX_WORDS.split(' ').map(x=>vzNorm(x)));}return NV_STATIC_LEX.has(w);}
+const NV_KEY=/^(lunes|martes|miercoles|jueves|viernes|sabado|sabados|domingo|domingos|semana|quincena|medio|media|completo|completa|horas?|extras?|menos|finca|todos?|todas?|dia|dias|hoy|ayer|antier|el|la|los|las|de|del|y|a|al|en|con|no|vino|falto)$/;
+function nvEmpAliases(){const m={};String(CFG.empAliasText||'').split(/\n|;/).forEach(l=>{const p=l.split(/=|:/);if(p.length<2)return;const al=p[0].trim(),to=p.slice(1).join('=').trim();if(!al||!to)return;const emp=(CFG.empleados||[]).find(e=>vzNorm(e)===vzNorm(to))||(CFG.empleados||[]).find(e=>vzNorm(e).includes(vzNorm(to)));if(emp)(m[emp]=m[emp]||[]).push(al);});return m;}
+function nvEmpCands(nom){const inNom=nom.entries.map(e=>e.emp);const al=nvEmpAliases();const names=[...new Set(inNom.concat(CFG.empleados||[]))];
+  return names.map(name=>({name,inNom:inNom.includes(name),forms:[name].concat(al[name]||[]).map(f=>{const t=vzPhon(f).split(' ').filter(Boolean);return{full:t.join(''),toks:t,raw:vzNorm(f).split(/\s+/)};})}));}
+// Empleados mencionados (nombre completo, nombre o apellido, apodo), sin solaparse
+function nvEmpHits(toks,nom){
+  const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const cands=nvEmpCands(nom);const hits=[];
+  const fincaTok=new Set();vzFincaAll(toks,false).forEach(h=>{for(let k=h.pos;k<h.pos+h.len;k++)fincaTok.add(k);});
+  const tokFreq={};cands.forEach(c=>c.forms.forEach(f=>new Set(f.toks).forEach(t=>{tokFreq[t]=(tokFreq[t]||0)+1;})));
+  for(let i=0;i<toks.length;i++){
+    if(!ph[i]||/^[,;:.]$/.test(toks[i])||/^\d/.test(toks[i])||NV_KEY.test(toks[i]))continue;
+    cands.forEach(c=>c.forms.forEach((f,fi)=>{
+      for(let w=Math.min(f.toks.length+1,toks.length-i);w>=1;w--){const win=ph.slice(i,i+w).join('');const s=vzSim(win,f.full);
+        if(s>=(f.full.length<=4?1:0.84)){hits.push({name:c.name,pos:i,len:w,score:s*10+w*2+(c.inNom?3:0)+(fi>0?2:0)+(s===1?2:0)});return;}}
+      if(f.toks.length>1&&!fincaTok.has(i))f.toks.forEach((t,k)=>{if(t.length<4)return;const rawTok=f.raw[k]||'';if(nvCommon(rawTok)&&!c.inNom)return;const s=vzSim(ph[i],t);
+        if(s>=0.9&&!nvCommon(toks[i]))hits.push({name:c.name,pos:i,len:1,score:s*7+(c.inNom?3:0)-(tokFreq[t]>1?4:0)});});
+    }));
+  }
+  hits.sort((a,b)=>b.score-a.score);const used=new Set(),out=[];
+  hits.forEach(h=>{for(let k=h.pos;k<h.pos+h.len;k++)if(used.has(k))return;for(let k=h.pos;k<h.pos+h.len;k++)used.add(k);out.push(h);});
+  return out.sort((a,b)=>a.pos-b.pos);
+}
+// Horas dichas: «2 horas», «media hora», «hora y media», «2 horas y media», «una hora»
+const NV_H='(?:(\\d+(?:\\.\\d+)?)\\s*(?:horas?|horitas?|h)?(\\s*y\\s*media)?|(media)\\s*(?:hora|horita)|(?:1\\s*)?(?:hora|horita)\\s*y\\s*(media)|(1|una)\\s*(?:hora|horita))';
+function nvHval(m,o){const g=k=>m[o+k];if(g(0)){const v=parseFloat(g(0))+(g(1)?0.5:0);return v>0&&v<=12?v:null;}if(g(2))return 0.5;if(g(3))return 1.5;if(g(4))return 1;return null;}
+function nvScan(seg){
+  // devuelve elementos ordenados: día(s), semana, atributos, exclusiones, puntuación
+  const it=[];const add=(type,pos,len,extra)=>it.push(Object.assign({type,pos,end:pos+len},extra||{}));
+  const D='(lunes|martes|miercoles|jueves|viernes|sabado|domingo)s?';
+  const take=(re,fn)=>{for(const m of seg.matchAll(re))fn(m);};
+  take(/[,;.](?!\d)/g,m=>add('punct',m.index,1));
+  take(/\b(primera|1|segunda|2|otra|siguiente|proxima|ultima)\s+semana\b|\bsemana\s+(uno|1|dos|2)\b/g,m=>{const w=/primera|^1$|uno/.test(m[1]||m[2]||'')&&!/segunda|otra|siguiente|proxima|ultima/.test(m[0])?0:1;add('week',m.index,m[0].length,{w});});
+  take(/\b(toda la quincena|la quincena completa|quincena completa|las (?:dos|2) semanas|ambas semanas|los (?:quince|15) dias|la quincena entera|toda la quincena completa|toda la quincena entera)\b/g,m=>add('day',m.index,m[0].length,{spec:'quincena'}));
+  take(/\b(toda la semana|la semana completa|semana completa|la semana entera|toda esa semana|todita la semana)\b/g,m=>add('day',m.index,m[0].length,{spec:'semana'}));
+  take(/\bentre semana\b/g,m=>add('day',m.index,m[0].length,{spec:'entresemana'}));
+  take(/\b(el )?fin de semana\b/g,m=>add('day',m.index,m[0].length,{spec:'finde'}));
+  take(/\btodos los dias\b/g,m=>add('day',m.index,m[0].length,{spec:'todos'}));
+  take(/\b(los demas dias|el resto de la semana|el resto de los dias|los otros dias|el resto|lo demas|los dias restantes)\b/g,m=>add('day',m.index,m[0].length,{spec:'resto'}));
+  take(new RegExp('\\b(?:de|desde|del)?\\s*(?:el\\s+)?'+D+'\\s+(?:a|al|hasta(?:\\s+el)?)\\s+(?:el\\s+)?'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:'range',a:m[1],b:m[2]}));
+  take(new RegExp('\\bentre\\s+(?:el\\s+)?'+D+'\\s+y\\s+(?:el\\s+)?'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:'range',a:m[1],b:m[2]}));
+  take(new RegExp('\\b(?:hasta|solo hasta)\\s+(?:el\\s+)?'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:'hasta',a:m[1]}));
+  take(new RegExp('\\b(?:desde|a partir del?|apartir del?)\\s+(?:el\\s+)?'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:'desde',a:m[1]}));
+  take(new RegExp('\\b(?:los dos|los 2|ambos|todos los|las dos|las 2)\\s+'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:'both',a:m[1]}));
+  take(new RegExp('\\b(?:el\\s+|los\\s+)?'+D+'\\b','g'),m=>add('day',m.index,m[0].length,{spec:/s$/.test(m[0])&&/^los/.test(m[0])?'both':'one',a:m[1]}));
+  take(/\bdel?\s+(\d{1,2})\s+(?:al|hasta el)\s+(\d{1,2})\b/g,m=>add('day',m.index,m[0].length,{spec:'drange',a:+m[1],b:+m[2]}));
+  take(/\bel\s+(?:dia\s+)?(\d{1,2})\b(?!\s*(?:horas?|mil|h\b))/g,m=>add('day',m.index,m[0].length,{spec:'date',a:+m[1]}));
+  take(/\b(hoy|ayer|antier|anteayer)\b/g,m=>add('day',m.index,m[0].length,{spec:'rel',a:m[1]}));
+  take(/\b(menos|excepto|salvo|pero no|sin contar|quitando)\s+(?=(?:el|los|la)?\s*(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo|dia|\d))/g,m=>add('excl',m.index,m[0].length));
+  // atributos de jornada
+  take(new RegExp(NV_H+'\\s*(?:extras?|de mas|adicionales|de sobretiempo|de sobre tiempo|mas)\\b','g'),m=>{const h=nvHval(m,1);if(h)add('attr',m.index,m[0].length,{mod:'+',h});});
+  take(new RegExp('\\b(?:se quedo|se quedaron|le metio|le meti|le echo|le sumo|le sumaron|metio|hizo|hicieron|trabajo|trabajaron|camello|le agregue|agregale|sumale|ponle|anotale)\\s+(?:otras?\\s+)?'+NV_H+'\\s*(?:mas|extras?|de mas|adicionales)?','g'),m=>{const h=nvHval(m,1);if(h&&/(se quedo|se quedaron|metio|meti|echo|sumo|sumaron|agregue|agregale|sumale)/.test(m[0])||/(mas|extra|adicional)/.test(m[0].slice(-14)))add('attr',m.index,m[0].length,{mod:'+',h});});
+  take(/\b(\d+(?:\.\d+)?)\s+extras?\b/g,m=>add('attr',m.index,m[0].length,{mod:'+',h:parseFloat(m[1])}));
+  take(new RegExp(NV_H+'\\s*(?:menos|de menos|antes|temprano|tarde)\\b','g'),m=>{const h=nvHval(m,1);if(h)add('attr',m.index,m[0].length,{mod:'-',h});});
+  take(new RegExp('\\b(?:se fue|se salio|salio|se retiro|se fueron|salieron|llego|llegaron|le falto|le faltaron|falto|faltaron|quitale|descuentale|restale|quitarle|descontarle|le quite|le descuento)\\s+(?:temprano\\s+|antes\\s+|tarde\\s+)?'+NV_H,'g'),m=>{const h=nvHval(m,1);if(h)add('attr',m.index,m[0].length,{mod:'-',h,strong:true});});
+  take(/\b(no (?:vino|fue|trabajo|asistio|llego|laboro|camello|aparecio|vinieron|trabajaron|fueron|se presento|estuvo)|falto|faltaron|fallo|fallaron|descanso|descansaron|libre|incapacitad[oa]s?|incapacidad|permiso|enferm[oa]s?|calamidad|cita medica|se volo|ausente|vacaciones|no hubo trabajo|no hizo nada|nada de trabajo)\b/g,m=>add('attr',m.index,m[0].length,{abs:true}));
+  take(/\b(medio dia|mediodia|media jornada|medio tiempo|mitad del dia|medio jornal|solo (?:en )?la manana|solo (?:por )?la tarde|solo en la tarde|hasta (?:el )?medio ?dia|(?:en|por) la manana nada mas|(?:en|por) la tarde nada mas|trabajo (?:solo )?(?:la|por la|en la) manana|jornada media|la mitad|media jornal)\b/g,m=>add('attr',m.index,m[0].length,{base:'M'}));
+  take(/(?<!\by\s)\bmedia\b(?!\s*hora)/g,m=>add('attr',m.index,m[0].length,{base:'M',weak:true}));
+  take(/\b(completo|completa|completos|completas|dia completo|jornada completa|todo el dia|el dia entero|dia entero|normal|normalito|jornal completo|todo el jornal)\b/g,m=>add('attr',m.index,m[0].length,{base:'C'}));
+  // fincas
+  const toks=seg.split(' ');let p=0;const tpos=toks.map(t=>{const i=seg.indexOf(t,p);p=i+t.length;return i;});
+  vzFincaAll(toks,false).forEach(h=>add('attr',tpos[h.pos],toks.slice(h.pos,h.pos+h.len).join(' ').length,{fi:h.name}));
+  // quitar solapes: se queda el elemento más largo/específico
+  it.sort((a,b)=>a.pos-b.pos||(b.end-b.pos)-(a.end-a.pos));const out=[];
+  it.forEach(x=>{if(x.type==='punct'||x.type==='week'){out.push(x);return;}const ov=out.find(y=>y.type===x.type&&x.pos<y.end&&y.pos<x.end);if(ov)return;
+    if(x.type==='attr'&&x.abs){const mm=out.find(y=>y.type==='attr'&&y.mod==='-'&&y.strong&&x.pos<y.end&&y.pos<x.end);if(mm)return;}
+    if(x.type==='attr'&&x.base==='M'&&x.weak&&out.some(y=>y.type==='attr'&&y.mod&&x.pos<y.end&&y.pos<x.end))return;
+    if(x.type==='day'&&x.spec==='one'&&out.some(y=>y.type==='day'&&x.pos>=y.pos&&x.end<=y.end))return;
+    out.push(x);});
+  return out.sort((a,b)=>a.pos-b.pos);
+}
+function nvResolve(it,days,week,assigned){
+  const inW=w=>days.filter(d=>d.i>=w*7&&d.i<w*7+7);const byDow=(w,dw)=>inW(w).filter(d=>d.dow===dw).map(d=>d.i);
+  const ord=dw=>(dw+6)%7; // lunes=0 … domingo=6
+  const dayN=x=>NV_DOW[x];const w=it.w!=null?it.w:week;
+  switch(it.spec){
+    case 'quincena':return days.filter(d=>d.dow!==0).map(d=>d.i);
+    case 'semana':return inW(w).filter(d=>d.dow!==0).map(d=>d.i);
+    case 'entresemana':return inW(w).filter(d=>d.dow>=1&&d.dow<=5).map(d=>d.i);
+    case 'finde':return inW(w).filter(d=>d.dow===6||d.dow===0).map(d=>d.i);
+    case 'todos':return inW(w).map(d=>d.i);
+    case 'resto':return inW(w).filter(d=>d.dow!==0&&!assigned.has(d.i)).map(d=>d.i);
+    case 'range':{const a=ord(dayN(it.a)),b=ord(dayN(it.b));return inW(w).filter(d=>ord(d.dow)>=Math.min(a,b)&&ord(d.dow)<=Math.max(a,b)).map(d=>d.i);}
+    case 'hasta':{const b=ord(dayN(it.a));return inW(w).filter(d=>ord(d.dow)<=b).map(d=>d.i);}
+    case 'desde':{const a=ord(dayN(it.a));return inW(w).filter(d=>ord(d.dow)>=a&&d.dow!==0).map(d=>d.i);}
+    case 'both':return days.filter(d=>d.dow===dayN(it.a)).map(d=>d.i);
+    case 'one':return byDow(w,dayN(it.a));
+    case 'drange':{const a=days.findIndex(d=>d.dom===it.a),b=days.findIndex(d=>d.dom===it.b);return a>=0&&b>=a?days.slice(a,b+1).map(d=>d.i):[];}
+    case 'date':{const d=days.find(d=>d.dom===it.a);return d?[d.i]:[];}
+    case 'rel':{const off={hoy:0,ayer:-1,antier:-2,anteayer:-2}[it.a];const iso=addDaysISO(todayISO(),off);const d=days.find(d=>d.iso===iso);return d?[d.i]:[];}
+  }
+  return [];
+}
+function nvParse(raw,nom,opts){
+  opts=opts||{};const days=nvDays(nom);const noAs=omrJLabel(null);
+  const clean=vzLexFix(vzDedupe(raw));const n=vzNumbers(vzNorm(clean)).replace(/([,;:])/g,' $1 ').replace(/\s+/g,' ').trim();
+  const toks=n.split(' ');let p=0;const tpos=toks.map(t=>{const i=n.indexOf(t,p);p=i+t.length;return i;});
+  const res={order:[],emps:{},warn:[]};let week=opts.week||0;
+  // empleados y «todos»
+  const hits=nvEmpHits(toks,nom).map(h=>({...h,c:tpos[h.pos],ref:false}));
+  hits.forEach(h=>{const before=toks.slice(Math.max(0,h.pos-4),h.pos).join(' ');if(/(igual (?:que|a)|lo mismo que|mismo que|como|identico a|copia de|igualito a)(?: (?:a|el|la|don|dona))?$/.test(before))h.ref=true;});
+  const allRe=/\b(todos(?: los trabajadores| los empleados| los muchachos| ellos)?|toda la cuadrilla|todo el personal|todo el mundo|todo el equipo|la cuadrilla completa|todos los de la cuadrilla)\b/g;
+  const allHits=[...n.matchAll(allRe)].filter(m=>!/^todos los (dias|lunes|martes|miercoles|jueves|viernes|sabados|domingos)/.test(n.slice(m.index))).map(m=>({all:true,c:m.index,cEnd:m.index+m[0].length}));
+  const starts=hits.filter(h=>!h.ref).map(h=>({names:[h.name],c:h.c,cEnd:tpos[h.pos+h.len-1]+toks[h.pos+h.len-1].length})).concat(allHits.map(a=>({names:'ALL',c:a.c,cEnd:a.cEnd}))).sort((a,b)=>a.c-b.c);
+  // agrupar «Carlos y Gelner …»
+  const groups=[];starts.forEach(s=>{const g=groups[groups.length-1];if(g&&g.names!=='ALL'&&s.names!=='ALL'){const between=n.slice(g.cEnd,s.c).trim();if(/^(y|e|,|con|tambien|y tambien|,?\s*y)?$/.test(between)){g.names=g.names.concat(s.names);g.cEnd=s.cEnd;return;}}groups.push({names:s.names,c:s.c,cEnd:s.cEnd});});
+  if(!groups.length){res.warn.push('No se identificó ningún empleado. Di el nombre del empleado antes de sus días (por ejemplo: «Carlos trabajó de lunes a viernes»).');return res;}
+  if(n.slice(0,groups[0].c).replace(/[,;. ]/g,'').length>12&&nvScan(n.slice(0,groups[0].c)).some(x=>x.type==='day'))res.warn.push('Hay datos al comienzo sin un empleado identificado; di el nombre antes de los días.');
+  // semana indicada antes del primer empleado
+  nvScan(n.slice(0,groups[0].c)).forEach(x=>{if(x.type==='week')week=x.w;});
+  groups.forEach((g,gi)=>{
+    const segTxt=n.slice(g.cEnd,gi+1<groups.length?groups[gi+1].c:n.length);
+    const targets=g.names==='ALL'?nom.entries.map(e=>e.emp):g.names;
+    if(g.names==='ALL'&&!targets.length){res.warn.push('Dijiste «todos», pero la quincena aún no tiene empleados.');return;}
+    const plan={};const assigned=new Set();let segFi=null,prest=null;
+    // «igual que X»
+    const ref=hits.find(h=>h.ref&&h.c>=g.cEnd&&h.c<(gi+1<groups.length?groups[gi+1].c:n.length));
+    if(ref){const src=res.emps[ref.name]?res.emps[ref.name].days:null;const ent=nom.entries.find(e=>e.emp===ref.name);
+      if(src)Object.entries(src).forEach(([i,v])=>{plan[i]={...v};assigned.add(+i);});else if(ent)ent.dias.forEach((d,i)=>{if(!/asist/i.test(d.j)){plan[i]={j:d.j,fi:d.fi};assigned.add(i);}});}
+    // préstamos / anticipos
+    for(const m of segTxt.matchAll(/\b(otro |otra |mas un |tambien un )?(prestamo|presto|preste|prestamos|prestaron|anticipo|adelanto|adelante|adelantaron|adelantamos|vale|le di|le dimos|se le dio|le saque|descuentale|descontarle|descuento de|plata prestada)\s*(?:de|por|en)?\s*(\d+(?:\.\d+)?)/g)){const v=parseFloat(m[3]);if(v>=1000)prest={v:(prest&&m[1]?prest.v:0)+v,add:!!m[1]};}
+    const items=nvScan(segTxt.replace(/\b(otro |otra |mas un |tambien un )?(prestamo|presto|preste|prestamos|prestaron|anticipo|adelanto|adelante|adelantaron|adelantamos|vale|le di|le dimos|se le dio|le saque|descuentale|descontarle|descuento de|plata prestada)\s*(?:de|por|en)?\s*\d+(\.\d+)?/g,m=>' '.repeat(m.length)));
+    // recorrer: unidades = días + atributos
+    const units=[];let u={days:[],attrs:[]},excl=false;
+    const close=()=>{if(u.days.length||u.attrs.length)units.push(u);u={days:[],attrs:[]};};
+    items.forEach(x=>{
+      if(excl==='list'){if(x.type==='day'&&/^\s*(?:,|y|e|ni|ni el|y el|y los)?\s*(?:el|los|la)?\s*$/.test(segTxt.slice(u._exEnd,x.pos))){(u.excl=u.excl||[]).push({...x,w:week});u._exEnd=x.end;return;}excl=false;}
+      if(x.type==='week'){week=x.w;const last=u.days[u.days.length-1];if(last&&/^\s*(?:de|en|para)?\s*(?:la|esa)?\s*$/.test(segTxt.slice(last.end,x.pos)))last.w=x.w;return;}
+      if(x.type==='punct'){if(u.days.length&&!u.attrs.length)return;close();return;}
+      if(x.type==='excl'){excl=true;return;}
+      if(x.type==='day'){if(excl){(u.excl=u.excl||[]).push({...x,w:x.w!=null?x.w:week});excl='list';u._exEnd=x.end;return;}
+        if(u.days.length&&u.attrs.some(a=>a.pos>u.days[u.days.length-1].end)){close();}u.days.push({...x,w:week});return;}
+      if(x.type==='attr')u.attrs.push(x);});
+    close();
+    // atributos sin días: se pegan a la unidad anterior; si no hay, finca general del empleado
+    const merged=[];units.forEach(un=>{if(!un.days.length){const prev=merged[merged.length-1];if(prev&&un.attrs.every(a=>!a.fi||!prev.attrs.some(b=>b.fi))&&!un.attrs.every(a=>a.fi)){prev.attrs=prev.attrs.concat(un.attrs);return;}
+        un.attrs.forEach(a=>{if(a.fi)segFi=a.fi;});if(prev&&un.attrs.every(a=>a.fi)&&!prev.attrs.some(b=>b.fi))prev.attrs=prev.attrs.concat(un.attrs);else if(!prev)merged.push(un);return;}merged.push(un);});
+    let carryFi=null;
+    merged.forEach(un=>{if(!un.days.length){un.attrs.forEach(a=>{if(a.fi)segFi=a.fi;});return;}
+      let idx=[];un.days.forEach(d=>{idx=idx.concat(nvResolve(d,days,week,assigned));});
+      (un.excl||[]).forEach(d=>{const ex=nvResolve(d,days,week,assigned);idx=idx.filter(i=>!ex.includes(i));});
+      idx=[...new Set(idx)];if(!idx.length){res.warn.push(`Algunos días mencionados para ${g.names==='ALL'?'todos':g.names.join(', ')} no están en esta quincena.`);return;}
+      const abs=un.attrs.some(a=>a.abs);const baseA=un.attrs.filter(a=>a.base);const base=baseA.length?(baseA.some(a=>a.base==='M'&&!a.weak)?'M':baseA[baseA.length-1].base):'C';
+      const mods=un.attrs.filter(a=>a.mod);let mod=null,h=null;if(mods.length){const m=mods[mods.length-1];mod=m.mod;h=Math.round(m.h*2)/2;}
+      const fiA=un.attrs.filter(a=>a.fi);let fi=fiA.length?fiA[fiA.length-1].fi:null;const fiCarry=carryFi;if(fi)carryFi=fi;
+      if(mod){const max=mod==='+'?(base==='M'?4:8):(base==='M'?2.5:3);if(h>max){res.warn.push(`${h} horas ${mod==='+'?'extra':'de menos'} no es una opción; se dejaron ${max}.`);h=max;}if(h<=0)mod=null;}
+      idx.forEach(i=>{assigned.add(i);plan[i]={j:abs?noAs:omrJLabel(base,mod,mod?String(h):null),fi:abs?'':fi,_noFi:!fi&&!abs,_carry:fiCarry};});});
+    // finca: la de la unidad, la general del empleado, la elegida por defecto o la que ya tenía ese día
+    const segAll=[...new Set(merged.flatMap(un=>un.attrs.filter(a=>a.fi).map(a=>a.fi)))];const segOne=segAll.length===1?segAll[0]:null;
+    Object.keys(plan).forEach(i=>{const pl=plan[i];if(pl._noFi){const ent=nom.entries.find(e=>targets.includes(e.emp));const prevFi=ent&&ent.dias[i]&&ent.dias[i].fi;pl.fi=segFi||pl._carry||segOne||opts.finca||prevFi||CFG.fincas[0];}delete pl._noFi;delete pl._carry;});
+    targets.forEach(name=>{const r=res.emps[name]||(res.emps[name]={days:{},prestamo:null});if(!res.order.includes(name))res.order.push(name);
+      Object.entries(plan).forEach(([i,v])=>{r.days[i]={...v};});if(prest&&g.names!=='ALL')r.prestamo=prest;});
+    if(!Object.keys(plan).length&&!prest)res.warn.push(`No se entendieron días para ${g.names==='ALL'?'todos':g.names.join(', ')}.`);
+  });
+  return res;
+}
+function nvShortJ(j){const l=(j||'').toLowerCase();if(/asist/.test(l))return'Faltó';if(/completa/.test(l))return'Completa';return j;}
+function nvGroupDays(days,map){const keys=Object.keys(map).map(Number).sort((a,b)=>a-b);const out=[];
+  keys.forEach(i=>{const v=map[i];const last=out[out.length-1];const lab=nvShortJ(v.j)+(v.fi?' · '+v.fi:'');if(last&&last.lab===lab&&last.to===i-1){last.to=i;}else out.push({from:i,to:i,lab,abs:/asist/i.test(v.j)});});
+  const dl=i=>`${NV_DN[days[i].dow]} ${String(days[i].dom).padStart(2,'0')}`;
+  return out.map(g=>`<div class="nv-row${g.abs?' abs':''}"><span>${g.from===g.to?dl(g.from):dl(g.from)+' – '+dl(g.to)}</span><b>${esc(g.lab)}</b></div>`).join('');}
+function nvOpts(){const w=document.getElementById('nv_w'),f=document.getElementById('nv_f');return{week:w?+w.value:0,finca:f?f.value:''};}
+function nvRefresh(){
+  const nom=NOMINAS.find(x=>x.id===ui.nomId);const t=document.getElementById('vz_txt');const box=document.getElementById('nv_prev');if(!nom||!t||!box)return;
+  const res=nvParse(t.value,nom,nvOpts());ui._nvLast=res;const days=nvDays(nom);
+  if(!t.value.trim()){box.innerHTML='<div class="empty" style="padding:14px">Aquí verás lo que va a quedar en cada empleado.</div>';return;}
+  box.innerHTML=(res.warn.length?`<div class="note" style="margin:0 0 10px;border-left-color:var(--amber)">${res.warn.map(esc).join('<br>')}</div>`:'')+
+    res.order.map(name=>{const e=res.emps[name];const isNew=!nom.entries.some(x=>x.emp===name);
+      return `<div class="nv-emp"><div class="nv-h"><b>${esc(name)}</b>${isNew?'<span class="chip">se agregará a la quincena</span>':''}</div>${nvGroupDays(days,e.days)||'<div class="nv-row"><span>—</span><b>Sin días</b></div>'}${e.prestamo?`<div class="nv-row"><span>Préstamo</span><b>${e.prestamo.add?'+ ':''}${fmt(e.prestamo.v)}</b></div>`:''}</div>`;}).join('');
+}
+function nomVoiceModal(){
+  const nom=NOMINAS.find(x=>x.id===ui.nomId);if(!nom)return;if(roGuard())return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const days=nvDays(nom);
+  const tIdx=days.findIndex(d=>d.iso===todayISO());const wDef=tIdx>=7?1:0;
+  const cnt={};nom.entries.forEach(e=>e.dias.forEach(d=>{if(d.fi)cnt[d.fi]=(cnt[d.fi]||0)+1;}));const fDef=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||CFG.fincas[0];
+  const wl=w=>`Semana ${w+1} (${fmtFecha(days[w*7].iso).slice(0,5)} al ${fmtFecha(days[w*7+6].iso).slice(0,5)})`;
+  ui._vzOnUpdate=nvRefresh;
+  showModal('Dictar nómina',`
+   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Habla con naturalidad, empleado por empleado. Por ejemplo:<br><i>«Carlos trabajó toda la semana en Frutexcol. Geiner de lunes a viernes en el Placer y el sábado medio día. Arley el jueves no vino y el viernes se quedó dos horas más. Paputa igual que Carlos, y a Luis le presté cincuenta mil.»</i></p>
+   <div class="form-grid" style="margin-bottom:10px">
+     <div class="field" style="margin:0"><label>Semana que vas a dictar</label><select class="input" id="nv_w" onchange="nvRefresh()">${[0,1].map(w=>`<option value="${w}" ${w===wDef?'selected':''}>${wl(w)}</option>`).join('')}</select></div>
+     <div class="field" style="margin:0"><label>Finca si no la dices</label><select class="input" id="nv_f" onchange="nvRefresh()">${CFG.fincas.map(f=>`<option ${f===fDef?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+   </div>
+   <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
+   </div>
+   <textarea class="input" id="vz_txt" rows="4" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="nvRefresh()" style="resize:vertical;min-height:84px"></textarea>
+   <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Así quedará</div>
+   <div id="nv_prev" class="nv-prev"></div>
+   <div class="note"><b>Consejos:</b> di primero el nombre (o apodo) del empleado y luego sus días. Entiende: «toda la semana», «de lunes a viernes», «entre semana», «toda la quincena», «los dos sábados», «hasta el jueves», «desde el miércoles», «menos el martes», «los demás días», «el 22», «la segunda semana»; «completo», «medio día», «se quedó dos horas más», «hora y media extra», «salió una hora antes», «le faltó media hora»; «no vino», «faltó», «descansó», «incapacitado», «permiso»; «igual que Carlos», «todos»; y préstamos: «le presté cincuenta mil», «vale de cien mil», «anticipo». Solo cambian los días que menciones.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
+    {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';nvRefresh();}},
+    {label:'Aplicar a la quincena',cls:'btn primary',fn:()=>nvApply()}]);
+  ui._vzBase='';ui._vzSess='';nvRefresh();
+}
+async function nvApply(){
+  const nom=NOMINAS.find(x=>x.id===ui.nomId);const t=document.getElementById('vz_txt');if(!nom||!t)return;
+  if(!t.value.trim()){toast('Dicta o escribe primero la nómina');return;}
+  vzStop();const res=nvParse(t.value,nom,nvOpts());if(!res.order.length){toast('No se identificó ningún empleado');return;}
+  const noAs=omrJLabel(null);let nDays=0;
+  res.order.forEach(name=>{const r=res.emps[name];let e=nom.entries.find(x=>x.emp===name);
+    if(!e){e={emp:name,prestamo:0,dias:Array.from({length:14},()=>({j:noAs,fi:''}))};nom.entries.push(e);}
+    Object.entries(r.days).forEach(([i,v])=>{e.dias[+i]={j:v.j,fi:v.fi||''};nDays++;});
+    if(r.prestamo)e.prestamo=r.prestamo.add?(+e.prestamo||0)+r.prestamo.v:r.prestamo.v;});
+  await persistNom();ui._vzOnUpdate=null;closeModal();renderNomina();
+  toast(`Quincena actualizada: ${res.order.length} empleado(s), ${nDays} día(s)`);
+}
+async function setEmpAliasText(v){CFG.empAliasText=String(v||'');await persistCfg();toast('Apodos guardados');}
 function vzProducts(){return [...new Set((CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean))];}
 // Encuentra químicos del catálogo (por cómo suenan, con tolerancia) y devuelve coincidencias sin solaparse
 function vzProdMatches(toks){
@@ -2036,7 +2259,7 @@ function vzPreviewHTML(r){
 }
 function vzStop(){if(ui._vzRec){ui._vzOn=false;try{ui._vzRec.stop();}catch(e){}ui._vzRec=null;}}
 function voiceMovModal(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  ui._vzOnUpdate=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   showModal('Dictar movimiento',`
    <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Toca el micrófono y di el movimiento de forma natural. Por ejemplo:<br><i>«Egreso en la finca Placer, compra de diez bultos de abono en Agroinsumos Cacayal a ochenta y cinco mil cada uno, pagado, factura 1234, ayer»</i></p>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
@@ -2065,9 +2288,9 @@ function vzToggle(){
     const rec=new SR();rec.lang='es-CO';rec.continuous=!android;rec.interimResults=true;rec.maxAlternatives=1;
     rec.onresult=ev=>{const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
       ui._vzSess=vzLexFix(vzDedupe(vzMergeFinals(fin)));const t=document.getElementById('vz_txt');
-      if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();vzRefresh();}};
+      if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();(ui._vzOnUpdate||vzRefresh)();}};
     rec.onerror=ev=>{if(ev.error==='no-speech'&&ui._vzOn)return;const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';if(ev.error==='not-allowed'){ui._vzOn=false;}};
-    rec.onend=()=>{if(ui._vzRec!==rec)return;ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;vzRefresh();}
+    rec.onend=()=>{if(ui._vzRec!==rec)return;ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;(ui._vzOnUpdate||vzRefresh)();}
       if(ui._vzOn){try{start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
     rec.start();ui._vzRec=rec;
   };
@@ -2434,8 +2657,9 @@ function renderNomEditor(){
   const nom=NOMINAS.find(x=>x.id===ui.nomId);if(!nom){ui.nomView='list';return nominaList();}
   const t=nomTotals(nom),ft=nomFincaTotals(nom);
   const avail=CFG.empleados.filter(e=>!nom.entries.some(x=>x.emp===e));
-  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px">
+  document.getElementById('topctl').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
      <button class="btn" onclick="ui.nomView='list';renderNomina()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</button>
+     <button class="btn" onclick="nomVoiceModal()" title="Llenar la quincena hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button>
      <button class="btn" onclick="printNomina(${nom.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>PDF</button>
      <button class="btn primary" onclick="sendNominaToMovs(${nom.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Enviar a movimientos</button></div>`;
   document.getElementById('content').innerHTML=`
@@ -5639,6 +5863,10 @@ function renderConfig(){
    <div class="cfg-grid">
      ${listBlock('Fincas y centros','fincas','Aparecen en los menús de cada movimiento')}
      <div class="card panel" style="margin-bottom:16px">
+       <div class="ph"><div><h2>Apodos de empleados para el dictado</h2><p>Escribe un apodo por línea con el formato <b>apodo = EMPLEADO</b> (por ejemplo: <i>el mono = CARLOS</i>). Así, al dictar la nómina, la app sabrá a quién te refieres.</p></div></div>
+       <textarea class="input" rows="4" style="resize:vertical;margin-bottom:6px" placeholder="el mono = CARLOS&#10;gallego = Brayan Gallego" onchange="setEmpAliasText(this.value)">${esc(CFG.empAliasText||'')}</textarea>
+     </div>
+     <div class="card panel" style="margin-bottom:16px">
        <div class="ph"><div><h2>Nombres de fincas para el dictado por voz</h2><p>Si al dictar el celular escribe mal una finca, agrega aquí cómo la escribe (separa con comas). Ya se reconocen muchas variantes automáticamente.</p></div></div>
        <div class="secgrid2">${(CFG.fincas||[]).map(f=>`<div class="field" style="margin:0"><label>${esc(f)}</label><input class="input" value="${esc((CFG.fincaAlias||{})[f]||'')}" placeholder="Ej: ${esc((VZ_FINCA_ALIAS[vzNorm(f)]||[]).slice(0,2).join(', ')||'otro nombre')}" onchange="setFincaAlias('${esc(f).replace(/'/g,"\\'")}',this.value)"></div>`).join('')}</div>
      </div>
@@ -5809,7 +6037,7 @@ function confirmModal(title,msg,onYes){showModal(title,`<p style="color:var(--mu
 async function setFincaHa(f,c,v){if(!CFG.fincaHa[f])CFG.fincaHa[f]={};const n=+v||0;if(n<=0)delete CFG.fincaHa[f][c];else CFG.fincaHa[f][c]=n;await persistCfg();renderConfig();}
 async function delFincaHa(f,c){if(CFG.fincaHa[f])delete CFG.fincaHa[f][c];await persistCfg();renderConfig();}
 async function addFincaHa(f,fi){const cs=document.getElementById('fha_c_'+fi),vs=document.getElementById('fha_v_'+fi);if(!cs)return;const c=cs.value;const v=+(vs?vs.value:0)||0;if(!c)return;if(!CFG.fincaHa[f])CFG.fincaHa[f]={};CFG.fincaHa[f][c]=v;await persistCfg();renderConfig();toast('Hectáreas guardadas');}
-function closeModal(){if(typeof vzStop==='function'&&ui&&ui._vzRec)vzStop();document.getElementById('overlay').classList.remove('show');}
+function closeModal(){if(typeof vzStop==='function'&&ui&&ui._vzRec)vzStop();if(ui)ui._vzOnUpdate=null;document.getElementById('overlay').classList.remove('show');}
 let toastT;function toast(msg){const t=document.getElementById('toast');const warn=/^(Indica|Elige|Escribe|Agrega|Marca|Completa|No |Sin |El valor|El abono|El total|Tu perfil|PIN|Este |Esta |Primero|Debes|Selecciona)/i.test(String(msg||''));t.classList.toggle('warn',warn);t.innerHTML=(warn?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:0 0 auto"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>':ic('check'))+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),warn?3600:2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
