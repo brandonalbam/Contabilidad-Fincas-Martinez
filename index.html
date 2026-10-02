@@ -1846,6 +1846,8 @@ function vzLexBuild(){
 }
 const VZ_NAMECTX=new Set(['cliente','comercio','proveedor','almacen','don','dona','senor','senora','donde','empleado','trabajador']);
 function vzLexBest(n,L){
+  if(!L.memo)L.memo=new Map();if(L.memo.has(n))return L.memo.get(n);const r=vzLexBest0(n,L);L.memo.set(n,r);return r;}
+function vzLexBest0(n,L){
   const p=vzPhon(n).replace(/ /g,'');if(L.byPh.has(p))return{w:L.byPh.get(p),s:1};
   const len=n.length;if(len<=5)return null;
   const need=len<=7?0.83:0.8;let best=null;
@@ -1884,10 +1886,11 @@ function vzMergeFinals(list){
   let acc='';const nk=s=>vzNorm(s).replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
   list.forEach(r=>{r=String(r||'').trim();if(!r)return;const an=nk(acc),rn=nk(r);
     if(!an){acc=r;return;}
-    if(rn.startsWith(an)){acc=r;return;}
-    if(an.endsWith(rn)||an.includes(rn))return;
+    if(rn.startsWith(an)){acc=r;return;}          // Android: el resultado nuevo trae todo lo anterior
+    if(an.endsWith(rn))return;                     // repetición inmediata del reconocedor
     const aw=an.split(' '),rw=rn.split(' '),rws=r.split(/\s+/);let k=Math.min(aw.length,rw.length);
-    for(;k>0;k--){if(aw.slice(-k).join(' ')===rw.slice(0,k).join(' '))break;}
+    for(;k>1;k--){if(aw.slice(-k).join(' ')===rw.slice(0,k).join(' '))break;}
+    if(k<2)k=0;
     acc=(acc+' '+rws.slice(k).join(' ')).trim();});
   return acc;
 }
@@ -1910,13 +1913,14 @@ const VZ_FINCA_ALIAS={
 };
 const VZ_FINCA_BLOCK=new Set(['mandarina','mandarinas','ganado','ganadero','naranja','futbol']);
 function vzFincaAliases(f){const k=vzNorm(f).trim();const base=VZ_FINCA_ALIAS[k]||[];const user=String(((CFG.fincaAlias||{})[f])||'').split(',').map(s=>s.trim()).filter(Boolean);return [f].concat(base,user);}
-function vzFincaCands(){const out=[];(CFG.fincas||[]).forEach(f=>vzFincaAliases(f).forEach(a=>{const pt=vzPhon(a).split(' ').filter(Boolean);if(pt.length)out.push({name:f,alias:vzNorm(a),full:pt.join(''),toks:pt});}));return out;}
+let VZ_FC_CACHE=null;
+function vzFincaCands(){const sig=(CFG.fincas||[]).join('|')+'#'+JSON.stringify(CFG.fincaAlias||{});if(VZ_FC_CACHE&&VZ_FC_CACHE.sig===sig)return VZ_FC_CACHE.out;const out=[];(CFG.fincas||[]).forEach(f=>vzFincaAliases(f).forEach(a=>{const pt=vzPhon(a).split(' ').filter(Boolean);if(pt.length)out.push({name:f,alias:vzNorm(a),full:pt.join(''),toks:pt});}));VZ_FC_CACHE={sig,out};return out;}
 // Búsqueda de fincas con más tolerancia: alias, sonido parecido y comienzo del nombre («frutex» → FRUTEXCOL)
 function vzFincaAll(toks,generous){
   const out=[];const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const cands=vzFincaCands();const minSim=generous?0.7:0.76;
   for(let i=0;i<toks.length;i++){
     if(!ph[i]||/^[,;:.]$/.test(toks[i])||/\d/.test(toks[i]))continue;
-    cands.forEach(c=>{
+    const f0=ph[i][0];cands.forEach(c=>{if(c.full[0]!==f0)return;
       const maxW=Math.min(toks.length-i,c.toks.length+1);let best=0,bw=0;
       for(let w=1;w<=maxW;w++){if(/\d|^[,;:.]$/.test(toks[i+w-1]||''))break;const win=ph.slice(i,i+w).join('');const raw=toks.slice(i,i+w).join(' ');if(VZ_FINCA_BLOCK.has(raw))continue;
         let s=vzSim(win,c.full);
@@ -1950,18 +1954,26 @@ function nvEmpAliases(){const m={};String(CFG.empAliasText||'').split(/\n|;/).fo
 function nvEmpCands(nom){const inNom=nom.entries.map(e=>e.emp);const al=nvEmpAliases();const names=[...new Set(inNom.concat(CFG.empleados||[]))];
   return names.map(name=>({name,inNom:inNom.includes(name),forms:[name].concat(al[name]||[]).map(f=>{const t=vzPhon(f).split(' ').filter(Boolean);return{full:t.join(''),toks:t,raw:vzNorm(f).split(/\s+/)};})}));}
 // Empleados mencionados (nombre completo, nombre o apellido, apodo), sin solaparse
+let NV_EMP_CACHE=null;
+function nvEmpPrep(nom){
+  const sig=nom.entries.map(e=>e.emp).join('|')+'#'+(CFG.empleados||[]).length+'#'+(CFG.empAliasText||'');
+  if(NV_EMP_CACHE&&NV_EMP_CACHE.sig===sig)return NV_EMP_CACHE;
+  const cands=nvEmpCands(nom);const tokFreq={};cands.forEach(c=>c.forms.forEach(f=>new Set(f.toks).forEach(t=>{tokFreq[t]=(tokFreq[t]||0)+1;})));
+  const byFirst={},tokIdx={};
+  cands.forEach(c=>c.forms.forEach((f,fi)=>{if(!f.full)return;(byFirst[f.full[0]]=byFirst[f.full[0]]||[]).push({c,f,fi});
+    if(f.toks.length>1)f.toks.forEach((t,k)=>{if(t.length<4)return;(tokIdx[t[0]]=tokIdx[t[0]]||[]).push({c,t,raw:f.raw[k]||'',freq:tokFreq[t]});});}));
+  NV_EMP_CACHE={sig,byFirst,tokIdx};return NV_EMP_CACHE;
+}
 function nvEmpHits(toks,nom){
-  const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const cands=nvEmpCands(nom);const hits=[];
+  const ph=toks.map(w=>vzPhon(w).replace(/ /g,''));const P=nvEmpPrep(nom);const hits=[];
   const fincaTok=new Set();vzFincaAll(toks,false).forEach(h=>{for(let k=h.pos;k<h.pos+h.len;k++)fincaTok.add(k);});
-  const tokFreq={};cands.forEach(c=>c.forms.forEach(f=>new Set(f.toks).forEach(t=>{tokFreq[t]=(tokFreq[t]||0)+1;})));
   for(let i=0;i<toks.length;i++){
     if(!ph[i]||/^[,;:.]$/.test(toks[i])||/^\d/.test(toks[i])||NV_KEY.test(toks[i]))continue;
-    cands.forEach(c=>c.forms.forEach((f,fi)=>{
-      for(let w=Math.min(f.toks.length+1,toks.length-i);w>=1;w--){const win=ph.slice(i,i+w).join('');const s=vzSim(win,f.full);
-        if(s>=(f.full.length<=4?1:0.84)){hits.push({name:c.name,pos:i,len:w,score:s*10+w*2+(c.inNom?3:0)+(fi>0?2:0)+(s===1?2:0)});return;}}
-      if(f.toks.length>1&&!fincaTok.has(i))f.toks.forEach((t,k)=>{if(t.length<4)return;const rawTok=f.raw[k]||'';if(nvCommon(rawTok)&&!c.inNom)return;const s=vzSim(ph[i],t);
-        if(s>=0.9&&!nvCommon(toks[i]))hits.push({name:c.name,pos:i,len:1,score:s*7+(c.inNom?3:0)-(tokFreq[t]>1?4:0)});});
-    }));
+    (P.byFirst[ph[i][0]]||[]).forEach(({c,f,fi})=>{
+      for(let w=Math.min(f.toks.length+1,toks.length-i);w>=1;w--){const win=ph.slice(i,i+w).join('');if(Math.abs(win.length-f.full.length)>Math.max(2,f.full.length*0.25))continue;const s=vzSim(win,f.full);
+        if(s>=(f.full.length<=4?1:0.84)){hits.push({name:c.name,pos:i,len:w,score:s*10+w*2+(c.inNom?3:0)+(fi>0?2:0)+(s===1?2:0)});return;}}});
+    if(!fincaTok.has(i)&&!nvCommon(toks[i]))(P.tokIdx[ph[i][0]]||[]).forEach(({c,t,raw,freq})=>{if(nvCommon(raw)&&!c.inNom)return;if(Math.abs(t.length-ph[i].length)>2)return;const s=vzSim(ph[i],t);
+      if(s>=0.9)hits.push({name:c.name,pos:i,len:1,score:s*7+(c.inNom?3:0)-(freq>1?4:0)});});
   }
   hits.sort((a,b)=>b.score-a.score);const used=new Set(),out=[];
   hits.forEach(h=>{for(let k=h.pos;k<h.pos+h.len;k++)if(used.has(k))return;for(let k=h.pos;k<h.pos+h.len;k++)used.add(k);out.push(h);});
@@ -2344,6 +2356,7 @@ function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;cons
   if(ui._vzProds.length){r._prod=ui._vzProds.slice();r.d=ui._vzProds.join(' - ');if((r.t||'E')==='E'){const iq=CFG.catEgresos.find(c=>vzNorm(c)==='insumos/quimicos');if(iq)r.c=iq;}}else{delete r._prod;}
   ui._vzLast=r;const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
 function vzRemoveProd(i){const nm=(ui._vzProds||[])[i];if(!nm)return;ui._vzProds.splice(i,1);const r=ui._vzLast||{};ui._vzBlock=ui._vzBlock||{};ui._vzBlock[nm]=(r._prodCount&&r._prodCount[nm])||1;vzRefresh();}
+function vzSchedule(){const run=()=>(ui._vzOnUpdate||vzRefresh)();if(ui._vzT){ui._vzPend=true;return;}run();ui._vzT=setTimeout(function tick(){ui._vzT=null;if(ui._vzPend){ui._vzPend=false;run();ui._vzT=setTimeout(tick,330);}},330);}
 function vzToggle(){
   if(ui._vzRec){vzStop();const st=document.getElementById('vz_st');if(st)st.textContent='Dictado en pausa. Toca de nuevo para seguir hablando.';const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
@@ -2353,7 +2366,7 @@ function vzToggle(){
     const rec=new SR();rec.lang='es-CO';rec.continuous=!android;rec.interimResults=true;rec.maxAlternatives=1;
     rec.onresult=ev=>{const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
       ui._vzSess=vzLexFix(vzDedupe(vzMergeFinals(fin)));const t=document.getElementById('vz_txt');
-      if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();(ui._vzOnUpdate||vzRefresh)();}};
+      if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();vzSchedule();}};
     rec.onerror=ev=>{if(ev.error==='no-speech'&&ui._vzOn)return;const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';if(ev.error==='not-allowed'){ui._vzOn=false;}};
     rec.onend=()=>{if(ui._vzRec!==rec)return;ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;(ui._vzOnUpdate||vzRefresh)();}
       if(ui._vzOn){try{start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
