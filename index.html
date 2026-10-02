@@ -2266,13 +2266,14 @@ function frvParse(raw){
     const prev=toks.slice(Math.max(0,i-3),i).join(' '),next=toks.slice(i+1,i+4).join(' ');const v=parseFloat(t);
     if(/\b(factura|numero|nro|#)\s*$/.test(prev))return;
     const unit=frvUnitOf(toks[i+1]||'')||(toks[i+1]==='de'?frvUnitOf(toks[i+2]||''):null);
-    let kind;
+    // regla: decenas o centenas = cantidad; miles = precio
+    let kind,smallA=false;
     if(unit)kind='q';
     else if(/\b(cantidad|son|fueron|salieron|van)\s*$/.test(prev))kind='q';
-    else if(/\b(a|en|por|precio|valor|vale|valen|como a|a como|de a|sobre|cada una a|cada uno a|pagan|pagaron|me pagan)\s*$/.test(prev)||/^(pesos|cada|c\/u|la canastilla|el kilo|por canastilla|por kilo|la caja|el bulto)/.test(next))kind='p';
-    else if(/\btotal(?:\s+de)?\s*$/.test(prev))kind='t';
-    else kind=v>=2000?'p':'q';
-    nums.push({i,v,kind,unit});});
+    else if(/\btotal(?:\s+de)?\s*$/.test(prev))kind=v>=1000?'t':'q';
+    else if(v>=1000)kind='p';
+    else{kind='q';smallA=/\b(a|en|por|precio|valor|vale|valen|como a|a como|de a|sobre|pagan|pagaron|me pagan)\s*$/.test(prev)||/^(mil\b|cada|c\/u|la canastilla|por canastilla)/.test(next);}
+    nums.push({i,v,kind,unit,smallA});});
   const unitHit=nums.find(x=>x.unit);if(unitHit)put('u',unitHit.unit,0);
   else{for(let i=0;i<toks.length;i++){const u=frvUnitOf(toks[i]);if(u){put('u',u,0);break;}}}
   // asignar cada número a la calidad más cercana (las cantidades pueden ir antes: «120 canastillas de extra»)
@@ -2285,11 +2286,14 @@ function frvParse(raw){
     const after=cal.find(h=>h.pos>x.i&&h.pos-x.i<=4&&toks.slice(x.i+1,h.pos).every(w=>/^(de|del|la|las|el|los|en|canastillas?|canastas?|guacal(es)?|huacal(es)?|kilos?|kg|cajas?|bultos?|toneladas?|unidad(es)?)$/.test(w)));
     const before=[...cal].reverse().find(h=>h.end<=x.i);
     if(x.kind==='q'){const strongAfter=after&&toks.slice(x.i+1,after.pos).some(w=>w==='de'||w==='del');
-      if(strongAfter)target=after;else if(before&&lines[before.cal]&&lines[before.cal].q==null)target=before;else target=after||before||cal.find(h=>h.pos>x.i);}
+      if(strongAfter)target=after;else if(before&&lines[before.cal]&&(lines[before.cal].q==null||x.smallA))target=before;else target=after||before||cal.find(h=>h.pos>x.i);}
     else{target=before||after;if(before&&/\b(todo|toda|todas|todos)\b/.test(toks.slice(before.end,x.i).join(' ')))target=null;
       if(!target||/\b(todo|toda|todas|todos)\b/.test(toks.slice(Math.max(0,x.i-4),x.i).join(' '))){globalP=x.v;return;}}
     if(!target){const l=lineOf('');if(x.kind==='q')l.q=x.v;else l.p=x.v;return;}
-    const l=lineOf(target.cal);if(x.kind==='q')l.q=x.v;else l.p=x.v;});
+    const l=lineOf(target.cal);
+    // «extra 120 a 32»: esa calidad ya tiene cantidad, así que el número pequeño es el precio en miles
+    if(x.kind==='q'&&x.smallA&&l.q!=null){l.p=x.v*1000;l.k=true;return;}
+    if(x.kind==='q')l.q=x.v;else l.p=x.v;});
   order.forEach(c=>{const l=lines[c];if(l.p==null&&globalP!=null)l.p=globalP;if(l.p==null){const dp=frutaPrecioOf(c);if(dp)l.p=dp,l.def=true;}r.lines.push(l);});
   if(globalT!=null&&r.lines.length===1&&r.lines[0].q&&r.lines[0].p==null){r.lines[0].p=Math.round(globalT/r.lines[0].q);}
   if(!r.lines.length&&(globalP||globalT))r.lines.push({cal:'',q:1,p:globalP||globalT});
@@ -2301,7 +2305,7 @@ function frvPreview(r){
   const row=(lab,val)=>`<div class="vz-it ${val?'ok':''}"><span>${lab}</span><b>${val?esc(String(val)):'—'}</b></div>`;
   const tot=r.lines.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0);
   return `<div class="vz-grid">${row('Fecha',r.f?fmtFecha(r.f):'Hoy (por defecto)')+row('Qué se vendió',r.cat)+row('Finca',r.fi)+row('Cliente',r.cl)+row('Unidad',r.u)+row('Estado',r.e==='X'?'Pendiente (por cobrar)':(r.e==='P'?'Pagado / Recibido':''))}</div>
-   ${r.lines.length?`<div class="tablewrap" style="margin-top:10px"><table class="frv-tb"><thead><tr><th>Calidad</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Subtotal</th></tr></thead><tbody>${r.lines.map(l=>`<tr><td><b>${esc(l.cal||'Fruta')}</b></td><td class="r tnum">${l.q!=null?(+l.q).toLocaleString('es-CO'):'—'}</td><td class="r tnum">${l.p!=null?fmt(l.p)+(l.def?'*':''):'—'}</td><td class="r tnum">${l.q!=null&&l.p!=null?fmt(l.q*l.p):'—'}</td></tr>`).join('')}</tbody></table></div>${r.lines.some(l=>l.def)?'<div style="font-size:11px;color:var(--muted);margin-top:4px">* Precio del día (no se dictó precio)</div>':''}
+   ${r.lines.length?`<div class="tablewrap" style="margin-top:10px"><table class="frv-tb"><thead><tr><th>Calidad</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Subtotal</th></tr></thead><tbody>${r.lines.map(l=>`<tr><td><b>${esc(l.cal||'Fruta')}</b></td><td class="r tnum">${l.q!=null?(+l.q).toLocaleString('es-CO'):'—'}</td><td class="r tnum">${l.p!=null?fmt(l.p)+(l.def?'*':'')+(l.k?'†':''):'—'}</td><td class="r tnum">${l.q!=null&&l.p!=null?fmt(l.q*l.p):'—'}</td></tr>`).join('')}</tbody></table></div>${r.lines.some(l=>l.def)?'<div style="font-size:11px;color:var(--muted);margin-top:4px">* Precio del día (no se dictó precio)</div>':''}${r.lines.some(l=>l.k)?'<div style="font-size:11px;color:var(--muted);margin-top:2px">† Dijiste un número pequeño después de la cantidad; se tomó como precio en miles</div>':''}
    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px"><span style="color:var(--muted)">Total venta</span><b class="tnum">${fmt(tot)}</b></div>`:''}
    ${r.warn.length?`<div class="note" style="margin-top:8px;border-left-color:var(--amber)">${r.warn.map(esc).join('<br>')}</div>`:''}`;
 }
@@ -2318,7 +2322,7 @@ function frutaVoiceModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="frvRefresh()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Venta detectada</div>
    <div id="frv_prev"></div>
-   <div class="note"><b>Calidades:</b> ${esc(cals)}. También entiende sinónimos («manchada», «pipitos», «menuda», «gruesa», «revuelta», «exportación»…). Di cada calidad con su cantidad y, si quieres, su precio: «extra 120 a 32 mil», «80 canastillas de mediana», «mancha 40». Si no dices el precio, se usa el <b>precio del día</b>. «Todo a 30 mil» pone ese precio a las calidades sin precio. Para el pago: «pagado», «de contado», «pendiente», «fiado», «me debe».</div>`,
+   <div class="note"><b>Calidades:</b> ${esc(cals)}. También entiende sinónimos («manchada», «pipitos», «menuda», «gruesa», «revuelta», «exportación»…). Di cada calidad con su cantidad y, si quieres, su precio: «extra 120 a 32 mil», «80 canastillas de mediana», «mancha 40». Los números de <b>decenas o centenas</b> (10, 40, 120, 150) son <b>cantidad</b>; los de <b>miles</b> (10.000, 32.000, 80.000) son <b>precio</b>. Si no dices el precio, se usa el <b>precio del día</b>. «Todo a 30 mil» pone ese precio a las calidades sin precio. Para el pago: «pagado», «de contado», «pendiente», «fiado», «me debe».</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';frvRefresh();}},
     {label:'Llenar venta',cls:'btn primary',fn:()=>frvFill()}]);
