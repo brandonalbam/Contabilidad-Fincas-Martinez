@@ -455,6 +455,17 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .ro-lock .ro-ok{opacity:1;cursor:pointer}
 .ro-banner{display:flex;align-items:center;gap:9px;background:var(--amber-soft);color:#8a5a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
 .ro-banner svg{width:18px;height:18px;flex:0 0 auto}
+/* Dictado por voz */
+.vz-mic{flex:0 0 auto;width:62px;height:62px;border-radius:50%;border:none;background:var(--green2);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(30,107,63,.35)}
+.vz-mic svg{width:28px;height:28px}
+.vz-mic.on{background:#c8443a;box-shadow:0 0 0 0 rgba(200,68,58,.55);animation:vzpulse 1.4s infinite}
+@keyframes vzpulse{0%{box-shadow:0 0 0 0 rgba(200,68,58,.55)}70%{box-shadow:0 0 0 16px rgba(200,68,58,0)}100%{box-shadow:0 0 0 0 rgba(200,68,58,0)}}
+.vz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.vz-it{border:1px solid var(--line);border-radius:7px;padding:6px 9px;min-width:0;background:var(--surface)}
+.vz-it span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);font-weight:700}
+.vz-it b{display:block;font-size:12.5px;color:var(--faint);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vz-it.ok{border-color:var(--green);background:var(--green-soft)}
+.vz-it.ok b{color:var(--ink)}
 /* Campos de fecha en formato día/mes/año, sin importar el idioma del navegador */
 .dmy-wrap{position:relative;display:block;width:100%;min-width:0}
 .dmy-wrap>input[type=date]{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent;cursor:pointer}
@@ -1556,7 +1567,7 @@ function filteredMovs(){
   });
 }
 function renderMovs(){
-  document.getElementById('topctl').innerHTML=`<button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
+  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
   const list=filteredMovs();
   const per=40,pages=Math.max(1,Math.ceil(list.length/per));
   if(ui.mPage>pages)ui.mPage=1;
@@ -1626,11 +1637,11 @@ function rowHTML(m){
 }
 
 /* ===== MODAL movimiento ===== */
-function openMov(id,preset){
+function openMov(id,preset,opts){
   const def={f:todayISO(),fi:ui.mFinca||CFG.fincas[0],t:'E',c:'',d:'',u:'',q:1,pu:'',tot:0,e:'P',ab:0,fa:'',co:''};
   const m=id?MOVS.find(x=>x.id===id):(preset?{...def,...preset}:def);
-  const isNew=!id;const isDup=isNew&&!!preset;const tmp={...m};
-  const body=()=>`
+  const isNew=!id;const isVoice=!!(opts&&opts.voice);const isDup=isNew&&!!preset&&!isVoice;const tmp={...m};
+  const body=()=>`${isVoice?`<div class="note" style="margin:0 0 12px"><b>Datos dictados:</b> «${esc(opts.text||'')}». Revisa y completa lo que falte antes de guardar.</div>`:''}
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="m_f" value="${tmp.f}"></div>
       <div class="field"><label>Finca / centro</label><select class="input" id="m_fi">${CFG.fincas.map(f=>`<option ${tmp.fi===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
@@ -1648,7 +1659,7 @@ function openMov(id,preset){
       <div class="field" id="m_abwrap" style="${tmp.e==='X'?'':'display:none'}"><label>Abono / pago recibido</label><input class="input tnum money" inputmode="numeric" id="m_ab" value="${fmn(tmp.ab||0)}" oninput="window.__saldo()"></div>
       <div class="field" id="m_salwrap" style="${tmp.e==='X'?'':'display:none'}"><label id="m_sallab">Saldo pendiente</label><input class="input tnum" id="m_sal" value="${fmt(Math.max(((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)-(+tmp.ab||0),0))}" disabled></div>
     </div>`;
-  showModal(isDup?'Duplicar movimiento':(isNew?'Nuevo movimiento':'Editar movimiento'),body(),[
+  showModal(isDup?'Duplicar movimiento':(isVoice?'Nuevo movimiento (dictado)':(isNew?'Nuevo movimiento':'Editar movimiento')),body(),[
     {label:'Cancelar',cls:'btn',fn:closeModal},
     {label:isDup?'Crear duplicado':(isNew?'Guardar movimiento':'Guardar cambios'),cls:'btn primary',fn:()=>saveMov(id)}
   ]);
@@ -1656,6 +1667,157 @@ function openMov(id,preset){
   window.__movType=v=>{document.getElementById('m_c').innerHTML=catOpts(v,'');document.getElementById('m_clwrap').style.display=v==='I'?'':'none';window.__saldo();};
   window.__estado=v=>{const sh=v==='X'?'':'none';document.getElementById('m_abwrap').style.display=sh;document.getElementById('m_salwrap').style.display=sh;window.__saldo();};
   window.__calc=()=>{const q=+document.getElementById('m_q').value||0,p=num(document.getElementById('m_pu').value);document.getElementById('m_total').textContent=fmt(q*p);window.__saldo();};
+}
+/* ===== DICTADO DE MOVIMIENTOS POR VOZ ===== */
+function vzNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+const VZ_U={cero:0,un:1,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,diecisiete:17,dieciocho:18,diecinueve:19,veinte:20,veintiun:21,veintiuno:21,veintiuna:21,veintidos:22,veintitres:23,veinticuatro:24,veinticinco:25,veintiseis:26,veintisiete:27,veintiocho:28,veintinueve:29,treinta:30,cuarenta:40,cincuenta:50,sesenta:60,setenta:70,ochenta:80,noventa:90,cien:100,ciento:100,doscientos:200,doscientas:200,trescientos:300,trescientas:300,cuatrocientos:400,cuatrocientas:400,quinientos:500,quinientas:500,seiscientos:600,seiscientas:600,setecientos:700,setecientas:700,ochocientos:800,ochocientas:800,novecientos:900,novecientas:900};
+// Convierte números dichos en palabras y cifras con separadores a dígitos: "ochenta y cinco mil" -> 85000
+function vzNumbers(t){
+  let s=' '+t+' ';
+  s=s.replace(/\$\s*/g,' ');
+  s=s.replace(/(\d)[.,](\d{3})(?=[.,]\d{3}|\D)/g,'$1$2').replace(/(\d)[.,](\d{3})(?=[.,]\d{3}|\D)/g,'$1$2');
+  s=s.replace(/(\d),(\d)/g,'$1.$2');
+  s=s.replace(/([,;:])/g,' $1 ').replace(/\.(?!\d)/g,' . ');
+  s=s.replace(/\bun (total|valor|precio|abono|pago|poco)\b/g,'$1');
+  const toks=s.split(/\s+/).filter(Boolean);const out=[];let i=0;
+  const SCALE=w=>w==='mil'||w==='millon'||w==='millones';
+  const UNITW=/^(bultos?|kilos?|kilogramos?|litros?|galon(es)?|canastillas?|toneladas?|unidad(es)?|cabezas?|novillos?|garrafas?|canecas?|cajas?|horas?|jornales?|repuestos?|herramientas?|fumigadas?|abonadas?|reses|millon|millones|mil)$/;
+  while(i<toks.length){
+    const w=toks[i];
+    const isUn=(w==='un'||w==='una'||w==='uno');
+    const startOk=(w in VZ_U&&!isUn)||(isUn&&toks[i+1]&&UNITW.test(toks[i+1]))||/^\d+(\.\d+)?$/.test(w)||(w==='mil'&&toks[i+1]&&(toks[i+1] in VZ_U));
+    if(!startOk){out.push(w);i++;continue;}
+    let total=0,cur=0,j=i,used=false,lastScale=0;
+    while(j<toks.length){
+      const x=toks[j];
+      if(x==='y'&&toks[j+1]&&(toks[j+1]==='medio'||toks[j+1]==='media')&&used){if(lastScale===1e6&&cur===0)total+=500000;else if(lastScale===1000&&cur===0)total+=500;else cur+=0.5;j+=2;continue;}
+      if(x==='y'&&toks[j+1]&&(toks[j+1] in VZ_U)&&used&&cur%10===0&&cur%100>=20){j++;continue;}
+      if(/^\d+(\.\d+)?$/.test(x)){if(used&&cur&&!lastScale)break;cur+=parseFloat(x);used=true;lastScale=0;j++;continue;}
+      if(x in VZ_U){const v=VZ_U[x];if(used&&cur>0&&v<100&&cur%100!==0&&!(cur%10===0&&cur%100>=20&&v<10))break;if(used&&v>=100&&cur%1000!==0)break;cur+=v;used=true;lastScale=0;j++;continue;}
+      if(x==='mil'){cur=(used?(cur||1):1)*1000;total+=cur;cur=0;used=true;lastScale=1000;j++;continue;}
+      if(x==='millon'||x==='millones'){total=(total+(cur||1))*1000000;cur=0;used=true;lastScale=1e6;j++;continue;}
+      break;
+    }
+    out.push(String(Math.round((total+cur)*100)/100));i=j;
+  }
+  return out.join(' ').replace(/\s+([,;:.])/g,'$1').replace(/\s+/g,' ').trim();
+}
+const VZ_MES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+const VZ_DOW={domingo:0,lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6};
+function vzDate(n){
+  const today=todayISO();const pad=x=>String(x).padStart(2,'0');
+  if(/\bantier\b|\banteayer\b|antes de ayer/.test(n))return addDaysISO(today,-2);
+  if(/\bayer\b/.test(n))return addDaysISO(today,-1);
+  if(/\bhoy\b/.test(n))return today;
+  let m=n.match(/\b(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?: (?:de )?(\d{4}))?/);
+  if(m){const y=m[3]?+m[3]:+today.slice(0,4);let iso=`${y}-${pad(VZ_MES[m[2]])}-${pad(m[1])}`;if(!m[3]&&iso>today)iso=`${y-1}-${pad(VZ_MES[m[2]])}-${pad(m[1])}`;return iso;}
+  m=n.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if(m){let y=m[3]?+m[3]:+today.slice(0,4);if(y<100)y+=2000;return `${y}-${pad(m[2])}-${pad(m[1])}`;}
+  m=n.match(/\b(?:el )?(?:pasado )?(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b/);
+  if(m){const d=new Date(today+'T00:00:00');const diff=(d.getDay()-VZ_DOW[m[1]]+7)%7;return addDaysISO(today,-diff);}
+  m=n.match(/\bel (?:dia )?(\d{1,2})\b(?! de| bultos| kilos)/);
+  if(m&&+m[1]>=1&&+m[1]<=31){let y=+today.slice(0,4),mo=+today.slice(5,7);let iso=`${y}-${pad(mo)}-${pad(m[1])}`;if(iso>today){mo--;if(mo<1){mo=12;y--;}iso=`${y}-${pad(mo)}-${pad(m[1])}`;}return iso;}
+  return null;
+}
+const VZ_UNITS=[[/\bbultos?\b/,'BULTO'],[/\b(kilos?|kilogramos?|kg)\b/,'KG'],[/\blitros?\b/,'LITRO'],[/\bgalon(es)?\b/,'GALON'],[/\bcanastillas?\b/,'CANASTILLA'],[/\btoneladas?\b/,'TONELADA'],[/\bunidad(es)?\b/,'UNIDAD'],[/\b(cabezas?|reses|novillos?)\b/,'CABEZA'],[/\bgarrafas?\b/,'GARRAFA'],[/\bcanecas?\b/,'CANECA'],[/\bcajas?\b/,'CAJA'],[/\bhoras?\b/,'HORAS'],[/\brepuestos?\b/,'REPUESTO'],[/\bherramientas?\b/,'HERRAMIENTA'],[/\b(jornales|jornal|mano de obra)\b/,'MANO DE OBRA'],[/\bfumigadas?\b/,'FUMIGADA'],[/\babonadas?\b/,'ABONADA']];
+const VZ_CAT_E=[[/abono|fertiliz|urea|triple 15|foliar|cal agricola|quimic|fungicid|herbicid|insecticid|glifosato|veneno|agroquimic/,'insumos/quimicos'],[/semilla|plantula|colino/,'semillas'],[/herramient|maquinari|guadana|motosierra|fumigadora|bomba de espalda/,'herramientas/maquinaria'],[/nomina|jornal|sueldo|salario|quincena/,'nomina'],[/transporte|flete|acarreo|uber|taxi|pasaje/,'transporte'],[/gasolina|acpm|diesel|combustible|aceite|lubricante/,'combustible/lubricantes'],[/\bluz\b|energia|\bagua\b|internet|servicios? public/,'servicios publicos'],[/vacuna|veterinari|medicamento|purgante/,'veterinaria/vacunas'],[/sal mineral|concentrado|melaza|alimento para (el )?ganado|forraje/,'alimentos para ganado'],[/\bseguro/,'seguros'],[/impuesto|predial|\bdian\b/,'impuestos'],[/ferreteria|tornill|cemento|alambre|puntilla|tuberia/,'ferreteria'],[/botas|uniforme|guantes|indumentaria|overol/,'indumentaria/accesorios'],[/reparacion|arreglo|mantenimiento/,'reparacion'],[/vaquero/,'vaqueros'],[/contador|contaduria|contable/,'serv. contaduria']];
+const VZ_CAT_I=[[/naranja/,'venta naranja'],[/aguacate/,'venta aguacate'],[/ganado|novillo|\bvaca|\btoro|ternero|res\b/,'venta ganado'],[/mandarina/,'venta mandarina']];
+function vzFindIn(list,n){let best=null;(list||[]).forEach(x=>{const k=vzNorm(x).trim();if(k&&new RegExp('(^|[^a-z0-9])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z0-9]|$)').test(n)&&(!best||k.length>vzNorm(best).length))best=x;});return best;}
+function vzParse(raw){
+  const r={};const notes=[];
+  const n0=vzNorm(raw);const n=vzNumbers(n0);
+  // tipo
+  if(/\bingreso\b/.test(n))r.t='I';else if(/\begreso\b|\bgasto\b/.test(n))r.t='E';
+  else if(/\bvent[ae]|\bvendi|\bvendimos|\bcobr|\brecibi|me pagaron|nos pagaron/.test(n))r.t='I';
+  else if(/\bcompr|\bpag(o|ue|amos)\b|\bfactura de\b/.test(n))r.t='E';
+  // fecha
+  const f=vzDate(n);if(f)r.f=f;
+  // finca
+  const fi=vzFindIn(CFG.fincas,n);if(fi)r.fi=fi;
+  // proveedor / cliente
+  const cl=vzFindIn(CFG.clientes,n);const co=vzFindIn(CFG.comercios,n);
+  if(cl){r.cl=cl;if(!r.t)r.t='I';}
+  if(co)r.co=co;
+  else{const m=n.match(/\b(?:proveedor|comercio|almacen|en el almacen|donde)\s+([a-z0-9 ]{3,40}?)(?=,|\.|\s(?:por|a|el|la|factura|pagad|pendient|cada|en la finca)\b|$)/);if(m)r.co=m[1].trim().toUpperCase();}
+  // categoría
+  const t=r.t||'E';const cats=t==='I'?CFG.catIngresos:CFG.catEgresos;
+  let cat=null;const mc=n.match(/\bcategoria\s+([a-z0-9/ .]{3,40}?)(?=,|\.|$|\s(?:por|a|el|la|en|pagad|pendient|factura)\b)/);
+  if(mc)cat=vzFindIn(cats,mc[1])||cats.find(c=>vzNorm(c).includes(mc[1].trim().split(' ')[0]));
+  if(!cat){for(const[re,target]of(t==='I'?VZ_CAT_I:VZ_CAT_E)){if(re.test(n)){cat=cats.find(c=>vzNorm(c)===target);if(cat)break;}}}
+  if(!cat)cat=vzFindIn(cats,n);
+  if(!cat&&t==='I')cat=cats.find(c=>/otros/i.test(c));
+  if(cat)r.c=cat;
+  // cantidad + unidad
+  for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;const m=n.match(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,'')));if(m){r.q=parseFloat(m[1]);r.u=u;break;}}
+  // precios
+  const mu=n.match(/\b(?:a|en|por|de)\s+(\d+(?:\.\d+)?)\s*(?:pesos\s*)?(?:cada uno|cada una|c\/u|cada (?:bulto|kilo|litro|galon|unidad|canastilla|caja|hora)|por (?:unidad|bulto|kilo|litro|galon|canastilla|caja|hora)|el (?:bulto|kilo|litro|galon|unidad)|la (?:unidad|canastilla|caja|hora)|unitario)/)||n.match(/precio unitario\s+(?:de\s+)?(\d+(?:\.\d+)?)/);
+  if(mu)r.pu=parseFloat(mu[1]);
+  const mt=n.match(/\b(?:por un total de|total(?: de)?|valor(?: total)?(?: de)?|costo|costaron|costo de|vale|valio|por un valor de|pague|pagamos|pagaron)\s+(\d+(?:\.\d+)?)/);
+  let tot=mt?parseFloat(mt[1]):null;
+  if(!r.pu&&!tot){const ms=[...n.matchAll(/\b(?:por|en|de|a)\s+(\d+(?:\.\d+)?)\s*(?:pesos)?(?=\s|,|\.|$)(?!\s*(?:bultos?|kilos?|litros?|galon|canastillas?|toneladas?|unidad|cajas?|horas?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/g)].map(x=>parseFloat(x[1])).filter(v=>v>=500);if(ms.length)tot=ms[ms.length-1];}
+  if(r.pu&&!r.q)r.q=1;
+  if(tot&&!r.pu){if(r.q&&r.q>0){r.pu=Math.round(tot/r.q);}else{r.q=1;r.pu=tot;}}
+  // estado y abono
+  if(/pendiente|a credito|fiado|\bdebo\b|por pagar|por cobrar|sin pagar|quede debiendo|queda debiendo/.test(n))r.e='X';
+  else if(/\bpagad[oa]\b|\bcancelad[oa]\b|de contado|ya (se )?pag|recibid[oa]|cobrad[oa]/.test(n))r.e='P';
+  const ma=n.match(/\babon(?:o|e|amos|aron)\s+(?:de\s+)?(\d+(?:\.\d+)?)/);if(ma&&parseFloat(ma[1])>=100){r.ab=parseFloat(ma[1]);r.e='X';}
+  // factura
+  const mf=n.match(/\bfactura\s+(?:numero|nro|no\.?|n|#)?\s*([a-z]{0,3}-?\d[\w-]*)/);if(mf)r.fa=mf[1].toUpperCase();
+  // descripción
+  const ld=raw.toLowerCase();
+  const md=n.match(/\b(?:descripcion|concepto|detalle)\s+(?:es\s+)?([^,.]{3,80})/);
+  if(md){r.d=md[1].trim();}
+  else{const ma2=n.match(/\b(compra|pago|venta|arreglo|reparacion|flete|servicio|mantenimiento|transporte|abono|jornales?|gasto|alquiler|fumigacion)\s+de\s+[^,.]{2,70}/);
+    if(ma2){let seg=ma2[0];seg=seg.replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|en el almacen|donde|el dia|ayer|hoy|antier)\b.*$/,'').trim();
+      if(r.co)seg=seg.replace(new RegExp('\\s(?:en|a|de|donde)\\s+(?:la\\s+|el\\s+)?'+vzNorm(r.co).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'.*$'),'').trim();
+      if(r.fi)seg=seg.replace(new RegExp('\\s(?:en|de|para|del)?\\s*(?:la\\s+)?(?:finca\\s+)?'+vzNorm(r.fi).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b.*$'),'').trim();
+      seg=seg.replace(/\s+(?:de|del|la|el|en|para|a|y|con)(?:\s+(?:la|el))?$/,'').trim();
+      const wmap={};String(raw).toLowerCase().split(/[\s,.;:]+/).forEach(w=>{const k=vzNorm(w);if(k&&!wmap[k])wmap[k]=w;});seg=seg.split(' ').map(w=>wmap[w]||w).join(' ');r.d=seg;}}
+  if(r.d){r.d=r.d.charAt(0).toUpperCase()+r.d.slice(1);}
+  return r;
+}
+function vzPreviewHTML(r){
+  const row=(lab,val)=>`<div class="vz-it ${val?'ok':''}"><span>${lab}</span><b>${val?esc(String(val)):'—'}</b></div>`;
+  const tot=(r.q||0)*(r.pu||0);
+  return row('Fecha',r.f?fmtFecha(r.f):'Hoy (por defecto)')+row('Finca',r.fi)+row('Tipo',r.t==='I'?'Ingreso':(r.t==='E'?'Egreso':''))+row('Categoría',r.c)+row('Descripción',r.d)+
+    row('Cantidad',r.q?(r.q+(r.u?' '+r.u:'')):'')+row('Precio unitario',r.pu?fmt(r.pu):'')+row('Total',tot?fmt(tot):'')+row(r.t==='I'?'Cliente':'Proveedor',r.t==='I'?(r.cl||r.co):r.co)+
+    row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa);
+}
+function vzStop(){if(ui._vzRec){ui._vzOn=false;try{ui._vzRec.stop();}catch(e){}ui._vzRec=null;}}
+function voiceMovModal(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  showModal('Dictar movimiento',`
+   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Toca el micrófono y di el movimiento de forma natural. Por ejemplo:<br><i>«Egreso en la finca Placer, compra de diez bultos de abono en Agroinsumos Cacayal a ochenta y cinco mil cada uno, pagado, factura 1234, ayer»</i></p>
+   <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular para dictar.'}</div>
+   </div>
+   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
+   <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
+   <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
+   <div class="note">Puedes hablar varias veces: cada frase se agrega al texto. Al terminar pulsa «Llenar formulario»; ahí revisas y completas lo que falte antes de guardar.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();closeModal();}},{label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzFinal='';vzRefresh();}},{label:'Llenar formulario',cls:'btn primary',fn:()=>vzFill()}]);
+  ui._vzFinal='';
+}
+function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;const r=vzParse(t.value);const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
+function vzToggle(){
+  if(ui._vzRec){vzStop();const st=document.getElementById('vz_st');if(st)st.textContent='Dictado en pausa. Toca de nuevo para seguir hablando.';const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
+  const rec=new SR();rec.lang='es-CO';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
+  const ta=document.getElementById('vz_txt');ui._vzFinal=(ta&&ta.value.trim())?ta.value.trim()+' ':'';
+  rec.onresult=ev=>{let fin='',inter='';for(let i=ev.resultIndex;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin+=tx+' ';else inter+=tx;}
+    if(fin)ui._vzFinal+=fin;const t=document.getElementById('vz_txt');if(t){t.value=(ui._vzFinal+inter).trim();vzRefresh();}};
+  rec.onerror=ev=>{const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';};
+  rec.onend=()=>{if(ui._vzOn&&ui._vzRec===rec){try{rec.start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
+  try{rec.start();ui._vzRec=rec;ui._vzOn=true;const b=document.getElementById('vz_mic');if(b)b.classList.add('on');const st=document.getElementById('vz_st');if(st)st.innerHTML='<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.';}catch(e){toast('No se pudo iniciar el micrófono');}
+}
+function vzFill(){
+  const t=document.getElementById('vz_txt');const text=t?t.value.trim():'';
+  if(!text){toast('Dicta o escribe el movimiento primero');return;}
+  vzStop();const r=vzParse(text);const preset={};
+  ['f','fi','t','c','d','u','q','pu','e','ab','fa','co','cl'].forEach(k=>{if(r[k]!=null&&r[k]!=='')preset[k]=r[k];});
+  if(preset.t==='I'&&!preset.cl&&preset.co&&CFG.clientes.includes(preset.co)){preset.cl=preset.co;delete preset.co;}
+  closeModal();setTimeout(()=>openMov(null,preset,{voice:true,text}),60);
 }
 function catOpts(t,sel){const arr=t==='I'?CFG.catIngresos:CFG.catEgresos;return arr.map(c=>`<option ${sel===c?'selected':''}>${esc(c)}</option>`).join('');}
 async function saveMov(id){
@@ -5381,7 +5543,7 @@ function confirmModal(title,msg,onYes){showModal(title,`<p style="color:var(--mu
 async function setFincaHa(f,c,v){if(!CFG.fincaHa[f])CFG.fincaHa[f]={};const n=+v||0;if(n<=0)delete CFG.fincaHa[f][c];else CFG.fincaHa[f][c]=n;await persistCfg();renderConfig();}
 async function delFincaHa(f,c){if(CFG.fincaHa[f])delete CFG.fincaHa[f][c];await persistCfg();renderConfig();}
 async function addFincaHa(f,fi){const cs=document.getElementById('fha_c_'+fi),vs=document.getElementById('fha_v_'+fi);if(!cs)return;const c=cs.value;const v=+(vs?vs.value:0)||0;if(!c)return;if(!CFG.fincaHa[f])CFG.fincaHa[f]={};CFG.fincaHa[f][c]=v;await persistCfg();renderConfig();toast('Hectáreas guardadas');}
-function closeModal(){document.getElementById('overlay').classList.remove('show');}
+function closeModal(){if(typeof vzStop==='function'&&ui&&ui._vzRec)vzStop();document.getElementById('overlay').classList.remove('show');}
 let toastT;function toast(msg){const t=document.getElementById('toast');const warn=/^(Indica|Elige|Escribe|Agrega|Marca|Completa|No |Sin |El valor|El abono|El total|Tu perfil|PIN|Este |Esta |Primero|Debes|Selecciona)/i.test(String(msg||''));t.classList.toggle('warn',warn);t.innerHTML=(warn?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:0 0 auto"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>':ic('check'))+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),warn?3600:2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
