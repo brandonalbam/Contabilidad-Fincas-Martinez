@@ -2274,8 +2274,16 @@ function frvParse(raw){
     else if(v>=1000)kind='p';
     else{kind='q';smallA=/\b(a|en|por|precio|valor|vale|valen|como a|a como|de a|sobre|pagan|pagaron|me pagan)\s*$/.test(prev)||/^(mil\b|cada|c\/u|la canastilla|por canastilla)/.test(next);}
     nums.push({i,v,kind,unit,smallA});});
-  const unitHit=nums.find(x=>x.unit);if(unitHit)put('u',unitHit.unit,0);
-  else{for(let i=0;i<toks.length;i++){const u=frvUnitOf(toks[i]);if(u){put('u',u,0);break;}}}
+  // «unidad kilos», «unidad de medida canastillas», «la unidad es kilos»: la palabra «unidad» es el nombre del campo
+  const uLabels=[];
+  for(const m of n.matchAll(/\bunidad(?:es)?(?:\s+de\s+medida)?(?:\s+(?:es|son|en|sera|seria|va a ser|:))?\s+(?:la\s+|el\s+|los\s+|las\s+|en\s+|por\s+)?([a-z]+)/g)){
+    const before=n.slice(0,m.index);if(/\d\s*$/.test(before)||/\b(por|cada|la|una|1)\s*$/.test(before)&&!/\b(la)\s*$/.test(before))continue;
+    const w=m[1];const u=/^unidad(es)?$/.test(w)?(CFG.unidades.includes('UNIDAD')?'UNIDAD':null):frvUnitOf(w);if(u)uLabels.push({u,pos:m.index});}
+  const unitTokSkip=new Set();uLabels.forEach(l=>{const ti=tpos.findIndex(c=>c===l.pos);if(ti>=0)unitTokSkip.add(ti);});
+  const unitHit=nums.find(x=>x.unit);
+  if(uLabels.length)put('u',uLabels[uLabels.length-1].u,1e9);
+  else if(unitHit)put('u',unitHit.unit,0);
+  else{for(let i=0;i<toks.length;i++){if(unitTokSkip.has(i))continue;const u=frvUnitOf(toks[i]);if(u){put('u',u,0);break;}}}
   // asignar cada número a la calidad más cercana (las cantidades pueden ir antes: «120 canastillas de extra»)
   const lines={};const order=[];const lineOf=c=>{if(!lines[c]){lines[c]={cal:c,q:null,p:null};order.push(c);}return lines[c];};
   cal.forEach(h=>lineOf(h.cal));
@@ -2322,7 +2330,7 @@ function frutaVoiceModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="frvRefresh()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Venta detectada</div>
    <div id="frv_prev"></div>
-   <div class="note"><b>Calidades:</b> ${esc(cals)}. También entiende sinónimos («manchada», «pipitos», «menuda», «gruesa», «revuelta», «exportación»…). Di cada calidad con su cantidad y, si quieres, su precio: «extra 120 a 32 mil», «80 canastillas de mediana», «mancha 40». Los números de <b>decenas o centenas</b> (10, 40, 120, 150) son <b>cantidad</b>; los de <b>miles</b> (10.000, 32.000, 80.000) son <b>precio</b>. Si no dices el precio, se usa el <b>precio del día</b>. «Todo a 30 mil» pone ese precio a las calidades sin precio. Para el pago: «pagado», «de contado», «pendiente», «fiado», «me debe».</div>`,
+   <div class="note"><b>Calidades:</b> ${esc(cals)}. También entiende sinónimos («manchada», «pipitos», «menuda», «gruesa», «revuelta», «exportación»…). Di cada calidad con su cantidad y, si quieres, su precio: «extra 120 a 32 mil», «80 canastillas de mediana», «mancha 40». Los números de <b>decenas o centenas</b> (10, 40, 120, 150) son <b>cantidad</b>; los de <b>miles</b> (10.000, 32.000, 80.000) son <b>precio</b>. Si no dices el precio, se usa el <b>precio del día</b>. «Todo a 30 mil» pone ese precio a las calidades sin precio. Para el pago: «pagado», «de contado», «pendiente», «fiado», «me debe». Para la unidad di «unidad» y luego cuál: «unidad kilos», «unidad canastillas».</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';frvRefresh();}},
     {label:'Llenar venta',cls:'btn primary',fn:()=>frvFill()}]);
