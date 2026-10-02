@@ -466,6 +466,11 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .vz-it b{display:block;font-size:12.5px;color:var(--faint);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vz-it.ok{border-color:var(--green);background:var(--green-soft)}
 .vz-it.ok b{color:var(--ink)}
+.vz-prods{grid-column:1/-1}
+.vz-prods div{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.vz-prods em{font-style:normal;display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--green);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px;font-weight:700;color:var(--ink)}
+.vz-prods em button{border:none;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;border-radius:50%}
+.vz-prods em button:hover{color:var(--red);background:var(--red-soft)}
 /* Campos de fecha en formato día/mes/año, sin importar el idioma del navegador */
 .dmy-wrap{position:relative;display:block;width:100%;min-width:0}
 .dmy-wrap>input[type=date]{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent;cursor:pointer}
@@ -1795,6 +1800,66 @@ function vzCatFrom(text,t){
   const fz=vzFuzzyIn(cats,text);if(fz&&fz.sim>=0.8&&(!best||fz.sim>=0.9))best={v:fz.name,pos:best?best.pos:0};
   return best;
 }
+
+// ---- Base de vocabulario (más de 1.000 palabras generales y del campo) para corregir lo que el dictado entiende mal ----
+const VZ_LEX_WORDS="cero uno una dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciséis diecisiete dieciocho diecinueve veinte veintiuno veintidós veintitrés veinticuatro veinticinco veintiséis veintisiete veintiocho veintinueve treinta cuarenta cincuenta sesenta setenta ochenta noventa cien ciento doscientos trescientos cuatrocientos quinientos seiscientos setecientos ochocientos novecientos mil millón millones medio media mitad cuarto tercio docena par pares doble triple enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre lunes martes miércoles jueves viernes sábado domingo hoy ayer antier anteayer mañana tarde noche madrugada semana semanas quincena quincenas mes meses año años fecha día días pasado pasada próximo próxima anterior siguiente último última primero primera segundo segunda tercero tercera fin principio mediados finca fincas centro tipo categoría descripción concepto detalle unidad unidades medida comercio comercios proveedor proveedores almacén almacenes cliente clientes cantidad precio unitario valor total estado factura facturas número abono abonos saldo pendiente pendientes pagado pagada pagados cancelado cancelada contado crédito fiado deuda deudas debo debe debemos cobro cobros recibido recibida egreso egresos ingreso ingresos gasto gastos compra compras venta ventas pago pagos transferencia efectivo consignación consignó nequi daviplata bancolombia banco cheque recibo recibos cuenta cuentas cobrar pagar anticipo anticipos préstamo préstamos descuento descuentos iva retención impuesto impuestos movimiento movimientos registro nota observación remisión cotización pedido pedidos orden domicilio fertilizante fertilizantes urea dap kcl cloruro potasio nitrógeno fósforo calcio magnesio boro zinc azufre cal dolomita foliar foliares orgánico orgánica gallinaza compost humus bocashi lombricompost enmienda micronutrientes elementos menores mayores nutrición nutriente nutrientes herbicida herbicidas fungicida fungicidas insecticida insecticidas acaricida nematicida bactericida coadyuvante coadyuvantes pegante pegantes adherente surfactante glifosato paraquat gramoxone glufosinato mancozeb oxicloruro cobre sulfato clorpirifos imidacloprid abamectina cipermetrina lambda fipronil malatión carbendazim propiconazol tebuconazol azoxistrobina metalaxil fosetil aceite agrícola hormona hormonas enraizador cicatrizante trampa trampas feromona feromonas cebo veneno químico químicos insumo insumos agroquímico agroquímicos producto productos dosis mezcla caldo aplicación aplicaciones aspersión litro litros mililitros centímetros cúbicos naranja naranjas valencia tangelo mandarina mandarinas limón limones tahití aguacate aguacates hass lorena plátano plátanos banano yuca maíz café cacao piña papaya guayaba mango maracuyá lulo tomate pimentón cebolla frijol arroz caña pasto pastos brachiaria kingrass forraje injerto injertos patrón patrones colino colinos plántula plántulas semilla semillas vivero árbol árboles planta plantas mata matas fruto frutos fruta frutas cosecha cosechas cítricos cítrico huerto cultivo cultivos lote lotes potrero potreros cuadra hectárea hectáreas surco surcos calle calles hoja hojas raíz raíces tallo flor flores floración extra mediana mancha pareja pipo pipos grueso parejo calidad descarte fumigación fumigaciones fumigada fumigadas fumigar abonada abonadas abonar poda podas podar plateo platear guadañada guadañar rocería deshierbe desyerba desyerbar siembra sembrar resiembra trasplante riego regar drenaje recolección recoger empaque empacar selección seleccionar cargue cargar descargue descargar transporte transportar flete fletes acarreo mantenimiento reparación reparaciones arreglo arreglos arreglar limpieza limpiar cerca cercas cercado encierro control monitoreo muestreo análisis suelo suelos visita asesoría jornada labor labores trabajo trabajos tarea tareas guadaña guadañas motosierra machete machetes pala palas palín azadón rastrillo carretilla carretillas fumigadora fumigadoras bomba bombas espalda estacionaria manguera mangueras boquilla boquillas tanque tanques caneca canecas garrafa garrafas balde baldes tijera tijeras serrucho escalera escaleras tractor rastra arado remolque moto motos motocarro camión camioneta carro llanta llantas batería baterías filtro filtros cadena cadenas repuesto repuestos rodamiento correa correas tornillo tornillos tuerca tuercas alambre púa grapa grapas puntilla puntillas poste postes varilla varillas tubo tubos tubería codo codos válvula válvulas cemento arena gravilla ladrillo ladrillos teja tejas madera tabla tablas polisombra plástico costal costales lona cabuya piola canastilla canastillas caja cajas estiba estibas báscula balanza herramienta herramientas equipo equipos motor motores bujía carburador cuchilla cuchillas nylon hilo guantes overol botas gorra careta gafas tapabocas mascarilla impermeable uniforme dotación ganado vaca vacas toro toros novillo novillos novilla novillas ternero terneros ternera becerro res reses caballo caballos yegua mula burro cerdo cerdos marrano gallina gallinas pollo pollos pato peces leche carne sal mineralizada concentrado melaza ensilaje heno purgante purga vacuna vacunas vacunación aftosa brucelosis vitamina vitaminas antibiótico ivermectina baño garrapata garrapatas mosca moscas ordeño ordeñador vaquero vaqueros veterinario veterinaria medicamento medicamentos inyección jeringa gasolina acpm diésel lubricante lubricantes grasa galón galones peaje peajes parqueadero lavado combustible combustibles bulto bultos kilo kilos kilogramo kilogramos gramo gramos libra libras arroba arrobas tonelada toneladas mililitro metro metros rollo rollos jornal jornales hora horas viaje viajes carga cargas paquete paquetes frasco frascos sobre sobres cuñete cuñetes bolsa bolsas trabajador trabajadores jornalero jornaleros administrador administradora mayordomo encargado capataz operario operarios conductor conductores ayudante ayudantes piloto pilotos socio socios contador contadora abogado señor señora don doña ingeniero agrónomo técnico empleado empleados obrero obreros cuadrilla dueño nómina sueldo sueldos salario salarios prima cesantías vacaciones liquidación seguridad social eps arl pensión parafiscales extras dominical festivo bonificación subsidio auxilio luz energía agua acueducto internet celular minutos plan recarga arriendo alquiler predial dian cámara notaría seguro seguros póliza soat tecnomecánica licencia papelería fotocopias envío encomienda almuerzo almuerzos refrigerio comida mercado viáticos hospedaje pasaje pasajes taxi bus servicio servicios público públicos ferretería agropecuaria agroinsumos agroveterinaria distribuidora comercializadora tienda droguería estación taller depósito bodega supermercado cooperativa empresa de la el los las en a y con para por del al un unos unas que se su sus es fue son más menos muy ya no sí también cada otro otra otros otras todo toda todos todas entre sin hasta desde hacia cuando donde como porque pero mejor perdón corrijo corrección cambio cambiar quiero necesito compré compramos vendí vendimos pagué pagamos recibí recibimos cobramos quedé quedamos hice hicimos llevé llevamos traje trajimos dejé puse gasté gastamos salió costó costaron valió vale valen cuesta cuestan completo completa entero entera nuevo nueva nuevos viejo usado bueno buena malo mala grande grandes pequeño pequeña poco poca mucho mucha varios varias algún alguna ningún ninguna este esta estos estas ese esa esos esas aquel aquí allá acá ahí luego después antes ahora siempre nunca vez veces solo sola junto juntos aparte además igual favor gracias listo bien mal señal lugar casa cosa cosas parte partes resto vuelta caso tiempo forma dinero plata peso pesos centavos moneda billete billetes suma monto cuota cuotas interés intereses capital ganancia ganancias pérdida pérdidas utilidad costos inversión presupuesto ahorro menor fondo distribuidor vendedor comprador intermediario acopiador mayorista minorista plaza central abastos exportación exportadora empacadora lluvia lluvias verano invierno sequía clima temperatura humedad viento sol tierra barro camino caminos carretera vía puente quebrada río pozo aljibe reservorio represa motobomba electrobomba";
+let vzLexC=null;
+function vzLexBuild(){
+  const dyn=[].concat(CFG.fincas||[],CFG.comercios||[],CFG.clientes||[],CFG.empleados||[],CFG.catEgresos||[],CFG.catIngresos||[],CFG.unidades||[],(CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean));
+  const sig=dyn.join('|');if(vzLexC&&vzLexC.sig===sig)return vzLexC;
+  const map=new Map(),byPh=new Map(),list=[];
+  const add=(w,dynamic)=>{const k=vzNorm(w).replace(/[^a-z0-9]/g,'');if(k.length<2||map.has(k))return;const disp=dynamic?w.toLowerCase():w;map.set(k,disp);const p=vzPhon(k).replace(/ /g,'');if(!byPh.has(p))byPh.set(p,disp);list.push({k,p,disp});};
+  VZ_LEX_WORDS.split(' ').forEach(w=>add(w,false));
+  dyn.forEach(name=>String(name).split(/[\s/.,-]+/).forEach(w=>{if(w.length>=3)add(w,true);}));
+  vzLexC={sig,map,byPh,list};return vzLexC;
+}
+const VZ_NAMECTX=new Set(['cliente','comercio','proveedor','almacen','don','dona','senor','senora','donde','empleado','trabajador']);
+function vzLexBest(n,L){
+  const p=vzPhon(n).replace(/ /g,'');if(L.byPh.has(p))return{w:L.byPh.get(p),s:1};
+  const len=n.length;if(len<=5)return null;
+  const need=len<=7?0.83:0.8;let best=null;
+  for(const it of L.list){if(Math.abs(it.p.length-p.length)>2||it.p[0]!==p[0])continue;const s=vzSim(p,it.p);if(s>=need&&(!best||s>best.s))best={w:it.disp,s};}
+  return best;
+}
+function vzLexFix(text){
+  if(!text)return text;const L=vzLexBuild();
+  const parts=String(text).split(/\s+/).filter(Boolean);const out=[];
+  const core=t=>{const m=t.match(/^([^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]*)(.*?)([.,;:!?]*)$/);return m?{pre:m[1],w:m[2],post:m[3]}:{pre:'',w:t,post:''};};
+  for(let i=0;i<parts.length;i++){
+    const a=core(parts[i]);const n=vzNorm(a.w).replace(/[^a-z0-9]/g,'');
+    if(!n||/^\d/.test(n)||!/[a-z]/.test(n)){out.push(parts[i]);continue;}
+    const prev=i>0?vzNorm(core(parts[i-1]).w):'';
+    // palabra partida en dos: «a bono» -> «abono», «moto sierra» -> «motosierra», «con tado» -> «contado»
+    if(i+1<parts.length&&!a.post){const b=core(parts[i+1]);const nb=vzNorm(b.w).replace(/[^a-z0-9]/g,'');
+      if(nb&&nb.length>=2&&!/^\d/.test(nb)&&!(L.map.has(n)&&L.map.has(nb))&&vzPhon(n+nb).replace(/ /g,'')!==vzPhon(n).replace(/ /g,'')){const j=n+nb;const hit=L.map.get(j)||(j.length>=5?L.byPh.get(vzPhon(j).replace(/ /g,'')):null);
+        if(hit){out.push(a.pre+hit+b.post);i++;continue;}}}
+    if(L.map.has(n)){out.push(a.pre+L.map.get(n)+a.post);continue;}
+    if(VZ_NAMECTX.has(prev)){out.push(parts[i]);continue;}
+    const best=vzLexBest(n,L);out.push(best?a.pre+best.w+a.post:parts[i]);
+  }
+  return out.join(' ');
+}
+// ---- Quita repeticiones que mete el reconocedor («compra de abono compra de abono») ----
+function vzDedupe(text){
+  let w=String(text||'').split(/\s+/).filter(Boolean);const nk=x=>vzNorm(x).replace(/[^a-z0-9]/g,'');
+  for(let n=Math.min(10,Math.floor(w.length/2));n>=1;n--){
+    for(let i=0;i+2*n<=w.length;){let same=true;for(let k=0;k<n;k++)if(nk(w[i+k])!==nk(w[i+n+k])){same=false;break;}
+      if(same&&w.slice(i,i+n).some(x=>/[a-z]/i.test(x))){w.splice(i+n,n);}else i++;}
+  }
+  return w.join(' ');
+}
+// ---- Une los resultados del reconocedor sin duplicar (en Android cada resultado repite lo anterior) ----
+function vzMergeFinals(list){
+  let acc='';const nk=s=>vzNorm(s).replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+  list.forEach(r=>{r=String(r||'').trim();if(!r)return;const an=nk(acc),rn=nk(r);
+    if(!an){acc=r;return;}
+    if(rn.startsWith(an)){acc=r;return;}
+    if(an.endsWith(rn)||an.includes(rn))return;
+    const aw=an.split(' '),rw=rn.split(' '),rws=r.split(/\s+/);let k=Math.min(aw.length,rw.length);
+    for(;k>0;k--){if(aw.slice(-k).join(' ')===rw.slice(0,k).join(' '))break;}
+    acc=(acc+' '+rws.slice(k).join(' ')).trim();});
+  return acc;
+}
 function vzProducts(){return [...new Set((CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean))];}
 // Encuentra químicos del catálogo (por cómo suenan, con tolerancia) y devuelve coincidencias sin solaparse
 function vzProdMatches(toks){
@@ -1814,6 +1879,7 @@ function vzFixProducts(text){
   return{text:out.join(' '),found};
 }
 function vzParse(raw){
+  raw=vzLexFix(vzDedupe(raw));
   const n=vzNumbers(vzNorm(raw));const toks=n.replace(/([,;:])/g,' $1 ').split(/\s+/).filter(Boolean);
   const tokPos=[];{let p=0;toks.forEach(w=>{const i=n.indexOf(w,p);tokPos.push(i<0?p:i);p=(i<0?p:i)+w.length;});}
   const at=ix=>tokPos[ix]!=null?tokPos[ix]:n.length;
@@ -1879,8 +1945,8 @@ function vzParse(raw){
     seg=restore(seg);if(seg)r.d=seg.charAt(0).toUpperCase()+seg.slice(1);}
   // químicos del catálogo: autocorrección en la descripción y detección en toda la frase
   const allP=vzProdMatches(toks).map(h=>h.name);const prodsAll=[...new Set(allP)];
-  if(r.d){const fx=vzFixProducts(r.d);r.d=fx.text;const miss=prodsAll.filter(p=>!fx.found.includes(p));if(miss.length&&!F.d.v.explicit)r.d+=(fx.found.length?', ':' ')+miss.join(', ');}
-  else if(prodsAll.length){r.d=((r.t||'E')==='E'?'Compra de ':'')+prodsAll.join(', ');}
+  r._prodCount={};allP.forEach(p=>{r._prodCount[p]=(r._prodCount[p]||0)+1;});
+  if(prodsAll.length){r.d=prodsAll.join(' - ');}
   if(r.d){r.d=r.d.replace(/\s+([,;:.])/g,'$1').replace(/[\s,;:.]+$/,'').trim();r.d=r.d.charAt(0).toUpperCase()+r.d.slice(1);}
   if(prodsAll.length){r._prod=prodsAll;if((r.t||'E')==='E'&&!(F.c&&F.c.v.text)){const iq=CFG.catEgresos.find(c=>vzNorm(c)==='insumos/quimicos');if(iq)r.c=iq;}}
   return r;
@@ -1890,7 +1956,7 @@ function vzPreviewHTML(r){
   const tot=(r.q||0)*(r.pu||0);
   return row('Fecha',r.f?fmtFecha(r.f):'Hoy (por defecto)')+row('Finca',r.fi)+row('Tipo',r.t==='I'?'Ingreso':(r.t==='E'?'Egreso':''))+row('Categoría',r.c)+row('Descripción',r.d)+
     row('Cantidad',r.q?(r.q+(r.u?' '+r.u:'')):'')+row('Precio unitario',r.pu?fmt(r.pu):'')+row('Total',tot?fmt(tot):'')+row(r.t==='I'?'Cliente':'Proveedor',r.t==='I'?(r.cl||r.co):r.co)+
-    row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa)+(r._prod?row('Químicos',r._prod.join(', ')):'');
+    row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa)+(r._prod&&r._prod.length?`<div class="vz-it ok vz-prods"><span>Químicos guardados (${r._prod.length})</span><div>${r._prod.map((nm,i)=>`<em>${esc(nm)}<button type="button" title="Quitar" onclick="vzRemoveProd(${i})">×</button></em>`).join('')}</div></div>`:'');
 }
 function vzStop(){if(ui._vzRec){ui._vzOn=false;try{ui._vzRec.stop();}catch(e){}ui._vzRec=null;}}
 function voiceMovModal(){
@@ -1904,29 +1970,40 @@ function voiceMovModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
    <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
-   <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Los químicos del catálogo de <b>Preparación de químicos</b> se reconocen y se corrigen solos (por ejemplo, «romectín» → ROMECTIN). Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
-   [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();closeModal();}},{label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzFinal='';vzRefresh();}},{label:'Llenar formulario',cls:'btn primary',fn:()=>vzFill()}]);
-  ui._vzFinal='';
+   <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Los químicos del catálogo de <b>Preparación de químicos</b> se reconocen, se corrigen solos (por ejemplo, «romectín» → ROMECTIN) y se van guardando en una lista: en Descripción quedan solo sus nombres. Si alguno se coló por error, quítalo con la ×. Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
+   [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();closeModal();}},{label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';ui._vzProds=[];ui._vzBlock={};vzRefresh();}},{label:'Llenar formulario',cls:'btn primary',fn:()=>vzFill()}]);
+  ui._vzFinal='';ui._vzProds=[];ui._vzBlock={};ui._vzBase='';ui._vzSess='';
 }
-function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;const r=vzParse(t.value);const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
+function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;const r=vzParse(t.value);
+  ui._vzProds=ui._vzProds||[];ui._vzBlock=ui._vzBlock||{};
+  Object.entries(r._prodCount||{}).forEach(([nm,c])=>{if(ui._vzBlock[nm]!=null&&c<=ui._vzBlock[nm])return;delete ui._vzBlock[nm];if(!ui._vzProds.includes(nm))ui._vzProds.push(nm);});
+  if(ui._vzProds.length){r._prod=ui._vzProds.slice();r.d=ui._vzProds.join(' - ');if((r.t||'E')==='E'){const iq=CFG.catEgresos.find(c=>vzNorm(c)==='insumos/quimicos');if(iq)r.c=iq;}}else{delete r._prod;}
+  ui._vzLast=r;const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
+function vzRemoveProd(i){const nm=(ui._vzProds||[])[i];if(!nm)return;ui._vzProds.splice(i,1);const r=ui._vzLast||{};ui._vzBlock=ui._vzBlock||{};ui._vzBlock[nm]=(r._prodCount&&r._prodCount[nm])||1;vzRefresh();}
 function vzToggle(){
   if(ui._vzRec){vzStop();const st=document.getElementById('vz_st');if(st)st.textContent='Dictado en pausa. Toca de nuevo para seguir hablando.';const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
-  const rec=new SR();rec.lang='es-CO';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
-  const ta=document.getElementById('vz_txt');ui._vzFinal=(ta&&ta.value.trim())?ta.value.trim()+' ':'';
-  rec.onresult=ev=>{let fin='',inter='';for(let i=ev.resultIndex;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin+=tx+' ';else inter+=tx;}
-    if(fin)ui._vzFinal+=fin;const t=document.getElementById('vz_txt');if(t){t.value=(ui._vzFinal+inter).trim();vzRefresh();}};
-  rec.onerror=ev=>{const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';};
-  rec.onend=()=>{if(ui._vzOn&&ui._vzRec===rec){try{rec.start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
-  try{rec.start();ui._vzRec=rec;ui._vzOn=true;const b=document.getElementById('vz_mic');if(b)b.classList.add('on');const st=document.getElementById('vz_st');if(st)st.innerHTML='<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.';}catch(e){toast('No se pudo iniciar el micrófono');}
+  const android=/Android/i.test(navigator.userAgent||'');
+  const ta=document.getElementById('vz_txt');ui._vzBase=(ta&&ta.value.trim())?ta.value.trim():'';ui._vzSess='';
+  const start=()=>{
+    const rec=new SR();rec.lang='es-CO';rec.continuous=!android;rec.interimResults=true;rec.maxAlternatives=1;
+    rec.onresult=ev=>{const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
+      ui._vzSess=vzLexFix(vzDedupe(vzMergeFinals(fin)));const t=document.getElementById('vz_txt');
+      if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();vzRefresh();}};
+    rec.onerror=ev=>{if(ev.error==='no-speech'&&ui._vzOn)return;const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';if(ev.error==='not-allowed'){ui._vzOn=false;}};
+    rec.onend=()=>{if(ui._vzRec!==rec)return;ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;vzRefresh();}
+      if(ui._vzOn){try{start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
+    rec.start();ui._vzRec=rec;
+  };
+  try{ui._vzOn=true;start();const b=document.getElementById('vz_mic');if(b)b.classList.add('on');const st=document.getElementById('vz_st');if(st)st.innerHTML='<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.';}catch(e){ui._vzOn=false;toast('No se pudo iniciar el micrófono');}
 }
 function vzFill(){
   const t=document.getElementById('vz_txt');const text=t?t.value.trim():'';
   if(!text){toast('Dicta o escribe el movimiento primero');return;}
-  vzStop();const r=vzParse(text);const preset={};
+  vzStop();const clean=vzLexFix(vzDedupe(text));const r=vzParse(clean);if(ui._vzProds&&ui._vzProds.length){r.d=ui._vzProds.join(' - ');if((r.t||'E')==='E'){const iq=CFG.catEgresos.find(c=>vzNorm(c)==='insumos/quimicos');if(iq)r.c=iq;}}const preset={};
   ['f','fi','t','c','d','u','q','pu','e','ab','fa','co','cl'].forEach(k=>{if(r[k]!=null&&r[k]!=='')preset[k]=r[k];});
   if(preset.t==='I'&&!preset.cl&&preset.co&&CFG.clientes.includes(preset.co)){preset.cl=preset.co;delete preset.co;}
-  closeModal();setTimeout(()=>openMov(null,preset,{voice:true,text}),60);
+  closeModal();setTimeout(()=>openMov(null,preset,{voice:true,text:clean}),60);
 }
 function catOpts(t,sel){const arr=t==='I'?CFG.catIngresos:CFG.catEgresos;return arr.map(c=>`<option ${sel===c?'selected':''}>${esc(c)}</option>`).join('');}
 async function saveMov(id){
