@@ -1725,14 +1725,14 @@ const VZ_CAT_I=[[/naranja/,'venta naranja'],[/aguacate/,'venta aguacate'],[/gana
 // ---- Comparación fonética (cómo suena en español) para nombres de comercios, clientes y fincas ----
 function vzPhon(s){
   let t=vzNorm(s).replace(/[^a-z0-9 ]/g,' ');
-  t=t.replace(/ph/g,'f').replace(/qu/g,'k').replace(/c(?=[ei])/g,'s').replace(/ch/g,'x').replace(/c/g,'k').replace(/z/g,'s').replace(/ll/g,'i').replace(/y/g,'i').replace(/v/g,'b').replace(/w/g,'u').replace(/g(?=[ei])/g,'j').replace(/h/g,'').replace(/x/g,'s');
+  t=t.replace(/ph/g,'f').replace(/th/g,'t').replace(/sh/g,'s').replace(/qu/g,'k').replace(/c(?=[ei])/g,'s').replace(/ch/g,'x').replace(/c/g,'k').replace(/z/g,'s').replace(/ll/g,'i').replace(/y/g,'i').replace(/v/g,'b').replace(/w/g,'u').replace(/g(?=[ei])/g,'j').replace(/h/g,'').replace(/x/g,'s');
   return t.replace(/([a-z])\1+/g,'$1').replace(/\s+/g,' ').trim();
 }
 function vzLev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
 function vzSim(a,b){if(!a||!b)return 0;const d=vzLev(a,b),L=Math.max(a.length,b.length);if(L<=4)return d===0?1:(d===1&&Math.min(a.length,b.length)>=3?0.8:0);return 1-d/L;}
 const VZ_STOP=new Set(['de','del','la','el','los','las','y','en','a','al','por','para','con','finca','servicio','estacion','comercio','proveedor','cliente','almacen','sa','sas','ltda']);
 // Busca en la frase (lista de palabras normalizadas) el nombre más parecido de la lista; devuelve la coincidencia que aparece MÁS AL FINAL
-function vzFuzzyAll(list,toks){
+function vzFuzzyAll(list,toks,minSim,tokMin){minSim=minSim||0.8;tokMin=tokMin||0.85;
   const out=[];const ph=toks.map(w=>vzPhon(w));
   const cands=(list||[]).map(name=>{const pt=vzPhon(name).split(' ').filter(Boolean);return{name,full:pt.join(''),toks:pt};});
   const tokCount={};cands.forEach(c=>new Set(c.toks).forEach(t=>{tokCount[t]=(tokCount[t]||0)+1;}));
@@ -1741,9 +1741,9 @@ function vzFuzzyAll(list,toks){
     cands.forEach(c=>{
       const maxW=Math.min(toks.length-i,c.toks.length+1);let best=0,bw=0;
       for(let w=1;w<=maxW;w++){const win=ph.slice(i,i+w).join('');const s=vzSim(win,c.full);if(s>best){best=s;bw=w;}}
-      if(best>=0.8){out.push({name:c.name,pos:i,len:bw,sim:best+0.001*c.full.length});return;}
+      if(best>=minSim){out.push({name:c.name,pos:i,len:bw,sim:best+0.001*c.full.length});return;}
       // palabra distintiva del nombre (aparece solo en ese nombre)
-      if(!VZ_STOP.has(toks[i])&&ph[i].length>=4)c.toks.forEach(t=>{if(t.length>=4&&!VZ_STOP.has(t)&&tokCount[t]===1){const s=vzSim(ph[i],t);if(s>=0.85)out.push({name:c.name,pos:i,len:1,sim:s*0.9});}});
+      if(!VZ_STOP.has(toks[i])&&ph[i].length>=4)c.toks.forEach(t=>{if(t.length>=4&&!VZ_STOP.has(t)&&tokCount[t]===1){const s=vzSim(ph[i],t);if(s>=tokMin)out.push({name:c.name,pos:i,len:1,sim:s*0.9});}});
     });
   }
   return out;
@@ -1795,6 +1795,24 @@ function vzCatFrom(text,t){
   const fz=vzFuzzyIn(cats,text);if(fz&&fz.sim>=0.8&&(!best||fz.sim>=0.9))best={v:fz.name,pos:best?best.pos:0};
   return best;
 }
+function vzProducts(){return [...new Set((CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean))];}
+// Encuentra químicos del catálogo (por cómo suenan, con tolerancia) y devuelve coincidencias sin solaparse
+function vzProdMatches(toks){
+  const prods=vzProducts();if(!prods.length)return[];
+  const need=name=>{const L=vzPhon(name).replace(/ /g,'').length;return L<=5?0.99:(L<=7?0.83:0.74);};
+  const hits=vzFuzzyAll(prods,toks,0.74,0.8).filter(h=>h.sim>=need(h.name)-0.001*vzPhon(h.name).replace(/ /g,'').length||h.sim>=1).sort((a,b)=>b.sim-a.sim||b.len-a.len);
+  const used=new Set(),out=[];hits.forEach(h=>{let ok=true;for(let k=h.pos;k<h.pos+h.len;k++)if(used.has(k))ok=false;if(!ok)return;for(let k=h.pos;k<h.pos+h.len;k++)used.add(k);out.push(h);});
+  return out.sort((a,b)=>a.pos-b.pos);
+}
+// Corrige en el texto los nombres de químicos dichos de forma aproximada por el nombre exacto del catálogo
+function vzFixProducts(text){
+  if(!text)return{text,found:[]};const words=text.split(/\s+/).filter(Boolean);const nt=words.map(w=>vzNorm(w).replace(/[^a-z0-9]/g,''));
+  const hits=vzProdMatches(nt);if(!hits.length)return{text,found:[]};
+  const out=[];let i=0;const found=[];
+  hits.forEach(h=>{while(i<h.pos)out.push(words[i++]);out.push(h.name);found.push(h.name);i=h.pos+h.len;});
+  while(i<words.length)out.push(words[i++]);
+  return{text:out.join(' '),found};
+}
 function vzParse(raw){
   const n=vzNumbers(vzNorm(raw));const toks=n.replace(/([,;:])/g,' $1 ').split(/\s+/).filter(Boolean);
   const tokPos=[];{let p=0;toks.forEach(w=>{const i=n.indexOf(w,p);tokPos.push(i<0?p:i);p=(i<0?p:i)+w.length;});}
@@ -1809,7 +1827,7 @@ function vzParse(raw){
   {const m=vzFuzzyLast(CFG.fincas,toks);if(m)put('fi',m.name,at(m.pos));}
   {const m=vzFuzzyLast(CFG.comercios,toks);if(m)put('co',m.name,at(m.pos));}
   {const m=vzFuzzyLast(CFG.clientes,toks);if(m)put('cl',m.name,at(m.pos));}
-  for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;for(const m of n.matchAll(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,''),'g'))){put('q',parseFloat(m[1]),m.index);put('u',u,m.index);}}
+  const qtyHits=[];for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;for(const m of n.matchAll(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,''),'g'))){qtyHits.push(m.index);put('q',parseFloat(m[1]),m.index);put('u',u,m.index);}}
   {const re=/\b(?:a|en|por|de)\s+(\d+(?:\.\d+)?)\s*(?:pesos\s*)?(?:cada uno|cada una|c\/u|cada (?:bulto|kilo|litro|galon|unidad|canastilla|caja|hora)|por (?:unidad|bulto|kilo|litro|galon|canastilla|caja|hora)|el (?:bulto|kilo|litro|galon|unidad)|la (?:unidad|canastilla|caja|hora)|unitario)/g;for(const m of n.matchAll(re))put('pu',parseFloat(m[1]),m.index);}
   {const re=/\b(?:por un total de|por un valor de|costo|costaron|costo de|vale|valio|pague|pagamos|pagaron)\s+(\d+(?:\.\d+)?)/g;for(const m of n.matchAll(re))put('tot',parseFloat(m[1]),m.index);}
   if(!F.pu&&!F.tot){const ms=[...n.matchAll(/\b(?:por|en|de|a)\s+(\d+(?:\.\d+)?)\s*(?:pesos)?(?=\s|,|\.|$)(?!\s*(?:bultos?|kilos?|litros?|galon|canastillas?|toneladas?|unidad|cajas?|horas?|jornales?|novillos?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/g)].filter(m=>parseFloat(m[1])>=500);if(ms.length){const m=ms[ms.length-1];put('tot',parseFloat(m[1]),m.index);}}
@@ -1839,6 +1857,8 @@ function vzParse(raw){
       case 'categoria':put('c',{text:txt},p);break;
     }
   });
+  // varias cantidades distintas en la misma frase (p. ej. 2 litros de X y 1 galón de Y): se registra como un conjunto
+  if(qtyHits.length>1&&!labels.some(l=>l.k==='cantidad')&&!(F.pu&&!F.tot)){const vu=CFG.unidades.includes('VARIOS')?'VARIOS':'';const p=Math.max(...qtyHits)+0.2;put('q',1,p);put('u',vu,p);if(!vu)delete F.u;}
   // ---- armar resultado ----
   const r={};['t','f','fi','co','cl','q','u','e','ab','fa'].forEach(k=>{if(F[k])r[k]=F[k].v;});
   const t=r.t||'E';
@@ -1857,6 +1877,12 @@ function vzParse(raw){
       {const st=seg.split(' ');const hits=vzFuzzyAll([r.co,r.fi].filter(Boolean),st).filter(h=>h.pos>1);if(hits.length){let cut=Math.min(...hits.map(h=>h.pos));while(cut>1&&/^(en|a|de|del|donde|para|la|el|finca)$/.test(st[cut-1]))cut--;seg=st.slice(0,cut).join(' ');}}
       seg=seg.replace(/\s+(?:de|del|la|el|en|para|a|y|con)(?:\s+(?:la|el))?$/,'').trim();}
     seg=restore(seg);if(seg)r.d=seg.charAt(0).toUpperCase()+seg.slice(1);}
+  // químicos del catálogo: autocorrección en la descripción y detección en toda la frase
+  const allP=vzProdMatches(toks).map(h=>h.name);const prodsAll=[...new Set(allP)];
+  if(r.d){const fx=vzFixProducts(r.d);r.d=fx.text;const miss=prodsAll.filter(p=>!fx.found.includes(p));if(miss.length&&!F.d.v.explicit)r.d+=(fx.found.length?', ':' ')+miss.join(', ');}
+  else if(prodsAll.length){r.d=((r.t||'E')==='E'?'Compra de ':'')+prodsAll.join(', ');}
+  if(r.d){r.d=r.d.replace(/\s+([,;:.])/g,'$1').replace(/[\s,;:.]+$/,'').trim();r.d=r.d.charAt(0).toUpperCase()+r.d.slice(1);}
+  if(prodsAll.length){r._prod=prodsAll;if((r.t||'E')==='E'&&!(F.c&&F.c.v.text)){const iq=CFG.catEgresos.find(c=>vzNorm(c)==='insumos/quimicos');if(iq)r.c=iq;}}
   return r;
 }
 function vzPreviewHTML(r){
@@ -1864,7 +1890,7 @@ function vzPreviewHTML(r){
   const tot=(r.q||0)*(r.pu||0);
   return row('Fecha',r.f?fmtFecha(r.f):'Hoy (por defecto)')+row('Finca',r.fi)+row('Tipo',r.t==='I'?'Ingreso':(r.t==='E'?'Egreso':''))+row('Categoría',r.c)+row('Descripción',r.d)+
     row('Cantidad',r.q?(r.q+(r.u?' '+r.u:'')):'')+row('Precio unitario',r.pu?fmt(r.pu):'')+row('Total',tot?fmt(tot):'')+row(r.t==='I'?'Cliente':'Proveedor',r.t==='I'?(r.cl||r.co):r.co)+
-    row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa);
+    row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa)+(r._prod?row('Químicos',r._prod.join(', ')):'');
 }
 function vzStop(){if(ui._vzRec){ui._vzOn=false;try{ui._vzRec.stop();}catch(e){}ui._vzRec=null;}}
 function voiceMovModal(){
@@ -1878,7 +1904,7 @@ function voiceMovModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
    <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
-   <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
+   <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Los químicos del catálogo de <b>Preparación de químicos</b> se reconocen y se corrigen solos (por ejemplo, «romectín» → ROMECTIN). Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();closeModal();}},{label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzFinal='';vzRefresh();}},{label:'Llenar formulario',cls:'btn primary',fn:()=>vzFill()}]);
   ui._vzFinal='';
 }
