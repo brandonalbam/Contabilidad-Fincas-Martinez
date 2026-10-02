@@ -1720,60 +1720,143 @@ function vzDate(n){
   return null;
 }
 const VZ_UNITS=[[/\bbultos?\b/,'BULTO'],[/\b(kilos?|kilogramos?|kg)\b/,'KG'],[/\blitros?\b/,'LITRO'],[/\bgalon(es)?\b/,'GALON'],[/\bcanastillas?\b/,'CANASTILLA'],[/\btoneladas?\b/,'TONELADA'],[/\bunidad(es)?\b/,'UNIDAD'],[/\b(cabezas?|reses|novillos?)\b/,'CABEZA'],[/\bgarrafas?\b/,'GARRAFA'],[/\bcanecas?\b/,'CANECA'],[/\bcajas?\b/,'CAJA'],[/\bhoras?\b/,'HORAS'],[/\brepuestos?\b/,'REPUESTO'],[/\bherramientas?\b/,'HERRAMIENTA'],[/\b(jornales|jornal|mano de obra)\b/,'MANO DE OBRA'],[/\bfumigadas?\b/,'FUMIGADA'],[/\babonadas?\b/,'ABONADA']];
-const VZ_CAT_E=[[/abono|fertiliz|urea|triple 15|foliar|cal agricola|quimic|fungicid|herbicid|insecticid|glifosato|veneno|agroquimic/,'insumos/quimicos'],[/semilla|plantula|colino/,'semillas'],[/herramient|maquinari|guadana|motosierra|fumigadora|bomba de espalda/,'herramientas/maquinaria'],[/nomina|jornal|sueldo|salario|quincena/,'nomina'],[/transporte|flete|acarreo|uber|taxi|pasaje/,'transporte'],[/gasolina|acpm|diesel|combustible|aceite|lubricante/,'combustible/lubricantes'],[/\bluz\b|energia|\bagua\b|internet|servicios? public/,'servicios publicos'],[/vacuna|veterinari|medicamento|purgante/,'veterinaria/vacunas'],[/sal mineral|concentrado|melaza|alimento para (el )?ganado|forraje/,'alimentos para ganado'],[/\bseguro/,'seguros'],[/impuesto|predial|\bdian\b/,'impuestos'],[/ferreteria|tornill|cemento|alambre|puntilla|tuberia/,'ferreteria'],[/botas|uniforme|guantes|indumentaria|overol/,'indumentaria/accesorios'],[/reparacion|arreglo|mantenimiento/,'reparacion'],[/vaquero/,'vaqueros'],[/contador|contaduria|contable/,'serv. contaduria']];
+const VZ_CAT_E=[[/reparacion|arreglo|mantenimiento/,'reparacion'],[/abono|fertiliz|urea|triple 15|foliar|cal agricola|quimic|fungicid|herbicid|insecticid|glifosato|veneno|agroquimic/,'insumos/quimicos'],[/semilla|plantula|colino/,'semillas'],[/herramient|maquinari|guadana|motosierra|fumigadora|bomba de espalda/,'herramientas/maquinaria'],[/nomina|jornal|sueldo|salario|quincena/,'nomina'],[/transporte|flete|acarreo|uber|taxi|pasaje/,'transporte'],[/gasolina|acpm|diesel|combustible|aceite|lubricante/,'combustible/lubricantes'],[/\b(recibo|factura|servicio|pago) de (luz|energia|agua|internet)\b|\bacueducto\b|servicios? public|\bluz\b|\benergia electrica\b|\binternet\b/,'servicios publicos'],[/vacuna|veterinari|medicamento|purgante/,'veterinaria/vacunas'],[/sal mineral|concentrado|melaza|alimento para (el )?ganado|forraje/,'alimentos para ganado'],[/\bseguro/,'seguros'],[/impuesto|predial|\bdian\b/,'impuestos'],[/ferreteria|tornill|cemento|alambre|puntilla|tuberia/,'ferreteria'],[/botas|uniforme|guantes|indumentaria|overol/,'indumentaria/accesorios'],[/vaquero/,'vaqueros'],[/contador|contaduria|contable/,'serv. contaduria']];
 const VZ_CAT_I=[[/naranja/,'venta naranja'],[/aguacate/,'venta aguacate'],[/ganado|novillo|\bvaca|\btoro|ternero|res\b/,'venta ganado'],[/mandarina/,'venta mandarina']];
-function vzFindIn(list,n){let best=null;(list||[]).forEach(x=>{const k=vzNorm(x).trim();if(k&&new RegExp('(^|[^a-z0-9])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z0-9]|$)').test(n)&&(!best||k.length>vzNorm(best).length))best=x;});return best;}
+// ---- Comparación fonética (cómo suena en español) para nombres de comercios, clientes y fincas ----
+function vzPhon(s){
+  let t=vzNorm(s).replace(/[^a-z0-9 ]/g,' ');
+  t=t.replace(/ph/g,'f').replace(/qu/g,'k').replace(/c(?=[ei])/g,'s').replace(/ch/g,'x').replace(/c/g,'k').replace(/z/g,'s').replace(/ll/g,'i').replace(/y/g,'i').replace(/v/g,'b').replace(/w/g,'u').replace(/g(?=[ei])/g,'j').replace(/h/g,'').replace(/x/g,'s');
+  return t.replace(/([a-z])\1+/g,'$1').replace(/\s+/g,' ').trim();
+}
+function vzLev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
+function vzSim(a,b){if(!a||!b)return 0;const d=vzLev(a,b),L=Math.max(a.length,b.length);if(L<=4)return d===0?1:(d===1&&Math.min(a.length,b.length)>=3?0.8:0);return 1-d/L;}
+const VZ_STOP=new Set(['de','del','la','el','los','las','y','en','a','al','por','para','con','finca','servicio','estacion','comercio','proveedor','cliente','almacen','sa','sas','ltda']);
+// Busca en la frase (lista de palabras normalizadas) el nombre más parecido de la lista; devuelve la coincidencia que aparece MÁS AL FINAL
+function vzFuzzyAll(list,toks){
+  const out=[];const ph=toks.map(w=>vzPhon(w));
+  const cands=(list||[]).map(name=>{const pt=vzPhon(name).split(' ').filter(Boolean);return{name,full:pt.join(''),toks:pt};});
+  const tokCount={};cands.forEach(c=>new Set(c.toks).forEach(t=>{tokCount[t]=(tokCount[t]||0)+1;}));
+  for(let i=0;i<toks.length;i++){
+    if(!ph[i]||/^[,;:.]$/.test(toks[i]))continue;
+    cands.forEach(c=>{
+      const maxW=Math.min(toks.length-i,c.toks.length+1);let best=0,bw=0;
+      for(let w=1;w<=maxW;w++){const win=ph.slice(i,i+w).join('');const s=vzSim(win,c.full);if(s>best){best=s;bw=w;}}
+      if(best>=0.8){out.push({name:c.name,pos:i,len:bw,sim:best+0.001*c.full.length});return;}
+      // palabra distintiva del nombre (aparece solo en ese nombre)
+      if(!VZ_STOP.has(toks[i])&&ph[i].length>=4)c.toks.forEach(t=>{if(t.length>=4&&!VZ_STOP.has(t)&&tokCount[t]===1){const s=vzSim(ph[i],t);if(s>=0.85)out.push({name:c.name,pos:i,len:1,sim:s*0.9});}});
+    });
+  }
+  return out;
+}
+function vzFuzzyLast(list,toks){const a=vzFuzzyAll(list,toks);if(!a.length)return null;a.sort((x,y)=>x.pos-y.pos||y.sim-x.sim);let best=a[a.length-1];const same=a.filter(x=>x.pos===best.pos).sort((x,y)=>y.sim-x.sim);return same[0];}
+function vzFuzzyIn(list,text){const toks=vzNorm(text).replace(/([,;:.])/g,' $1 ').split(/\s+/).filter(Boolean);const a=vzFuzzyAll(list,toks);if(!a.length)return null;a.sort((x,y)=>y.sim-x.sim||x.pos-y.pos);return a[0];}
+// ---- Rótulos de campos: si dices el nombre del campo, se toma lo que sigue ----
+const VZ_LABELS=[
+  ['precio',['precio unitario','valor unitario','precio por unidad','precio']],['total',['valor total','total']],['fecha',['fecha']],['finca',['finca']],
+  ['tipo',['tipo de movimiento','tipo']],['categoria',['categoria']],['descripcion',['descripcion','concepto','detalle']],['unidad',['unidad de medida','unidad']],
+  ['comercio',['comercio','proveedor','almacen']],['cliente',['cliente']],['cantidad',['cantidad']],['estado',['estado']],['factura',['numero de factura','factura']],['abono',['abono']]];
+function vzLabels(toks){
+  const found=[];const isNum=w=>/^\d+(\.\d+)?$/.test(w||'');
+  for(let i=0;i<toks.length;i++){
+    let hit=null;
+    for(const[k,ws]of VZ_LABELS){for(const w of ws){const p=w.split(' ');if(p.every((x,j)=>toks[i+j]===x)){if(!hit||p.length>hit.len)hit={k,start:i,len:p.length};}}}
+    if(!hit)continue;
+    const nx=toks[i+hit.len],nx2=toks[i+hit.len+1];
+    if(hit.k==='unidad'&&isNum(toks[i-1]))continue;
+    if(hit.k==='abono'&&!(isNum(nx)||(nx==='de'&&isNum(nx2))))continue;
+    if(hit.k==='factura'&&nx==='de'&&!isNum(nx2))continue;
+    found.push(hit);i+=hit.len-1;
+  }
+  return found;
+}
+const VZ_SHORT={finca:1,comercio:1,cliente:1,cantidad:1,precio:1,total:1,estado:1,factura:1,abono:1,unidad:1,tipo:1,categoria:1,fecha:1};
+function vzSegments(toks,labels){
+  return labels.map((lb,ix)=>{const stop=ix+1<labels.length?labels[ix+1].start:toks.length;let seg=toks.slice(lb.start+lb.len,stop);
+    while(seg.length&&/^(es|de|del|el|la|:|,|son|seria|igual a|a)$/.test(seg[0])&&!(lb.k==='descripcion'&&seg[0]==='de'))seg=seg.slice(1);
+    if(VZ_SHORT[lb.k]){const c=seg.findIndex(w=>/^[,;.]$/.test(w));if(c>=0)seg=seg.slice(0,c);}
+    else{const c=seg.findIndex(w=>/^[;.]$/.test(w));if(c>=0)seg=seg.slice(0,c);}
+    return{k:lb.k,pos:lb.start,toks:seg};});
+}
+function vzLastMatch(re,s){let last=null;for(const m of s.matchAll(new RegExp(re.source,re.flags.includes('g')?re.flags:re.flags+'g')))last=m;return last;}
+function vzDateAll(n){
+  const today=todayISO(),pad=x=>String(x).padStart(2,'0'),out=[];
+  for(const m of n.matchAll(/\b(antier|anteayer|antes de ayer)\b/g))out.push([m.index,addDaysISO(today,-2)]);
+  for(const m of n.matchAll(/\bayer\b/g))if(!/antes de $/.test(n.slice(0,m.index)))out.push([m.index,addDaysISO(today,-1)]);
+  for(const m of n.matchAll(/\bhoy\b/g))out.push([m.index,today]);
+  for(const m of n.matchAll(/\b(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?: (?:de |del )?(\d{4}))?/g)){const y=m[3]?+m[3]:+today.slice(0,4);let iso=`${y}-${pad(VZ_MES[m[2]])}-${pad(m[1])}`;if(!m[3]&&iso>today)iso=`${y-1}-${pad(VZ_MES[m[2]])}-${pad(m[1])}`;out.push([m.index,iso]);}
+  for(const m of n.matchAll(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g)){let y=m[3]?+m[3]:+today.slice(0,4);if(y<100)y+=2000;out.push([m.index,`${y}-${pad(m[2])}-${pad(m[1])}`]);}
+  for(const m of n.matchAll(/\b(?:el )?(?:pasado )?(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b/g)){const d=new Date(today+'T00:00:00');const diff=(d.getDay()-VZ_DOW[m[1]]+7)%7;out.push([m.index,addDaysISO(today,-diff)]);}
+  for(const m of n.matchAll(/\bel (?:dia )?(\d{1,2})\b(?! de| bultos| kilos)/g)){if(+m[1]<1||+m[1]>31)continue;let y=+today.slice(0,4),mo=+today.slice(5,7);let iso=`${y}-${pad(mo)}-${pad(m[1])}`;if(iso>today){mo--;if(mo<1){mo=12;y--;}iso=`${y}-${pad(mo)}-${pad(m[1])}`;}out.push([m.index,iso]);}
+  return out;
+}
+function vzCatFrom(text,t){
+  const n=' '+text+' ';const cats=t==='I'?CFG.catIngresos:CFG.catEgresos;let best=null;
+  for(const[re,target]of(t==='I'?VZ_CAT_I:VZ_CAT_E)){const m=vzLastMatch(re,n);if(m){const c=cats.find(c=>vzNorm(c)===target);if(c){best={v:c,pos:m.index};break;}}}
+  const fz=vzFuzzyIn(cats,text);if(fz&&fz.sim>=0.8&&(!best||fz.sim>=0.9))best={v:fz.name,pos:best?best.pos:0};
+  return best;
+}
 function vzParse(raw){
-  const r={};const notes=[];
-  const n0=vzNorm(raw);const n=vzNumbers(n0);
-  // tipo
-  if(/\bingreso\b/.test(n))r.t='I';else if(/\begreso\b|\bgasto\b/.test(n))r.t='E';
-  else if(/\bvent[ae]|\bvendi|\bvendimos|\bcobr|\brecibi|me pagaron|nos pagaron/.test(n))r.t='I';
-  else if(/\bcompr|\bpag(o|ue|amos)\b|\bfactura de\b/.test(n))r.t='E';
-  // fecha
-  const f=vzDate(n);if(f)r.f=f;
-  // finca
-  const fi=vzFindIn(CFG.fincas,n);if(fi)r.fi=fi;
-  // proveedor / cliente
-  const cl=vzFindIn(CFG.clientes,n);const co=vzFindIn(CFG.comercios,n);
-  if(cl){r.cl=cl;if(!r.t)r.t='I';}
-  if(co)r.co=co;
-  else{const m=n.match(/\b(?:proveedor|comercio|almacen|en el almacen|donde)\s+([a-z0-9 ]{3,40}?)(?=,|\.|\s(?:por|a|el|la|factura|pagad|pendient|cada|en la finca)\b|$)/);if(m)r.co=m[1].trim().toUpperCase();}
-  // categoría
-  const t=r.t||'E';const cats=t==='I'?CFG.catIngresos:CFG.catEgresos;
-  let cat=null;const mc=n.match(/\bcategoria\s+([a-z0-9/ .]{3,40}?)(?=,|\.|$|\s(?:por|a|el|la|en|pagad|pendient|factura)\b)/);
-  if(mc)cat=vzFindIn(cats,mc[1])||cats.find(c=>vzNorm(c).includes(mc[1].trim().split(' ')[0]));
-  if(!cat){for(const[re,target]of(t==='I'?VZ_CAT_I:VZ_CAT_E)){if(re.test(n)){cat=cats.find(c=>vzNorm(c)===target);if(cat)break;}}}
-  if(!cat)cat=vzFindIn(cats,n);
-  if(!cat&&t==='I')cat=cats.find(c=>/otros/i.test(c));
-  if(cat)r.c=cat;
-  // cantidad + unidad
-  for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;const m=n.match(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,'')));if(m){r.q=parseFloat(m[1]);r.u=u;break;}}
-  // precios
-  const mu=n.match(/\b(?:a|en|por|de)\s+(\d+(?:\.\d+)?)\s*(?:pesos\s*)?(?:cada uno|cada una|c\/u|cada (?:bulto|kilo|litro|galon|unidad|canastilla|caja|hora)|por (?:unidad|bulto|kilo|litro|galon|canastilla|caja|hora)|el (?:bulto|kilo|litro|galon|unidad)|la (?:unidad|canastilla|caja|hora)|unitario)/)||n.match(/precio unitario\s+(?:de\s+)?(\d+(?:\.\d+)?)/);
-  if(mu)r.pu=parseFloat(mu[1]);
-  const mt=n.match(/\b(?:por un total de|total(?: de)?|valor(?: total)?(?: de)?|costo|costaron|costo de|vale|valio|por un valor de|pague|pagamos|pagaron)\s+(\d+(?:\.\d+)?)/);
-  let tot=mt?parseFloat(mt[1]):null;
-  if(!r.pu&&!tot){const ms=[...n.matchAll(/\b(?:por|en|de|a)\s+(\d+(?:\.\d+)?)\s*(?:pesos)?(?=\s|,|\.|$)(?!\s*(?:bultos?|kilos?|litros?|galon|canastillas?|toneladas?|unidad|cajas?|horas?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/g)].map(x=>parseFloat(x[1])).filter(v=>v>=500);if(ms.length)tot=ms[ms.length-1];}
+  const n=vzNumbers(vzNorm(raw));const toks=n.replace(/([,;:])/g,' $1 ').split(/\s+/).filter(Boolean);
+  const tokPos=[];{let p=0;toks.forEach(w=>{const i=n.indexOf(w,p);tokPos.push(i<0?p:i);p=(i<0?p:i)+w.length;});}
+  const at=ix=>tokPos[ix]!=null?tokPos[ix]:n.length;
+  const F={};const put=(k,v,pos)=>{if(v==null||v==='')return;if(!F[k]||pos>=F[k].pos)F[k]={v,pos};};
+  const lastRe=(re,s)=>vzLastMatch(re,s);
+  // ---- lectura natural (lo último que se dice gana) ----
+  {const mI=lastRe(/\bingreso\b|\bvent[ae]s?\b|\bvendi(mos)?\b|\bcobr\w*|\brecibi\b|me pagaron|nos pagaron/,n),mE=lastRe(/\begreso\b|\bgasto\b|\bcompr\w*|\bpag(o|ue|amos)\b|\bfactura de\b/,n);
+   if(mI)put('t','I',mI.index);if(mE)put('t','E',mE.index);
+   const ex=lastRe(/\b(ingreso|egreso)\b/,n);if(ex)put('t',ex[1]==='ingreso'?'I':'E',ex.index+0.5);}
+  vzDateAll(n).forEach(([p,iso])=>put('f',iso,p));
+  {const m=vzFuzzyLast(CFG.fincas,toks);if(m)put('fi',m.name,at(m.pos));}
+  {const m=vzFuzzyLast(CFG.comercios,toks);if(m)put('co',m.name,at(m.pos));}
+  {const m=vzFuzzyLast(CFG.clientes,toks);if(m)put('cl',m.name,at(m.pos));}
+  for(const[re,u]of VZ_UNITS){if(!CFG.unidades.includes(u))continue;for(const m of n.matchAll(new RegExp('(\\d+(?:\\.\\d+)?)\\s+(?:de\\s+)?'+re.source.replace(/^\\b/,''),'g'))){put('q',parseFloat(m[1]),m.index);put('u',u,m.index);}}
+  {const re=/\b(?:a|en|por|de)\s+(\d+(?:\.\d+)?)\s*(?:pesos\s*)?(?:cada uno|cada una|c\/u|cada (?:bulto|kilo|litro|galon|unidad|canastilla|caja|hora)|por (?:unidad|bulto|kilo|litro|galon|canastilla|caja|hora)|el (?:bulto|kilo|litro|galon|unidad)|la (?:unidad|canastilla|caja|hora)|unitario)/g;for(const m of n.matchAll(re))put('pu',parseFloat(m[1]),m.index);}
+  {const re=/\b(?:por un total de|por un valor de|costo|costaron|costo de|vale|valio|pague|pagamos|pagaron)\s+(\d+(?:\.\d+)?)/g;for(const m of n.matchAll(re))put('tot',parseFloat(m[1]),m.index);}
+  if(!F.pu&&!F.tot){const ms=[...n.matchAll(/\b(?:por|en|de|a)\s+(\d+(?:\.\d+)?)\s*(?:pesos)?(?=\s|,|\.|$)(?!\s*(?:bultos?|kilos?|litros?|galon|canastillas?|toneladas?|unidad|cajas?|horas?|jornales?|novillos?|de (?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/g)].filter(m=>parseFloat(m[1])>=500);if(ms.length){const m=ms[ms.length-1];put('tot',parseFloat(m[1]),m.index);}}
+  {const mX=lastRe(/pendiente|a credito|fiado|\bdebo\b|por pagar|por cobrar|sin pagar|quede debiendo|queda debiendo/,n),mP=lastRe(/\bpagad[oa]\b|\bcancelad[oa]\b|de contado|ya (se )?pag\w*|recibid[oa]|cobrad[oa]/,n);if(mX)put('e','X',mX.index);if(mP)put('e','P',mP.index);}
+  for(const m of n.matchAll(/\babon(?:o|e|amos|aron)\s+(?:de\s+)?(\d+(?:\.\d+)?)/g))if(parseFloat(m[1])>=100){put('ab',parseFloat(m[1]),m.index);put('e','X',m.index);}
+  for(const m of n.matchAll(/\bfactura\s+(?:numero|nro|no\.?|n|#)?\s*([a-z]{0,3}-?\d[\w-]*)/g))put('fa',m[1].toUpperCase(),m.index);
+  {const m=lastRe(/\b(compra|pago|venta|arreglo|reparacion|flete|servicio|mantenimiento|transporte|jornales?|gasto|alquiler|fumigacion)\s+de\s+[^,.]{2,70}/,n);if(m)put('d',{seg:m[0]},m.index);}
+  // ---- rótulos dichos: «finca …», «comercio …», «precio …» (la palabra del campo no se escribe) ----
+  const labels=vzLabels(toks);const segs=vzSegments(toks,labels);
+  segs.forEach(sg=>{
+    const p=at(sg.pos)+0.25;const txt=sg.toks.join(' ');const num=(sg.toks.find(w=>/^\d+(\.\d+)?$/.test(w)));
+    if(!sg.toks.length)return;
+    switch(sg.k){
+      case 'finca':{const m=vzFuzzyIn(CFG.fincas,txt);if(m)put('fi',m.name,p);break;}
+      case 'comercio':{const m=vzFuzzyIn(CFG.comercios,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('co',m.name,p);else put('co',{newName:sg.toks.slice(0,5)},p);break;}
+      case 'cliente':{const m=vzFuzzyIn(CFG.clientes,sg.toks.slice(0,6).join(' '));if(m&&m.pos<=1)put('cl',m.name,p);else put('cl',{newName:sg.toks.slice(0,5)},p);put('t','I',p);break;}
+      case 'cantidad':{if(num){put('q',parseFloat(num),p);const after=sg.toks[sg.toks.indexOf(num)+1]||'';for(const[re,u]of VZ_UNITS){if(CFG.unidades.includes(u)&&re.test(after)){put('u',u,p);break;}}}break;}
+      case 'precio':if(num)put('pu',parseFloat(num),p+0.1);break;
+      case 'total':if(num)put('tot',parseFloat(num),p+0.1);break;
+      case 'abono':if(num){put('ab',parseFloat(num),p);put('e','X',p);}break;
+      case 'unidad':{for(const[re,u]of VZ_UNITS){if(CFG.unidades.includes(u)&&re.test(txt)){put('u',u,p);break;}}const m=vzFuzzyIn(CFG.unidades,txt);if(m&&m.sim>=0.8)put('u',m.name,p);break;}
+      case 'estado':{if(/pendient|credito|fiado|debe|por pagar|por cobrar|sin pagar/.test(txt))put('e','X',p);else if(/pagad|cancelad|contado|recibid|cobrad/.test(txt))put('e','P',p);break;}
+      case 'tipo':{if(/ingreso|venta|entrada/.test(txt))put('t','I',p);else if(/egreso|gasto|salida|compra/.test(txt))put('t','E',p);break;}
+      case 'factura':{const m=txt.match(/([a-z]{0,3}-?\d[\w-]*)/);if(m)put('fa',m[1].toUpperCase(),p);break;}
+      case 'fecha':{const d=vzDateAll(txt);if(d.length)put('f',d[d.length-1][1],p);break;}
+      case 'descripcion':put('d',{seg:txt,explicit:true},p);break;
+      case 'categoria':put('c',{text:txt},p);break;
+    }
+  });
+  // ---- armar resultado ----
+  const r={};['t','f','fi','co','cl','q','u','e','ab','fa'].forEach(k=>{if(F[k])r[k]=F[k].v;});
+  const t=r.t||'E';
+  if(F.c&&F.c.v.text){const c=vzCatFrom(F.c.v.text,t);if(c)r.c=c.v;}
+  if(!r.c){const c=vzCatFrom(n,t);if(c)r.c=c.v;else if(t==='I'){const o=CFG.catIngresos.find(c=>/otros/i.test(c));if(o)r.c=o;}}
+  const wmap={};String(raw).toLowerCase().split(/[\s,.;:]+/).forEach(w=>{const k=vzNorm(w);if(k&&!wmap[k])wmap[k]=w;});
+  const restore=s=>s.split(' ').map(w=>wmap[w]||w).join(' ');
+  ['co','cl'].forEach(k=>{if(r[k]&&r[k].newName){r[k]=restore(r[k].newName.join(' ')).toUpperCase();}});
+  if(F.pu)r.pu=F.pu.v;
+  if(F.tot){const tot=F.tot.v;if(!F.pu||F.tot.pos>F.pu.pos){if(r.q&&r.q>0)r.pu=Math.round(tot/r.q);else{r.q=1;r.pu=tot;}}}
   if(r.pu&&!r.q)r.q=1;
-  if(tot&&!r.pu){if(r.q&&r.q>0){r.pu=Math.round(tot/r.q);}else{r.q=1;r.pu=tot;}}
-  // estado y abono
-  if(/pendiente|a credito|fiado|\bdebo\b|por pagar|por cobrar|sin pagar|quede debiendo|queda debiendo/.test(n))r.e='X';
-  else if(/\bpagad[oa]\b|\bcancelad[oa]\b|de contado|ya (se )?pag|recibid[oa]|cobrad[oa]/.test(n))r.e='P';
-  const ma=n.match(/\babon(?:o|e|amos|aron)\s+(?:de\s+)?(\d+(?:\.\d+)?)/);if(ma&&parseFloat(ma[1])>=100){r.ab=parseFloat(ma[1]);r.e='X';}
-  // factura
-  const mf=n.match(/\bfactura\s+(?:numero|nro|no\.?|n|#)?\s*([a-z]{0,3}-?\d[\w-]*)/);if(mf)r.fa=mf[1].toUpperCase();
-  // descripción
-  const ld=raw.toLowerCase();
-  const md=n.match(/\b(?:descripcion|concepto|detalle)\s+(?:es\s+)?([^,.]{3,80})/);
-  if(md){r.d=md[1].trim();}
-  else{const ma2=n.match(/\b(compra|pago|venta|arreglo|reparacion|flete|servicio|mantenimiento|transporte|abono|jornales?|gasto|alquiler|fumigacion)\s+de\s+[^,.]{2,70}/);
-    if(ma2){let seg=ma2[0];seg=seg.replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|en el almacen|donde|el dia|ayer|hoy|antier)\b.*$/,'').trim();
-      if(r.co)seg=seg.replace(new RegExp('\\s(?:en|a|de|donde)\\s+(?:la\\s+|el\\s+)?'+vzNorm(r.co).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'.*$'),'').trim();
-      if(r.fi)seg=seg.replace(new RegExp('\\s(?:en|de|para|del)?\\s*(?:la\\s+)?(?:finca\\s+)?'+vzNorm(r.fi).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b.*$'),'').trim();
-      seg=seg.replace(/\s+(?:de|del|la|el|en|para|a|y|con)(?:\s+(?:la|el))?$/,'').trim();
-      const wmap={};String(raw).toLowerCase().split(/[\s,.;:]+/).forEach(w=>{const k=vzNorm(w);if(k&&!wmap[k])wmap[k]=w;});seg=seg.split(' ').map(w=>wmap[w]||w).join(' ');r.d=seg;}}
-  if(r.d){r.d=r.d.charAt(0).toUpperCase()+r.d.slice(1);}
+  if(F.d){let seg=F.d.v.seg;
+    if(!F.d.v.explicit){seg=seg.replace(/\s(?:a|en|por)\s+\d.*$/,'').replace(/\s(?:en la finca|finca|pagad|pendient|factura|categoria|al proveedor|proveedor|comercio|en el almacen|donde|el dia|ayer|hoy|antier|precio|cantidad|estado|total)\b.*$/,'').trim();
+      const strip=nm=>{if(!nm)return;seg=seg.replace(new RegExp('\\s(?:en|a|de|donde|del|para)\\s+(?:la\\s+|el\\s+)?(?:finca\\s+)?'+vzNorm(nm).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b.*$'),'').trim();};
+      strip(r.co);strip(r.fi);
+      {const st=seg.split(' ');const hits=vzFuzzyAll([r.co,r.fi].filter(Boolean),st).filter(h=>h.pos>1);if(hits.length){let cut=Math.min(...hits.map(h=>h.pos));while(cut>1&&/^(en|a|de|del|donde|para|la|el|finca)$/.test(st[cut-1]))cut--;seg=st.slice(0,cut).join(' ');}}
+      seg=seg.replace(/\s+(?:de|del|la|el|en|para|a|y|con)(?:\s+(?:la|el))?$/,'').trim();}
+    seg=restore(seg);if(seg)r.d=seg.charAt(0).toUpperCase()+seg.slice(1);}
   return r;
 }
 function vzPreviewHTML(r){
@@ -1795,7 +1878,7 @@ function voiceMovModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
    <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
-   <div class="note">Puedes hablar varias veces: cada frase se agrega al texto. Al terminar pulsa «Llenar formulario»; ahí revisas y completas lo que falte antes de guardar.</div>`,
+   <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();closeModal();}},{label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzFinal='';vzRefresh();}},{label:'Llenar formulario',cls:'btn primary',fn:()=>vzFill()}]);
   ui._vzFinal='';
 }
