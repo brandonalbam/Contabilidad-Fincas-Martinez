@@ -1093,7 +1093,7 @@ function applyCloud(d){
   PRESTAMOS=d.prestamos||[];PRESTAMOS.forEach(x=>{if(x.id>=preseq)preseq=x.id+1;});Store.set('prestamos',JSON.stringify(PRESTAMOS));
   if(d.mixdraft){const j=d.mixdraft;ui.mixHa=j.ha??'';ui.mixLxHa=j.lxha??200;ui.mixTank=j.tank??1000;ui.mixFinca=j.finca??'';ui.mixMode=j.mode||'fum';ui.mixTrees=j.trees??'';ui.cronoApplyK=j.applyK||'';ui.cronoApplyId=+j.applyId||0;ui.mixLines=(j.lines&&j.lines.length)?j.lines:[{n:'',d:'',u:'ml'}];Store.set('mixdraft',JSON.stringify(j));}
   seq=Math.max(0,...MOVS.map(m=>m.id||0))+1;nseq=Math.max(0,...NOMINAS.map(n=>n.id||0))+1;
-  normalizeNominaMonths();ensureMenosJornadas();snapshotNominaTarifas();
+  normalizeNominaMonths();ensureMenosJornadas();snapshotNominaTarifas();if(migrateDaySet())Store.set('nominas',JSON.stringify(NOMINAS));
   if(migrateFincaNames()){Store.set('dron',JSON.stringify(DRON));Store.set('crono',JSON.stringify(CRONO));Store.set('mixdraft',JSON.stringify({ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines}));}
   Store.set('config',JSON.stringify(CFG));Store.set('movimientos',JSON.stringify(MOVS));Store.set('nominas',JSON.stringify(NOMINAS));
 }
@@ -1185,6 +1185,7 @@ async function init(){
   const nm2=await Store.get('nominas'); NOMINAS=nm2?JSON.parse(nm2):[];
   NOMINAS.forEach(x=>{if(x.id>=nseq)nseq=x.id+1;});
   if(normalizeNominaMonths())await Store.set('nominas',JSON.stringify(NOMINAS));
+  if(migrateDaySet())await Store.set('nominas',JSON.stringify(NOMINAS));
   if(snapshotNominaTarifas())await Store.set('nominas',JSON.stringify(NOMINAS));
   const dr2=await Store.get('dron'); DRON=dr2?JSON.parse(dr2):[];
   DRON.forEach(x=>{if(x.id>=dseq)dseq=x.id+1;});
@@ -2207,7 +2208,7 @@ async function nvApply(){
   const noAs=omrJLabel(null);let nDays=0;
   res.order.forEach(name=>{const r=res.emps[name];let e=nom.entries.find(x=>x.emp===name);
     if(!e){e={emp:name,prestamo:0,dias:Array.from({length:14},()=>({j:noAs,fi:''}))};nom.entries.push(e);}
-    Object.entries(r.days).forEach(([i,v])=>{e.dias[+i]={j:v.j,fi:v.fi||''};nDays++;});
+    Object.entries(r.days).forEach(([i,v])=>{e.dias[+i]={j:v.j,fi:v.fi||'',set:1};nDays++;});
     if(r.prestamo)e.prestamo=r.prestamo.add?(+e.prestamo||0)+r.prestamo.v:r.prestamo.v;});
   await persistNom();ui._vzOnUpdate=null;closeModal();renderNomina();
   toast(`Quincena actualizada: ${res.order.length} empleado(s), ${nDays} día(s)`);
@@ -2790,6 +2791,7 @@ async function facturaEditSave(){
 /* ===== NÓMINA ===== */
 async function persistNom(){if(roGuard())return;await Store.set('nominas',JSON.stringify(NOMINAS));Cloud.schedulePush();}
 const jVal=l=>{const j=CFG.jornadas.find(x=>x.l===l);return j?+j.v||0:0;};
+function migrateDaySet(){let ch=false;(NOMINAS||[]).forEach(n=>{if(n.daySetMig)return;n.entries.forEach(e=>{if(e.dias.some(d=>d&&d.j&&!/asist/i.test(d.j)))e.dias.forEach(d=>{if(d&&!d.set){d.set=1;}});});n.daySetMig=1;ch=true;});return ch;}
 function ensureMenosJornadas(){
   if(!Array.isArray(CFG.jornadas))return false;let ch=false;
   const comp=CFG.jornadas.find(j=>/completa/i.test(j.l));const base=comp?(+comp.v||60000):60000;
@@ -2857,7 +2859,7 @@ function newQuincena(){
      const d=document.getElementById('nq_d').value;if(!d){toast('Indica la fecha de inicio');return;}
      const q=+document.getElementById('nq_q').value;
      const hasta=addDaysISO(d,13);
-     const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot()};
+     const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot(),daySetMig:1};
      NOMINAS.push(nom);await persistNom();ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();closeModal();renderNomina();toast('Quincena creada');
    }}]);
 }
@@ -2939,9 +2941,12 @@ function empRow(nom,e,i){
 }
 function toggleEmp(i){if(ui.nomExp.has(i))ui.nomExp.delete(i);else ui.nomExp.add(i);renderNomina();}
 function nomFilter(q){q=(q||'').trim().toLowerCase();document.querySelectorAll('#content .emp-card').forEach(c=>{c.style.display=(!q||(c.dataset.emp||'').includes(q))?'':'none';});}
-async function setDay(id,i,di,k,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].dias[di][k]=v;await persistNom();renderNomina();}
+async function setDay(id,i,di,k,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].dias[di][k]=v;nom.entries[i].dias[di].set=1;await persistNom();renderNomina();}
 const WHEEL_ITEM=46;
-function jornadasWheel(){const rank=j=>{const l=(j.l||'').toLowerCase();if(/completa/.test(l))return 0;if(/asist/.test(l))return 1;if(l==='media')return 2;if(/^media\s*[+]/.test(l)){const q=l.match(/([\d]+(?:[.,]\d+)?)/);return 2.1+(q?parseFloat(q[1].replace(',','.'))/100:0);}if(/^media\s*-/.test(l)){const q=l.match(/([\d]+(?:[.,]\d+)?)/);return 2.5+(q?parseFloat(q[1].replace(',','.'))/100:0);}const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 3+parseFloat(m[1].replace(',','.'));if(/menos/.test(l)&&m)return 40+parseFloat(m[1].replace(',','.'));return 100;};return CFG.jornadas.slice().sort((a,b)=>rank(a)-rank(b));}
+function jornadasWheel(){const num=l=>{const q=l.match(/([\d]+(?:[.,]\d+)?)/);return q?parseFloat(q[1].replace(',','.')):0;};
+  const rank=j=>{const l=(j.l||'').toLowerCase();if(/asist/.test(l))return 0;if(l==='media')return 1;if(/completa/.test(l))return 2;
+    if(/^media\s*[+]/.test(l))return 40+num(l);if(/^media\s*-/.test(l))return 50+num(l);if(/extra/.test(l))return 3+num(l)/100;if(/menos/.test(l))return 20+num(l);return 100;};
+  return CFG.jornadas.slice().sort((a,b)=>rank(a)-rank(b));}
 function jShort(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'No asistió';if(/completa/.test(l))return 'Completa';if(l==='media')return 'Media';const m=l.match(/([\d]+(?:[.,]\d+)?)/);if(/extra/.test(l)&&m)return 'Extra '+m[1];if(/menos/.test(l)&&m)return 'Menos '+m[1];return j;}
 function jClass(j){const l=(j||'').toLowerCase();if(!j||/asist/.test(l))return 'j-falta';if(/completa/.test(l))return 'j-full';if(l==='media'||/^media\s*[+-]/.test(l))return 'j-media';if(/extra/.test(l))return 'j-extra';if(/menos/.test(l))return 'j-menos';return '';}
 let wheelCtx=null; // {id,i,day,mode:'j'|'fi'}
@@ -2979,7 +2984,9 @@ function renderWheelStep(){
   ov.classList.add('show');ov.onclick=ev=>{if(ev.target===ov)closeWheel();};
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   const wheel=document.getElementById('jwheel');
-  let curIdx=opts.findIndex(o=>o.val===cur);if(curIdx<0)curIdx=0;
+  let curIdx=opts.findIndex(o=>o.val===cur);
+  {const d=e.dias[day];if(mode==='j'&&d&&!d.set&&/asist/i.test(d.j||'No Asistió')&&!d.fi){const ci=opts.findIndex(o=>/completa/i.test(o.val));if(ci>=0)curIdx=ci;}}
+  if(curIdx<0)curIdx=0;
   const mark=()=>{const idx=Math.round(wheel.scrollTop/WHEEL_ITEM);wheel.querySelectorAll('.wheel-item').forEach(el=>el.classList.toggle('sel',+el.dataset.idx===idx));};
   wheel.addEventListener('scroll',()=>{clearTimeout(wheel._t);mark();wheel._t=setTimeout(mark,60)});
   requestAnimationFrame(()=>{wheel.scrollTop=curIdx*WHEEL_ITEM;mark();});
@@ -2990,7 +2997,7 @@ function wheelCommit(){
   const idx=Math.max(0,Math.min(opts.length-1,Math.round(wheel.scrollTop/WHEEL_ITEM)));
   const val=opts[idx]?opts[idx].val:'';
   const nom=NOMINAS.find(x=>x.id===wheelCtx.id);if(!nom)return;
-  nom.entries[wheelCtx.i].dias[wheelCtx.day][wheelCtx.mode]=val;persistNom();
+  {const d=nom.entries[wheelCtx.i].dias[wheelCtx.day];d[wheelCtx.mode]=val;d.set=1;}persistNom();
 }
 function wheelNav(dir){
   wheelCommit();
@@ -3051,7 +3058,7 @@ function wheelKeyHandler(e){
 document.addEventListener('keydown',wheelKeyHandler);
 async function setPrestamo(id,i,v){const nom=NOMINAS.find(x=>x.id===id);nom.entries[i].prestamo=num(v);await persistNom();renderNomina();}
 async function applyTpl(id,i,mode){const nom=NOMINAS.find(x=>x.id===id);const j=document.getElementById('qf_j_'+i).value,f=document.getElementById('qf_f_'+i).value;
-  nom.entries[i].dias.forEach((d,di)=>{const dn=dowOf(addDaysISO(nom.desde,di));if(mode==='week'&&dn===0){d.j='No Asistió';d.fi='';}else{d.j=j;d.fi=f;}});
+  nom.entries[i].dias.forEach((d,di)=>{const dn=dowOf(addDaysISO(nom.desde,di));if(mode==='week'&&dn===0){d.j='No Asistió';d.fi='';}else{d.j=j;d.fi=f;}d.set=1;});
   await persistNom();renderNomina();toast('Días aplicados');}
 async function removeEmp(id,i){const nom=NOMINAS.find(x=>x.id===id);nom.entries.splice(i,1);ui.nomExp=new Set();await persistNom();renderNomina();}
 function addEmpModal(id){const nom=NOMINAS.find(x=>x.id===id);const avail=CFG.empleados.filter(e=>!nom.entries.some(x=>x.emp===e)).sort((a,b)=>a.localeCompare(b));
@@ -6036,7 +6043,7 @@ async function omrApply(){
   const target=document.getElementById('omr_target').value;let nom;
   if(target==='ex')nom=NOMINAS.find(n=>n.desde===tpl.desde);
   if(!nom){const q=+document.getElementById('omr_q').value||1;const hasta=addDaysISO(tpl.desde,13);
-    nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:tpl.desde,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot()};NOMINAS.push(nom);}
+    nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:tpl.desde,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot(),daySetMig:1};NOMINAS.push(nom);}
   const noAs=omrJLabel(null);let applied=0,skipped=0;
   res.rows.forEach((row,ri)=>{
     let name=row.name;if(row.blank){const sel=document.querySelector(`.omr-emp[data-r="${ri}"]`);name=sel?sel.value:'';}
@@ -6045,8 +6052,8 @@ async function omrApply(){
     let e=nom.entries.find(x=>x.emp===name);
     if(!e){e={emp:name,prestamo:0,dias:Array.from({length:14},()=>({j:noAs,fi:''}))};nom.entries.push(e);}
     sels.forEach(s=>{const di=week*7+(+s.dataset.d);const j=s.value;
-      if(!/asist/i.test(j)){e.dias[di]={j,fi:tpl.finca};applied++;}
-      else if(e.dias[di]&&e.dias[di].fi===tpl.finca){e.dias[di]={j:noAs,fi:''};}});
+      if(!/asist/i.test(j)){e.dias[di]={j,fi:tpl.finca,set:1};applied++;}
+      else if(e.dias[di]&&e.dias[di].fi===tpl.finca){e.dias[di]={j:noAs,fi:'',set:1};}});
   });
   await persistNom();ui._omr=null;
   const Q=ui._omrQ;
