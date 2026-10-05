@@ -2379,6 +2379,10 @@ function pvParse(raw){
     const ti=tpos.findIndex(c=>c>=m.index);const prevH=[...hits].reverse().find(h=>h.pos+h.len<=ti);
     const sameClause=prevH&&!toks.slice(prevH.pos+prevH.len,ti).some(w=>/^[,;.]$/.test(w))&&!/\btodo\b/.test(n.slice(Math.max(0,m.index-12),m.index));
     if(sameClause)perNoBod.add(prevH.name);else globalNoBod=true;}
+  const fixedSet=new Set();const FIX=/^(cantidad fija|cantidad fijo|cantidad exacta|fija|fijo|en cantidad fija|como cantidad fija)$/;
+  hits.forEach((h,hi)=>{const end=hi+1<hits.length?hits[hi+1].pos:toks.length;const seg=toks.slice(h.pos+h.len,end).join(' ').split(/\s[,;.]\s?/)[0];
+    const pre=toks.slice(Math.max(0,h.pos-3),h.pos).join(' ');
+    if(/\b(cantidad fija|cantidad fijo|cantidad exacta)\b|\bfij[ao]\b/.test(seg)||/\b(cantidad fija|cantidad fijo)\s*(?:de\s*)?$/.test(pre))fixedSet.add(h.name);});
   const lines={};const order=[];const lineOf=nm=>{if(!lines[nm]){lines[nm]={n:nm};order.push(nm);}return lines[nm];};
   hits.forEach(h=>{if(removeSet.has(h)){lineOf(h.name).remove=true;}else{const l=lineOf(h.name);l.remove=false;}});
   // números: dosis por hectárea o cantidad fija
@@ -2394,8 +2398,8 @@ function pvParse(raw){
     const target=(toks[k]==='de'||toks[k]==='del')&&nextHit?nextHit:(prevHit&&!(lines[prevHit.name]&&lines[prevHit.name]._num)?prevHit:(nextHit||prevHit));
     if(!target){r.warn.push(`No sé a qué producto corresponde el número ${v}.`);return;}
     const l=lineOf(target.name);l._num=true;
-    if(perHa||(!fixed&&u&&!u.big)||(!fixed&&!u)){ // dosis por hectárea (en ml o g por ha)
-      l.mode='ha';l.d=u?v*u.m:v;l.u=u?u.b:null;}
+    if(!fixedSet.has(target.name)){ // por defecto: dosis por hectárea (en ml o g por ha)
+      l.mode='ha';l.d=u?v*u.m:v;l.u=u?u.b:null;if(u&&u.big&&!perHa)l.bigWarn=true;}
     else{ // cantidad fija
       l.mode='fijo';const uu=u||{b:null,m:1,big:true};
       if(uu.b==='g'){const g=v*uu.m;l.mq=g>=1000&&g%500===0?g/1000:g;l.mu=g>=1000&&g%500===0?'kg':'g';}
@@ -2404,12 +2408,14 @@ function pvParse(raw){
   });
   // bodega por producto: «Finale sin bodega»
   perNoBod.forEach(nm=>{lineOf(nm).noBod=true;});
+  fixedSet.forEach(nm=>{const l=lineOf(nm);if(!l.mode){l.mode='fijo';l.mq='';l.noQty=true;}});
   const cat=pedCatalog();
   order.forEach(nm=>{const l=lines[nm];const c=cat.find(x=>x.n===nm)||{};
     if(l.remove){r.lines.push({n:nm,remove:true});return;}
     const out={n:nm,useBodega:!(globalNoBod||l.noBod)};
-    if(l.mode==='fijo'){out.manual=true;out.mq=l.mq;out.mu=l.mu||((c.u==='g')?'kg':'L');out.d=c.d||'';out.u=c.u||'ml';}
+    if(l.mode==='fijo'){out.manual=true;out.mq=l.mq;out.mu=l.mu||((c.u==='g')?'kg':'L');out.d=c.d||'';out.u=c.u||'ml';if(l.noQty)r.warn.push(`${nm}: quedó en cantidad fija; di la cantidad («${nm.toLowerCase()} cantidad fija 5 litros») o escríbela en el pedido.`);}
     else{out.manual=false;out.u=l.u||c.u||'ml';out.d=l.d!=null?l.d:(c.d||'');out.def=l.d==null;
+      if(l.bigWarn)r.warn.push(`${nm}: se tomó ${(+out.d).toLocaleString('es-CO')} ${out.u} por hectárea. Si era la cantidad total, di «${nm.toLowerCase()} cantidad fija».`);
       if(l.u&&c.u&&l.u!==c.u)r.warn.push(`${nm}: la dosis dicha es en ${l.u==='g'?'gramos':'ml'} y el catálogo usa ${c.u==='g'?'gramos':'ml'}.`);
       if(!out.d)r.warn.push(`${nm}: no tiene dosis en el catálogo; dila («a 200 cc por hectárea») o pide una cantidad fija.`);}
     r.lines.push(out);});
@@ -2418,7 +2424,7 @@ function pvParse(raw){
 }
 function pvPreview(r){
   const row=(lab,val)=>`<div class="vz-it ${val?'ok':''}"><span>${lab}</span><b>${val?esc(String(val)):'—'}</b></div>`;
-  const qty=l=>l.remove?'<span style="color:var(--red)">Se quita del pedido</span>':(l.manual?`${(+l.mq).toLocaleString('es-CO')} ${esc(l.mu||'')} <span class="chip pay">Cantidad fija</span>`:(l.d!==''&&l.d!=null?`${(+l.d).toLocaleString('es-CO')} ${l.u}/ha${l.def?' <span style="color:var(--muted);font-size:11px">(catálogo)</span>':''}`:'—'));
+  const qty=l=>l.remove?'<span style="color:var(--red)">Se quita del pedido</span>':(l.manual?`${l.mq===''||l.mq==null?'<span style="color:var(--amber)">Por definir</span>':(+l.mq).toLocaleString('es-CO')+' '+esc(l.mu||'')} <span class="chip pay">Cantidad fija</span>`:(l.d!==''&&l.d!=null?`${(+l.d).toLocaleString('es-CO')} ${l.u}/ha${l.def?' <span style="color:var(--muted);font-size:11px">(catálogo)</span>':''}`:'—'));
   return `<div class="vz-grid">${row('Finca',r.fi)+row('Hectáreas',r.ha!=null?r.ha.toLocaleString('es-CO'):(r.fi&&fincaHaDefault(r.fi)?fincaHaDefault(r.fi)+' (de la finca)':''))+row('Fecha',r.f?fmtFecha(r.f):'')}</div>
    ${r.lines.length?`<div class="tablewrap" style="margin-top:10px"><table class="frv-tb"><thead><tr><th>Producto</th><th>Dosis / cantidad</th><th>Bodega</th></tr></thead><tbody>${r.lines.map(l=>`<tr><td><b>${esc(l.n)}</b></td><td>${qty(l)}</td><td>${l.remove?'':(l.useBodega?'Usar':'<span style="color:var(--amber)">No usar</span>')}</td></tr>`).join('')}</tbody></table></div>`:''}
    ${r.warn.length?`<div class="note" style="margin-top:8px;border-left-color:var(--amber)">${r.warn.map(esc).join('<br>')}</div>`:''}`;
@@ -2428,7 +2434,7 @@ function pedVoiceModal(){
   if(roGuard())return;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;ui._vzOnUpdate=pvRefresh;
   const n=pedCatalog().length;
   showModal('Dictar pedido',`
-   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Di el pedido con naturalidad. Por ejemplo:<br><i>«Pedido para Frutexcol, 12 hectáreas, Romectin a 300 cc por hectárea, Finale 5 litros, Azobyn Duo, Mancozeb 2 kilos, sin bodega»</i></p>
+   <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Di el pedido con naturalidad. Por ejemplo:<br><i>«Pedido para Frutexcol, 12 hectáreas, Romectin 300 cc, Finale 5 litros cantidad fija, Azobyn Duo, Mancozeb 2 kilos cantidad fija, sin bodega»</i></p>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
      ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
      <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
@@ -2436,7 +2442,7 @@ function pedVoiceModal(){
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="pvRefresh()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Pedido detectado</div>
    <div id="pv_prev"></div>
-   <div class="note"><b>Productos:</b> reconoce los ${n} productos del catálogo de <b>Preparación de químicos</b> aunque se pronuncien o escriban distinto. <b>Por hectárea:</b> «Romectin a 300 cc por hectárea», «dosis de 1 litro por hectárea», «200 gramos por hectárea». <b>Cantidad fija:</b> «Finale 5 litros», «2 kilos de Mancozeb», «medio litro de pegante», «1 galón» (= 3,79 L). Si solo dices el nombre, se usa la dosis del catálogo. También: «12 hectáreas», «finca Placer», «para mañana», «sin bodega», «quitar Finale».</div>`,
+   <div class="note"><b>Productos:</b> reconoce los ${n} productos del catálogo de <b>Preparación de químicos</b> aunque se pronuncien o escriban distinto. <b>Por defecto todo se calcula por hectáreas:</b> el número que digas con el producto es su dosis por hectárea («Romectin 300 cc», «Finale 1 litro», «Mancozeb 500 gramos»). Si solo dices el nombre, se usa la dosis del catálogo. <b>Cantidad fija:</b> di «cantidad fija» junto al producto: «Finale 5 litros cantidad fija», «Mancozeb cantidad fija 2 kilos» (1 galón = 3,79 L). También: «12 hectáreas», «finca Placer», «para mañana», «sin bodega», «quitar Finale».</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{vzStop();ui._vzOnUpdate=null;closeModal();}},
     {label:'Limpiar',cls:'btn',fn:()=>{const t=document.getElementById('vz_txt');t.value='';ui._vzBase='';ui._vzSess='';pvRefresh();}},
     {label:'Llenar pedido',cls:'btn primary',fn:()=>pvFill()}]);
