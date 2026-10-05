@@ -467,6 +467,20 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 .vz-it.ok{border-color:var(--green);background:var(--green-soft)}
 .vz-it.ok b{color:var(--ink)}
 .vz-prods{grid-column:1/-1}
+.pick-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;cursor:pointer;min-height:40px;font:inherit;color:var(--ink)}
+.pick-btn .pv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pick-btn .ph{color:var(--faint)}
+.pick-btn .pp-chev{width:16px;height:16px;flex:0 0 auto;color:var(--muted)}
+.pp-search{position:relative;margin-bottom:10px}
+.pp-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.pp-search .input{padding-left:34px;font-size:15px}
+.pp-list{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:9px}
+.pp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:11px 12px;border:none;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.pp-item:last-child{border-bottom:none}
+.pp-item:hover,.pp-item.first{background:var(--green-soft)}
+.pp-item.sel span{font-weight:700;color:var(--green2)}
+.pp-item span{font-size:14px}
+.pp-item small{color:var(--muted);font-size:11.5px;white-space:nowrap}
 .frv-tb th,.frv-tb td{padding:7px 6px;font-size:12.5px;white-space:nowrap}
 .frv-tb th{font-size:10.5px}
 .nv-prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
@@ -2462,6 +2476,37 @@ function pvFill(){
   ui._vzOnUpdate=null;closeModal();renderPedidos();persistPedDraft();
   toast(`Pedido llenado: ${r.lines.filter(l=>!l.remove).length} producto(s). Revisa y guarda.`);
 }
+/* ===== Selector de productos con buscador (tolerante a errores) ===== */
+function ppScore(name,q){
+  const nn=vzNorm(name),qq=vzNorm(q).trim();if(!qq)return 1;
+  if(nn.startsWith(qq))return 5;if(nn.split(/\s+/).some(w=>w.startsWith(qq)))return 4.5;if(nn.includes(qq))return 4;
+  const pn=vzPhon(name).replace(/ /g,''),pq=vzPhon(q).replace(/ /g,'');if(!pq||pq.length<3)return 0;
+  if(pn.startsWith(pq))return 3.5;if(pn.includes(pq))return 3;
+  // tolerancia: compara con el comienzo del nombre (o de cada palabra) del mismo largo
+  let best=vzSim(pn.slice(0,pq.length),pq);vzPhon(name).split(' ').forEach(w=>{best=Math.max(best,vzSim(w.slice(0,pq.length),pq),vzSim(w,pq));});
+  const need=pq.length<=3?1:(pq.length<=5?0.75:0.66);return best>=need?1+best:0;
+}
+function ppList(items,q,current){
+  const sc=items.map(c=>({c,s:ppScore(c.n,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s||a.c.n.localeCompare(b.c.n,'es'));
+  if(!sc.length)return `<div class="empty" style="padding:18px 10px">No se encontró «${esc(q)}». Revisa el nombre o agrégalo en el catálogo de Preparación de químicos.</div>`;
+  return sc.map((x,k)=>`<button type="button" class="pp-item${x.c.n===current?' sel':''}${k===0&&q?' first':''}" onclick="ppPick(${JSON.stringify(x.c.n).replace(/"/g,'&quot;')})"><span>${esc(x.c.n)}</span><small>${x.c.d!==''&&x.c.d!=null?esc(String(x.c.d))+' '+esc(x.c.u||'ml')+'/ha':''}</small></button>`).join('');
+}
+function prodPick(title,current,onPick){
+  const items=(CFG.quimicos||[]).filter(c=>c&&c.n);ui._ppCb=onPick;ui._ppItems=items;ui._ppCur=current||'';
+  showModal(title,`
+   <div class="pp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+     <input class="input" id="pp_q" placeholder="Escribe el nombre del producto…" autocomplete="off" oninput="ppRefresh()" onkeydown="if(event.key==='Enter'){const f=document.querySelector('#pp_list .pp-item');if(f){event.preventDefault();f.click();}}"></div>
+   <div id="pp_list" class="pp-list">${items.length?ppList(items,'',current):'<div class="empty" style="padding:18px 10px">No hay productos en el catálogo. Agrégalos en «Preparación de químicos».</div>'}</div>`,
+   [{label:'Cancelar',cls:'btn',fn:closeModal}]);
+  setTimeout(()=>{const i=document.getElementById('pp_q');if(i)i.focus();const s=document.querySelector('#pp_list .pp-item.sel');if(s)s.scrollIntoView({block:'center'});},60);
+}
+function ppRefresh(){const q=document.getElementById('pp_q');const l=document.getElementById('pp_list');if(q&&l)l.innerHTML=ppList(ui._ppItems||[],q.value,ui._ppCur);}
+function ppPick(name){const cb=ui._ppCb;ui._ppCb=null;closeModal();if(cb)cb(name);}
+function quimPickChem(i){const ab=ui.mixMode==='ab';prodPick(ab?'Elegir producto':'Elegir químico',(ui.mixLines[i]||{}).n,v=>quimSetLineChem(i,v));}
+function pedPickProd(i){prodPick('Elegir producto',(ui.pedLines[i]||{}).n,v=>pedSetProd(i,v));}
+// filtro para listas desplegables dentro de otras ventanas (p. ej. agregar a bodega)
+function ppFilterSelect(id,q){const s=document.getElementById(id);if(!s)return;let first=null;[...s.options].forEach(o=>{const ok=!q.trim()||ppScore(o.textContent,q)>0;o.hidden=!ok;o.disabled=!ok;if(ok&&!first)first=o;});
+  const scored=[...s.options].filter(o=>!o.hidden).map(o=>({o,sc:ppScore(o.textContent,q)})).sort((a,b)=>b.sc-a.sc);if(scored.length){s.value=scored[0].o.value||scored[0].o.textContent;s.dispatchEvent(new Event('change',{bubbles:true}));}}
 function vzProducts(){return [...new Set((CFG.quimicos||[]).map(q=>q&&q.n).filter(Boolean))];}
 // Encuentra químicos del catálogo (por cómo suenan, con tolerancia) y devuelve coincidencias sin solaparse
 function vzProdMatches(toks){
@@ -4269,10 +4314,7 @@ function quimRenderLines(){
   const cat=quimCatalog();const ab=ui.mixMode==='ab';
   if(!ui.mixLines||!ui.mixLines.length)ui.mixLines=[{n:'',d:'',u:ab?'g':'ml'}];
   box.innerHTML=ui.mixLines.map((l,i)=>`<div class="mixline">
-     <select class="input mix-chem" title="${esc(l.n||'Elegir producto')}" onchange="quimSetLineChem(${i},this.value)">
-       <option value="">— Elegir ${ab?'producto':'químico'} —</option>
-       ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
-     </select>
+     <button type="button" class="input mix-chem pick-btn" title="${esc(l.n||'Elegir producto')}" onclick="quimPickChem(${i})">${l.n?`<span class="pv">${esc(l.n)}</span>`:`<span class="ph">— Elegir ${ab?'producto':'químico'} —</span>`}<svg class="pp-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
      <input class="input tnum mix-dose" type="number" step="any" value="${esc(l.d)}" placeholder="${ab?'g/árbol':'dosis/ha'}" oninput="quimSetLineDose(${i},this.value)">
      ${ab?`<span class="mix-unit" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px">g/árbol</span>`:`<select class="input mix-unit" onchange="quimSetLineUnit(${i},this.value)"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>`}
      <button class="iconbtn del mixdel" onclick="quimDelLine(${i})">${ic('trash')}</button>
@@ -4829,10 +4871,7 @@ function pedRenderLines(){
       : `<input class="input tnum ped-dose" type="number" step="any" value="${esc(l.d)}" placeholder="dosis/ha" oninput="ui.pedLines[${i}].d=this.value;pedCalc();persistPedDraft()">
          <select class="input ped-unit" onchange="ui.pedLines[${i}].u=this.value;pedCalc();persistPedDraft()"><option value="ml" ${l.u==='ml'?'selected':''}>ml/ha</option><option value="g" ${l.u==='g'?'selected':''}>g/ha</option></select>`;
     return `<div class="pedline${manual?' manual':''}">
-     <select class="input ped-prod" title="${esc(l.n||'Elegir producto')}" onchange="pedSetProd(${i},this.value)">
-       <option value="">— Elegir producto —</option>
-       ${cat.map(c=>`<option ${l.n===c.n?'selected':''}>${esc(c.n)}</option>`).join('')}
-     </select>
+     <button type="button" class="input ped-prod pick-btn" title="${esc(l.n||'Elegir producto')}" onclick="pedPickProd(${i})">${l.n?`<span class="pv">${esc(l.n)}</span>`:'<span class="ph">— Elegir producto —</span>'}<svg class="pp-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
      <div class="ped-sub">
        ${sub}
        <button class="iconbtn del ped-del" onclick="pedDelLine(${i})">${ic('trash')}</button>
@@ -4883,7 +4922,7 @@ function pedBodegaCard(){
     <div class="ph"><div><h2>Bodega por finca</h2><p>Agrega existencias que luego se usan solas en los pedidos de esa finca</p></div></div>
     <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
       <div class="field"><label>Finca (bodega)</label><select class="input" id="pb_fi">${fincas.map(f=>`<option ${ui.pedFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
-      <div class="field full"><label>Producto</label><select class="input" id="pb_p">${cat.length?cat.map(c=>`<option data-u="${c.u||'ml'}">${esc(c.n)}</option>`).join(''):'<option value="">(catálogo vacío)</option>'}</select></div>
+      <div class="field full"><label>Producto</label><input class="input" placeholder="Escribe para buscar el producto…" autocomplete="off" oninput="ppFilterSelect('pb_p',this.value)" style="margin-bottom:6px"><select class="input" id="pb_p">${cat.length?cat.map(c=>`<option data-u="${c.u||'ml'}">${esc(c.n)}</option>`).join(''):'<option value="">(catálogo vacío)</option>'}</select></div>
       <div class="field"><label>Cantidad</label><input class="input tnum" id="pb_q" type="number" step="any" placeholder="0"></div>
       <div class="field"><label>Unidad</label><select class="input" id="pb_u"><option value="ml">ml</option><option value="L">L</option><option value="g">g</option><option value="kg">kg</option></select></div>
     </div>
