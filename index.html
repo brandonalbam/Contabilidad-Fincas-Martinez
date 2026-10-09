@@ -363,6 +363,20 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .cli-x{color:var(--faint);width:28px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .cli-x:hover{background:var(--red-soft);color:var(--red)}.cli-x svg{width:15px;height:15px}
 .cli-pdf{color:var(--green2)}.cli-pdf:hover{background:var(--green-soft);color:var(--green)}
+.cfin-title{padding:14px 18px 6px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cfin-list{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.cfin-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cfin-head{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;transition:.12s}
+.cfin-head:hover{background:var(--surface3)}
+.cfin-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.cfin-nm{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfin-amt{font-family:var(--display);font-size:16px;font-weight:600;color:var(--amber);white-space:nowrap}
+.cfin-head .chev{transition:.2s;color:var(--faint);flex:0 0 auto;display:inline-flex}
+.cfin-head .chev svg{width:18px;height:18px}
+.cfin-head .chev.open{transform:rotate(90deg)}
+.cfin-body{border-top:1px solid var(--line);background:var(--surface2)}
+.cfin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px}
+.cfin-n{font-size:12px;color:var(--muted)}
 
 /* ===== Nómina ===== */
 .nom-card,.emp-card{margin-bottom:10px;overflow:hidden}
@@ -3557,19 +3571,19 @@ function clientesData(){
   const sinCl=MOVS.filter(m=>m.t==='I'&&!m.cl&&m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
   return{data,sinCl,sinDeuda:sinCl.reduce((a,m)=>a+saldo(m),0)};
 }
-function detailTable(movs,saldoLab,totLab,showFa){saldoLab=saldoLab||'Saldo (debe)';totLab=totLab||'Total adeudado';
+function detailTable(movs,saldoLab,totLab,showFa,hideFi){saldoLab=saldoLab||'Saldo (debe)';totLab=totLab||'Total adeudado';
   return `<div class="tablewrap" style="border:none;border-radius:0"><table><thead><tr>
-    <th>Fecha</th><th>Finca</th><th>Descripción</th>${showFa?'<th>Factura</th>':''}<th class="r">Total</th><th class="r">Abonado</th><th class="r">${saldoLab}</th><th></th></tr></thead>
+    <th>Fecha</th>${hideFi?'':'<th>Finca</th>'}<th>Descripción</th>${showFa?'<th>Factura</th>':''}<th class="r">Total</th><th class="r">Abonado</th><th class="r">${saldoLab}</th><th></th></tr></thead>
     <tbody>${movs.map(m=>`<tr>
       <td class="tnum">${fmtFecha(m.f)}</td>
-      <td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>
+      ${hideFi?'':`<td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td>`}
       <td class="wrap">${esc(m.d||m.c)||'—'}</td>
       ${showFa?`<td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}</td>`:''}
       <td class="r tnum">${fmt(m.tot)}</td>
       <td class="r tnum" style="color:var(--green2)">${fmt(m.ab||0)}</td>
       <td class="r tnum"><b style="color:var(--amber)">${fmt(saldo(m))}</b></td>
       <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end">${(m.fruta&&m.fruta.length)?`<button class="iconbtn" title="Detalle y precios" onclick="verFactura(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>`:''}${(m.ab>0||(m.abs&&m.abs.length))?`<button class="iconbtn" title="Ver abonos" onclick="verAbonos(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>`:''}<button class="btn sm" onclick="openPago(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Abonar</button></div></td></tr>`).join('')}
-      <tr style="border-top:2px solid var(--line)"><td colspan="${showFa?6:5}"><b>${totLab}</b></td><td class="r tnum"><b style="color:var(--amber)">${fmt(movs.reduce((a,m)=>a+saldo(m),0))}</b></td><td></td></tr>
+      <tr style="border-top:2px solid var(--line)"><td colspan="${(showFa?6:5)-(hideFi?1:0)}"><b>${totLab}</b></td><td class="r tnum"><b style="color:var(--amber)">${fmt(movs.reduce((a,m)=>a+saldo(m),0))}</b></td><td></td></tr>
     </tbody></table></div>`;
 }
 function clienteStatementHTML(d){
@@ -3664,9 +3678,13 @@ function pagadasSection(pagadas,key,verbo){
           </tbody></table></div>
       </div>`;
 }
-function smartAbonoPlan(clName,amount){
-  const pend=MOVS.filter(m=>m.t==='I'&&m.cl===clName&&m.e==='X'&&saldo(m)>0)
+function saCtxPend(ctx){
+  return MOVS.filter(m=>m.t===ctx.t&&(ctx.t==='I'?m.cl===ctx.who:m.co===ctx.who)&&(ctx.fi==null||(m.fi||'')===ctx.fi)&&m.e==='X'&&saldo(m)>0)
     .sort((a,b)=>(a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0)));
+}
+function smartAbonoPlan(clName,amount,ctx){
+  ctx=ctx||ui._saCtx||{t:'I',who:clName};
+  const pend=saCtxPend(ctx);
   let rem=Math.max(0,Math.round(amount||0));const plan=[];
   for(const m of pend){
     if(rem<=0)break;
@@ -3677,38 +3695,44 @@ function smartAbonoPlan(clName,amount){
   }
   return{plan,rem,pend,deudaTotal:pend.reduce((a,m)=>a+saldo(m),0)};
 }
-function smartAbono(clName){
-  const {pend,deudaTotal}=smartAbonoPlan(clName,0);
-  if(!pend.length){toast('Este cliente no tiene cuentas por cobrar');return;}
-  const clj=esc(clName).replace(/'/g,"\\'");
-  showModal('Abono inteligente',`
-   <p style="color:var(--muted);margin-bottom:12px"><b>${esc(clName)}</b> debe <b style="color:var(--amber)">${fmt(deudaTotal)}</b> en ${pend.length} factura(s) pendientes.</p>
+function smartAbono(clName,ctx){
+  ctx=ctx||{t:'I',who:clName};ui._saCtx=ctx;
+  const {pend,deudaTotal}=smartAbonoPlan(clName,0,ctx);
+  if(!pend.length){toast(ctx.t==='I'?'Este cliente no tiene cuentas por cobrar':'No hay facturas pendientes por pagar');return;}
+  const isCom=ctx.t==='E';
+  const quien=isCom?(`La finca <b>${esc(ctx.fi||'Sin finca')}</b> le debe a <b>${esc(ctx.who)}</b>`):(`<b>${esc(clName)}</b> debe`);
+  showModal(isCom?('Abono inteligente · '+esc(ctx.fi||'Sin finca')):'Abono inteligente',`
+   <p style="color:var(--muted);margin-bottom:12px">${quien} <b style="color:var(--amber)">${fmt(deudaTotal)}</b> en ${pend.length} factura(s) pendiente(s).</p>
    <div class="form-grid">
      <div class="field"><label>Fecha del abono</label><input class="input tnum" type="date" id="sa_f" value="${todayISO()}"></div>
-     <div class="field"><label>Monto del abono</label><input class="input tnum money" inputmode="numeric" id="sa_v" placeholder="0" oninput="smartAbonoPreview('${clj}')"></div>
+     <div class="field"><label>Monto del abono</label><input class="input tnum money" inputmode="numeric" id="sa_v" placeholder="0" oninput="smartAbonoPreview()"></div>
    </div>
-   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('sa_v');e.value='${fmn(deudaTotal)}';e.dataset.raw='${Math.round(deudaTotal)}';smartAbonoPreview('${clj}')">Abonar toda la deuda (${fmt(deudaTotal)})</button></div>
+   <div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('sa_v');e.value='${fmn(deudaTotal)}';e.dataset.raw='${Math.round(deudaTotal)}';smartAbonoPreview()">${isCom?'Pagar toda la deuda':'Abonar toda la deuda'} (${fmt(deudaTotal)})</button></div>
    <div id="sa_prev" style="margin-top:12px"></div>
-   <div class="note">El abono se distribuye solo: primero paga por completo las facturas más antiguas y el remanente lo abona parcialmente a la siguiente. Cada movimiento queda registrado con la fecha indicada en el historial de cada factura.</div>`,
+   <div class="note">El abono se distribuye solo: primero paga por completo las facturas más antiguas y el remanente lo abona parcialmente a la siguiente (que sigue pendiente, pero con ese abono parcial). Las demás quedan pendientes. Cada abono queda registrado con la fecha indicada en el historial de cada factura.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar abono',cls:'btn primary',fn:()=>smartAbonoApply(clName)}]);
-  setTimeout(()=>smartAbonoPreview(clName),0);
+  setTimeout(()=>smartAbonoPreview(),0);
 }
-function smartAbonoPreview(clName){
+function smartAbonoPreview(){
   const el=document.getElementById('sa_prev');if(!el)return;
+  const ctx=ui._saCtx;
   const amount=Math.round(num(document.getElementById('sa_v').value));
-  const{plan,rem}=smartAbonoPlan(clName,amount);
+  const{plan,rem}=smartAbonoPlan(ctx&&ctx.who,amount,ctx);
   if(!amount){el.innerHTML='<div style="color:var(--muted);font-size:12.5px">Escribe el monto para ver cómo se distribuirá.</div>';return;}
-  const rows=plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td><span class="fdot"><i style="background:${fincaColor(p.m.fi)}"></i>${esc(p.m.fi)}</span>${p.m.fa?' · '+esc(p.m.fa):''}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${fmt(p.sAfter)}</td><td>${p.full?'<span class="chip i">Pagada</span>':'<span class="chip pend">Parcial</span>'}</td></tr>`).join('');
+  const isCom=ctx&&ctx.t==='E';
+  const rows=plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td>${isCom?(p.m.fa?('Fact. '+esc(p.m.fa)):esc(p.m.d||p.m.c||'—')):(`<span class="fdot"><i style="background:${fincaColor(p.m.fi)}"></i>${esc(p.m.fi)}</span>${p.m.fa?' · '+esc(p.m.fa):''}`)}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${fmt(p.sAfter)}</td><td>${p.full?'<span class="chip i">Pagada</span>':'<span class="chip pend">Parcial</span>'}</td></tr>`).join('');
   const aplicado=plan.reduce((a,p)=>a+p.ap,0);
-  el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th class="r">Saldo</th><th class="r">Abono</th><th class="r">Queda</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="padding:12px;color:var(--muted)">Sin facturas pendientes.</td></tr>'}</tbody></table></div>
-   <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:8px;flex-wrap:wrap;gap:6px"><span>Se aplicará: <b style="color:var(--green2)">${fmt(aplicado)}</b> en <b>${plan.length}</b> factura(s)</span>${rem>0?`<span style="color:var(--amber)">Sobran ${fmt(rem)} (superan la deuda; no se aplicarán)</span>`:''}</div>`;
+  const quedan=(ctx?saCtxPend(ctx).length:0)-plan.filter(p=>p.full).length;
+  el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>${isCom?'Factura':'Finca'}</th><th class="r">Saldo</th><th class="r">Abono</th><th class="r">Queda</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="padding:12px;color:var(--muted)">Sin facturas pendientes.</td></tr>'}</tbody></table></div>
+   <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:8px;flex-wrap:wrap;gap:6px"><span>Se aplicará: <b style="color:var(--green2)">${fmt(aplicado)}</b> en <b>${plan.length}</b> factura(s) · quedan <b>${Math.max(quedan,0)}</b> pendiente(s)</span>${rem>0?`<span style="color:var(--amber)">Sobran ${fmt(rem)} (superan la deuda; no se aplicarán)</span>`:''}</div>`;
 }
 async function smartAbonoApply(clName){
+  const ctx=ui._saCtx||{t:'I',who:clName};
   const amount=Math.round(num(document.getElementById('sa_v').value));
   const f=document.getElementById('sa_f').value||todayISO();
   if(amount<=0){toast('Escribe el monto del abono');return;}
-  const{plan}=smartAbonoPlan(clName,amount);
-  if(!plan.length){toast('El cliente no tiene cuentas pendientes');return;}
+  const{plan}=smartAbonoPlan(clName,amount,ctx);
+  if(!plan.length){toast('No hay facturas pendientes');return;}
   const bid='b'+Date.now().toString(36);
   plan.forEach(({m,ap})=>{
     m.abs=Array.isArray(m.abs)?m.abs:[];
@@ -3732,7 +3756,7 @@ function cliAbonoGroups(movs){
   });});
   return Object.values(g).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
 }
-function abonosSection(movs,key){
+function abonosSection(movs,key,lab){
   const groups=cliAbonoGroups(movs);
   if(!groups.length)return '';
   const total=groups.reduce((a,g)=>a+g.total,0);
@@ -3749,7 +3773,7 @@ function abonosSection(movs,key){
   return `
       <div class="cli-paghead" onclick="const x=document.getElementById('abo_${key}');const c=document.getElementById('abochev_${key}');const o=x.style.display==='none';x.style.display=o?'':'none';if(c)c.classList.toggle('open',o)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        <b>Abonos recibidos (${groups.length})</b><span style="color:var(--muted);font-size:12px">· ${fmt(total)}</span>
+        <b>${lab||'Abonos recibidos'} (${groups.length})</b><span style="color:var(--muted);font-size:12px">· ${fmt(total)}</span>
         <span style="flex:1"></span><span class="chev" id="abochev_${key}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div id="abo_${key}" style="display:none"><div class="abo-list">${rows}</div></div>`;
@@ -3785,7 +3809,11 @@ function comerciosData(){
     const movs=MOVS.filter(m=>m.t==='E'&&m.co===co);
     const pend=movs.filter(m=>m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
     const pagadas=movs.filter(m=>m.e==='P').sort((x,y)=>(y.f||'').localeCompare(x.f||''));
-    return{co,movs,pend,pagadas,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
+    const fg={};
+    pend.forEach(m=>{const k=m.fi||'';(fg[k]=fg[k]||{fi:k,pend:[],deuda:0});fg[k].pend.push(m);fg[k].deuda+=saldo(m);});
+    const fincas=Object.values(fg).map(g=>{g.pend.sort((x,y)=>(x.f||'').localeCompare(y.f||'')||((x.id||0)-(y.id||0)));g.movs=movs.filter(m=>(m.fi||'')===g.fi);return g;})
+      .sort((a,b)=>b.deuda-a.deuda||a.fi.localeCompare(b.fi));
+    return{co,movs,pend,pagadas,fincas,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
   }).sort((a,b)=>b.deuda-a.deuda||a.co.localeCompare(b.co));
   const sinCom=MOVS.filter(m=>m.t==='E'&&!m.co&&m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
   return{data,sinCom,sinDeuda:sinCom.reduce((a,m)=>a+saldo(m),0)};
@@ -3796,7 +3824,7 @@ function comercioStatementHTML(d){
      <td class="r tnum">${fmt(m.tot)}</td><td class="r tnum">${fmt(m.ab||0)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Estado de cuenta</div>
-     <h2>${esc(d.co)}</h2><div class="rh-sub">Cuentas por pagar a la fecha</div></div>
+     <h2>${esc(d.co)}</h2><div class="rh-sub">${d.fiLabel!=null?('Cuentas por pagar de la finca '+esc(d.fiLabel||'Sin finca')+' a la fecha'):'Cuentas por pagar a la fecha'}</div></div>
      <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b><br>${d.pend.length} cuenta(s) pendiente(s)</div></div>
    <div class="report-sec">
      <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
@@ -3804,12 +3832,15 @@ function comercioStatementHTML(d){
        <div class="card kpi"><div class="lab">Cuentas pendientes</div><div class="val tnum" style="font-size:22px">${d.pend.length}</div></div>
        <div class="card kpi"><div class="lab">Comprado histórico</div><div class="val tnum" style="font-size:22px">${fmt(d.comprado)}</div></div>
      </div>
+     ${(d.fiLabel==null&&d.fincas&&d.fincas.length>1)?`<div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/></svg>Deuda por finca<span class="ln"></span></div>
+      <div class="card" style="margin-bottom:16px"><div class="tablewrap" style="border:none"><table><thead><tr><th>Finca</th><th class="r">Facturas</th><th class="r">Saldo a pagar</th></tr></thead>
+      <tbody>${d.fincas.map(g=>`<tr><td>${esc(g.fi||'Sin finca')}</td><td class="r tnum">${g.pend.length}</td><td class="r tnum"><b>${fmt(g.deuda)}</b></td></tr>`).join('')}</tbody></table></div></div>`:''}
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg>Detalle de cuentas por pagar<span class="ln"></span></div>
      ${d.pend.length?`<div class="card"><div class="tablewrap" style="border:none"><table>
         <thead><tr><th>Fecha</th><th>Finca</th><th>Concepto</th><th>Factura</th><th class="r">Total</th><th class="r">Abonado</th><th class="r">Saldo</th></tr></thead>
         <tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="6"><b>TOTAL A PAGAR</b></td><td class="r tnum"><b>${fmt(d.deuda)}</b></td></tr></tbody></table></div></div>`
       :`<div class="card"><div style="padding:24px;text-align:center;color:var(--green2);font-weight:600">Sin cuentas pendientes con este comercio.</div></div>`}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). Cuentas por pagar de Frutas La Estrella con ${esc(d.co)}.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). Cuentas por pagar de Frutas La Estrella${d.fiLabel!=null?(' (finca '+esc(d.fiLabel||'Sin finca')+')'):''} con ${esc(d.co)}.</div>
    </div>`;
 }
 function printComercio(name){
@@ -3819,6 +3850,12 @@ function printComercio(name){
   else d=data.find(x=>x.co===name);
   if(!d){toast('Comercio no encontrado');return;}
   printIsolated(comercioStatementHTML(d),'Estado de cuenta · '+d.co);
+}
+function printComercioFinca(co,fi){
+  const d=comerciosData().data.find(x=>x.co===co);if(!d){toast('Comercio no encontrado');return;}
+  const g=(d.fincas||[]).find(x=>x.fi===fi);if(!g){toast('Esta finca no tiene deudas con '+co);return;}
+  const pend=g.pend.slice().sort((x,y)=>(y.f||'').localeCompare(x.f||''));
+  printIsolated(comercioStatementHTML({co,fiLabel:fi,pend,deuda:g.deuda,comprado:g.movs.reduce((a,m)=>a+(+m.tot||0),0)}),'Estado de cuenta · '+co+' · '+(fi||'Sin finca'));
 }
 function renderComercios(){
   document.getElementById('topctl').innerHTML=`
@@ -3852,21 +3889,47 @@ function renderComercios(){
       <div class="note" style="margin:12px 16px">Estos egresos están pendientes pero no tienen comercio. Edita el movimiento para asignarle uno y se sumará a su cartera.</div></div>
    </div>`:''}`;
 }
+function comFinCard(d,g){
+  const k='f:'+d.co+'|'+g.fi;const open=!!(ui.comOpen&&ui.comOpen[k]);
+  const coj=esc(d.co).replace(/\\/g,'\\\\').replace(/'/g,"\\'"),fij=esc(g.fi).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return `<div class="cfin-card">
+    <div class="cfin-head" data-k="${esc(k)}" onclick="comTog(this)">
+      <span class="cfin-dot" style="background:${fincaColor(g.fi)}"></span>
+      <div class="cfin-nm">${esc(g.fi||'Sin finca')}</div>
+      <b class="cfin-amt tnum">${fmt(g.deuda)}</b>
+      <span class="chev ${open?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div class="cfin-body" style="${open?'':'display:none'}">
+      <div class="cfin-actions"><button class="btn sm primary" onclick="smartAbono('${coj}',{t:'E',who:'${coj}',fi:'${fij}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abono inteligente</button><button class="btn sm" onclick="printComercioFinca('${coj}','${fij}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Estado de cuenta</button><span class="cfin-n">${g.pend.length} factura(s) pendiente(s) · de la más antigua a la más reciente</span></div>
+      ${detailTable(g.pend,'Saldo (por pagar)','Total que debe '+esc(g.fi||'Sin finca'),true,true)}
+      ${abonosSection(g.movs,'cf'+Math.abs(hashStr(k)),'Abonos realizados')}
+    </div>
+  </div>`;
+}
+function hashStr(t){let h=0;for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}return h;}
+function comTog(el){
+  const k=el.dataset.k;ui.comOpen=ui.comOpen||{};const open=!ui.comOpen[k];ui.comOpen[k]=open;
+  const box=el.nextElementSibling;if(box)box.style.display=open?'':'none';
+  const c=el.querySelector('.chev');if(c)c.classList.toggle('open',open);
+}
 function comCard(d,i){
   const initial=d.co.trim().charAt(0).toUpperCase()||'·';
   const alDia=d.deuda<=0;
+  const k='c:'+d.co;const open=!!(ui.comOpen&&ui.comOpen[k]);
+  const coj=esc(d.co).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const nf=(d.fincas||[]).length;
   return `<div class="card cli-card">
-    <div class="cli-head" onclick="toggleCom(${i})">
+    <div class="cli-head" data-k="${esc(k)}" onclick="comTog(this)">
       <span class="av" style="background:${fincaColor(d.co)}">${esc(initial)}</span>
-      <div class="nmb"><div class="nn">${esc(d.co)}</div><div class="ss">${alDia?'Al día · sin deudas pendientes':d.pend.length+' cuenta(s) por pagar'}</div></div>
+      <div class="nmb"><div class="nn">${esc(d.co)}</div><div class="ss">${alDia?'Al día · sin deudas pendientes':(d.pend.length+' cuenta(s) por pagar · '+nf+' finca'+(nf===1?'':'s'))}</div></div>
       <b class="amt ${alDia?'pos':''}" style="${alDia?'':'color:var(--amber)'}">${alDia?'$ 0':fmt(d.deuda)}</b>
-      <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-      <button class="cli-x" title="Quitar de la lista" onclick="event.stopPropagation();delComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <span class="chev" id="chevc_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <button class="cli-x cli-pdf" title="Estado de cuenta (abre en pestaña nueva)" onclick="event.stopPropagation();printComercio('${coj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+      <button class="cli-x" title="Quitar de la lista" onclick="event.stopPropagation();delComercio('${coj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <span class="chev ${open?'open':''}" id="chevc_${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
     </div>
-    <div class="cli-detail" id="com_${i}" style="display:none">
-      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('${esc(d.co).replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
-      ${d.pend.length?detailTable(d.pend,'Saldo (por pagar)','Total por pagar',true):`<div style="padding:18px;color:var(--muted);font-size:13px">Sin cuentas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
+    <div class="cli-detail" id="com_${i}" style="${open?'':'display:none'}">
+      <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('${coj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
+      ${nf?`<div class="cfin-title">Deuda por finca · toca una finca para ver sus facturas y abonar</div><div class="cfin-list">${d.fincas.map(g=>comFinCard(d,g)).join('')}</div>`:`<div style="padding:18px;color:var(--muted);font-size:13px">Sin cuentas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
       ${pagadasSection(d.pagadas,'c'+i,'pagados')}
     </div></div>`;
 }
