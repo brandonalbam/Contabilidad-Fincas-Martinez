@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atelier &amp; Co, alta joyería colombiana</title>
+<meta name="description" content="Atelier & Co: joyería de alta calidad, hecha a mano en Colombia. Esmeraldas colombianas y oro de 18 quilates. Personaliza tu joya y conoce su precio al instante.">
+<meta name="theme-color" content="#ECEBE3">
+<meta name="color-scheme" content="light">
+<link rel="icon" type="image/png" sizes="48x48" href="atelier-favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="atelier-icono-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="atelier-apple-touch.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap" rel="stylesheet">
+<style>
+/* ===== Atelier & Co — catálogo "Nácar" =====
+   Lenguaje: nácar y esmeralda; la talla esmeralda (rectángulo con esquinas cortadas) es la forma de botones y opciones;
+   las vitrinas tienen arco; las tallas son anillos. Las secuencias de scroll son el único gesto grande. */
+:root{
+  --serif:'Gloock', 'Didot', 'Bodoni 72', Georgia, serif;
+  --sans:'Instrument Sans', 'Helvetica Neue', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --nacar:#ECEBE3; --papel:#F7F6F1; --tinta:#13261F; --tinta2:#4D5B54; --esmeralda:#0B5A43; --esmeralda2:#0E6B50;
+  --noche:#0C2B23; --noche2:#123A2F; --oro:#A98234; --oro-txt:#7D5C1B; --oro-claro:#D9B26A;
+  --linea:rgba(19,38,31,.16); --linea2:rgba(19,38,31,.28);
+  --fondo:var(--nacar); --superficie:var(--papel); --acento:var(--esmeralda); --vidrio:rgba(236,235,227,.82); --sombra:rgba(19,38,31,.22);
+  --t-cuerpo:16.5px; --t-ui:15px; --t-meta:14px; --t-etq:13px;
+  --bisel:9px; --ancho:1260px;
+  --curva:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);font-size:var(--t-cuerpo);line-height:1.6;color:var(--tinta);background:var(--fondo);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:'kern','liga','tnum' 0}
+img{max-width:100%;display:block}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--esmeralda);outline-offset:3px}
+[hidden]{display:none!important}
+.envol{max-width:var(--ancho);margin:0 auto;padding:0 clamp(18px,5vw,64px)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.02;margin:0;letter-spacing:-.012em;text-wrap:balance}
+.estado{padding:140px 20px;text-align:center;color:var(--tinta2)}
+[data-rev]{opacity:1}
+.ceja{font-size:var(--t-meta);color:var(--tinta2);margin:0}
+
+/* ---------- Botones: talla esmeralda ---------- */
+.btn-oro,.btn-linea{--c:var(--bisel);position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 26px;text-decoration:none;font-weight:600;font-size:var(--t-ui);letter-spacing:.005em;cursor:pointer;border:0;white-space:nowrap;
+  clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c));transition:background-color .3s,color .3s}
+.btn-oro{background:var(--esmeralda);color:var(--nacar)}
+.btn-oro::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,236,190,.38) 50%,transparent 65%) 160% 0/250% 100% no-repeat;z-index:-1;transition:background-position .9s var(--curva)}
+.btn-oro:hover{background:var(--esmeralda2)}
+.btn-oro:hover::after{background-position:-60% 0}
+.btn-linea{background:var(--linea2);color:var(--tinta)}
+.btn-linea::before{content:'';position:absolute;inset:1.5px;z-index:-1;background:var(--fondo);clip-path:polygon(calc(var(--c) - .6px) 0,calc(100% - var(--c) + .6px) 0,100% calc(var(--c) - .6px),100% calc(100% - var(--c) + .6px),calc(100% - var(--c) + .6px) 100%,calc(var(--c) - .6px) 100%,0 calc(100% - var(--c) + .6px),0 calc(var(--c) - .6px));transition:background-color .3s}
+.btn-linea:hover{background:var(--tinta)}
+.btn-oro:focus-visible,.btn-linea:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--oro-claro)}
+.btn-oro svg,.btn-linea svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+.btn-oro svg[fill=currentColor]{fill:currentColor;stroke:none}
+.btn-linea.sobre-noche{background:rgba(236,235,227,.4);color:var(--nacar)}.btn-linea.sobre-noche::before{background:var(--noche)}.btn-linea.sobre-noche:hover{background:var(--nacar)}
+.enlace{color:var(--esmeralda);font-weight:600;text-decoration:none;background:linear-gradient(currentColor,currentColor) 0 100%/100% 1px no-repeat;padding-bottom:2px;transition:background-size .35s var(--curva)}
+.enlace:hover{background-size:0 1px;background-position:100% 100%}
+
+/* ---------- Barra superior ---------- */
+.top{position:fixed;inset:0 0 auto 0;z-index:40;transition:background-color .35s,box-shadow .35s,transform .45s var(--curva)}
+.top .envol{display:flex;align-items:center;gap:22px;height:72px}
+.top.solida{background:var(--vidrio);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);box-shadow:0 1px 0 var(--linea)}
+.top.sobre-noche:not(.solida){color:var(--nacar)}
+.logo{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:auto;color:inherit}
+.logo svg,.logo .logo-svg svg{width:26px;height:auto;display:block}
+.logo .logo-svg{width:26px}
+.logo span:last-child{font-family:var(--serif);font-size:20px;letter-spacing:.06em;white-space:nowrap}
+.logo small{font-family:var(--sans);font-size:.62em;font-weight:500;margin:0 .14em;vertical-align:.18em}
+.top nav{display:flex;gap:4px}
+.top nav a{position:relative;text-decoration:none;font-size:var(--t-ui);font-weight:500;padding:10px 14px;color:inherit;opacity:.78;transition:opacity .2s}
+.top nav a::after{content:'';position:absolute;left:14px;right:14px;bottom:4px;height:1.5px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .4s var(--curva)}
+.top nav a:hover,.top nav a.activo{opacity:1}
+.top nav a:hover::after,.top nav a.activo::after{transform:scaleX(1)}
+.btn-perfil{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:var(--t-ui);font-weight:500;padding:10px 6px;white-space:nowrap}
+.btn-perfil svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.btn-perfil.con-perfil svg{stroke:var(--esmeralda)}
+.btn-perfil:focus-visible,.btn-menu:focus-visible{outline:2px solid var(--esmeralda);outline-offset:3px}
+.top .btn-oro{min-height:42px;padding:0 18px;--c:7px}
+.btn-menu{all:unset;cursor:pointer;display:none;align-items:center;gap:9px;font-size:var(--t-ui);font-weight:600;padding:8px 2px}
+.btn-menu .gema-menu{width:22px;height:22px;transition:transform .6s var(--curva)}
+.btn-menu[aria-expanded=true] .gema-menu{transform:rotate(135deg)}
+.gema-menu path{fill:none;stroke:currentColor;stroke-width:1.4;stroke-linejoin:round}
+
+/* menú: se abre desde el botón como un aro que crece */
+.menu-movil{position:fixed;inset:0;z-index:90;background:var(--noche);color:var(--nacar);display:flex;flex-direction:column;padding:16px clamp(18px,5vw,64px) calc(24px + env(safe-area-inset-bottom));clip-path:circle(0 at calc(100% - 44px) 36px);transition:clip-path .7s cubic-bezier(.7,0,.2,1)}
+.menu-movil.abierto{clip-path:circle(150% at calc(100% - 44px) 36px)}
+.mm-cab{display:flex;justify-content:space-between;align-items:center;height:56px}
+.mm-logo{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;letter-spacing:.06em}.mm-logo small{font-family:var(--sans);font-size:.62em;margin:0 .14em}
+.mm-logo .logo-svg{width:24px;display:block}.mm-logo .logo-svg svg{width:100%;height:auto;display:block}
+.mm-cerrar{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:var(--t-ui);font-weight:600}
+.mm-cerrar::after{content:'';width:20px;height:20px;background:linear-gradient(45deg,transparent 46%,currentColor 46% 54%,transparent 54%),linear-gradient(-45deg,transparent 46%,currentColor 46% 54%,transparent 54%)}
+.mm-nav{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;counter-reset:mm}
+.mm-nav a{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 18px;padding:10px 0;text-decoration:none;color:inherit;opacity:0;transform:translateY(24px);transition:opacity .5s calc(.06s * var(--i) + .25s),transform .7s var(--curva) calc(.06s * var(--i) + .25s)}
+.menu-movil.abierto .mm-nav a{opacity:1;transform:none}
+.mm-nav span{font-family:var(--serif);font-size:clamp(40px,11vw,96px);line-height:1;letter-spacing:-.02em;transition:color .3s}
+.mm-nav a:hover span{color:var(--oro-claro)}
+.mm-nav i{font-style:normal;font-size:var(--t-meta);color:rgba(236,235,227,.6)}
+.mm-pie{display:flex;gap:12px}.mm-pie > *{flex:1}
+.mm-pie .btn-linea{background:rgba(236,235,227,.4);color:var(--nacar)}.mm-pie .btn-linea::before{background:var(--noche)}
+.mm-pie .btn-oro{background:var(--nacar);color:var(--noche)}
+
+/* ---------- Secuencias de scroll ---------- */
+.seq{position:relative;height:var(--alto,300vh)}
+.seq-fijo{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid}
+.seq-lienzo{position:absolute;display:block;pointer-events:none}
+.seq.sin-cuadros{height:auto}.seq.sin-cuadros .seq-fijo{position:relative;height:auto;min-height:80vh;padding:120px 0 80px}
+.seq-textos{position:relative;z-index:2;pointer-events:none}
+.seq-textos a,.seq-textos button{pointer-events:auto}
+.seq-paso{position:absolute;opacity:0;will-change:opacity,transform}
+.seq-paso h1,.seq-paso h2{font-size:clamp(44px,6.4vw,104px)}
+.seq-paso p{font-size:clamp(17px,1.5vw,21px);line-height:1.45;max-width:30ch;margin:18px 0 0;color:var(--tinta2)}
+.seq-paso .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+/* el aro de avance: se llena con el scroll */
+.aro-avance{position:absolute;z-index:3;width:46px;height:46px;right:clamp(18px,4vw,56px);bottom:clamp(20px,4vh,44px)}
+.aro-avance circle{fill:none;stroke-width:1.5}
+.aro-avance .base{stroke:var(--linea2)}
+.aro-avance .lleno{stroke:var(--oro);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--p,0));transform:rotate(-90deg);transform-origin:center}
+.aro-avance .piedra{fill:var(--esmeralda);transform-origin:center;transform:rotate(calc(var(--p,0) * 360deg)) translateY(-19px)}
+
+/* 1. Portada: el anillo */
+#inicio{background:var(--nacar)}
+#inicio .seq-lienzo{right:max(0px,calc(50vw - 700px));top:53%;width:min(90vh,60vw);height:min(90vh,60vw);transform:translateY(-50%)}
+#inicio .seq-textos{max-width:var(--ancho);width:100%;margin:0 auto;padding:0 clamp(18px,5vw,64px)}
+#inicio .seq-paso{left:clamp(18px,5vw,64px);top:50%;transform:translateY(-50%);max-width:min(40vw,560px)}
+#inicio .seq-paso.p0 h1{font-size:clamp(52px,7.4vw,124px)}
+#inicio .seq-paso h2{font-size:clamp(36px,4.6vw,76px)}
+#inicio .bajar{position:absolute;left:clamp(18px,5vw,64px);bottom:clamp(22px,4vh,44px);font-size:var(--t-meta);color:var(--tinta2);display:flex;align-items:center;gap:12px;z-index:3;text-decoration:none}
+#inicio .bajar i{width:44px;height:1px;background:var(--tinta2);transform-origin:left;animation:linea 2.4s var(--curva) infinite}
+@keyframes linea{0%{transform:scaleX(0)}50%{transform:scaleX(1);transform-origin:left}51%{transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+
+/* 2. Piedras */
+#piedras{background:var(--papel)}
+#piedras .seq-lienzo{left:50%;top:50%;width:min(96vh,58vw);height:min(96vh,58vw);transform:translate(-8%,-50%)}
+#piedras .seq-textos{max-width:var(--ancho);width:100%;margin:0 auto;padding:0 clamp(18px,5vw,64px);display:flex;flex-direction:column;justify-content:center}
+#piedras h2{font-size:clamp(38px,5vw,78px);max-width:10ch}
+#piedras .intro{max-width:32ch;color:var(--tinta2);font-size:clamp(16px,1.4vw,19px);line-height:1.5;margin:18px 0 34px}
+.lista-piedras{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.lista-piedras li{display:flex;align-items:center;gap:16px;font-family:var(--serif);font-size:clamp(28px,3.4vw,48px);line-height:1.08;color:var(--tinta);opacity:.22;transform:translateX(0);transition:opacity .45s,transform .6s var(--curva)}
+.lista-piedras li.activa{opacity:1;transform:translateX(10px)}
+.lista-piedras .faceta{width:.62em;height:.62em;flex:none}
+#piedras .nota-p{margin-top:30px;font-size:var(--t-meta);color:var(--tinta2);pointer-events:auto}
+
+/* 3. Collar */
+#collar{background:var(--noche);color:var(--nacar)}
+#collar .seq-lienzo{left:58%;top:50%;width:min(100vh,100vw);height:min(100vh,100vw);transform:translate(-50%,-50%)}
+#collar .seq-textos{max-width:var(--ancho);width:100%;margin:0 auto;padding:0 clamp(18px,5vw,64px)}
+#collar .seq-paso{left:clamp(18px,5vw,64px);right:auto;top:clamp(110px,16vh,170px);max-width:min(30vw,420px);text-align:left}
+#collar .seq-paso h2{font-size:clamp(38px,4.4vw,72px);color:var(--nacar);max-width:9ch;margin:0}
+#collar .seq-paso p{color:rgba(236,235,227,.74);margin:16px auto 0}
+#collar .seq-paso.abajo{top:auto;bottom:clamp(40px,8vh,90px);left:clamp(18px,5vw,64px);right:auto;max-width:300px;text-align:left}
+#collar .seq-paso.abajo p{margin:0}
+#collar .seq-paso.abajo .cta{justify-content:flex-start}
+#collar .seq-paso .cta{justify-content:center}
+#collar .aro-avance .base{stroke:rgba(236,235,227,.25)}#collar .aro-avance .piedra{fill:var(--oro-claro)}
+
+/* ---------- Secciones ---------- */
+.bloque{padding:clamp(90px,12vw,170px) 0;position:relative}
+.cab-sec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr);gap:24px 60px;align-items:end;margin-bottom:clamp(36px,5vw,64px)}
+.cab-sec h2{font-size:clamp(42px,6vw,96px)}
+.cab-sec p{margin:0;color:var(--tinta2);max-width:38ch;font-size:clamp(16px,1.3vw,18px)}
+
+/* Pieza destacada (3D que se puede girar) */
+.destacada{background:var(--nacar);padding:clamp(80px,10vw,150px) 0}
+.destacada .envol{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(30px,6vw,90px);align-items:center}
+.destacada h2{font-size:clamp(36px,4.6vw,72px);margin-bottom:16px}
+.destacada .txt p{color:var(--tinta2);max-width:36ch;margin:0 0 28px}
+.vh{position:relative;width:100%;display:grid;gap:0}
+.vh-escena{position:relative;width:100%;aspect-ratio:1}
+.vh-visor{position:absolute;inset:0;overflow:hidden;border-radius:50% 50% 0 0/38% 38% 0 0;background:radial-gradient(100% 80% at 50% 30%,#FFFFFF,var(--papel) 60%,#E3E2D9)}
+.vh-visor img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .9s var(--curva)}
+.vh-visor .sin{position:absolute;inset:0;display:grid;place-items:center}.vh-visor .sin svg{width:30%;opacity:.4}
+.vh-3d{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--curva)}
+.vh-visor.con-3d img{opacity:0}.vh-visor.con-3d .vh-3d{opacity:1}
+.vh-pista{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:2;white-space:nowrap;font-size:var(--t-etq);color:var(--tinta2);pointer-events:none;transition:opacity .6s;display:flex;align-items:center;gap:8px}
+.vh-pista::before{content:'';width:26px;height:10px;border:1.5px solid currentColor;border-radius:50%;border-top-color:transparent}
+.vh-pista.fuera{opacity:0}
+.vh-pista.boton{pointer-events:auto;cursor:pointer;color:var(--tinta);font-weight:600}
+.vh-panel{position:relative;padding:22px 0 0;border-top:1px solid var(--linea2)}
+.vh-nombre{font-family:var(--serif);font-size:clamp(22px,2vw,28px);margin:0 0 12px}
+.vh-pie{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;flex-wrap:wrap}
+.vh-precio{margin:0;font-size:var(--t-meta);color:var(--tinta2)}
+.vh-precio b{display:block;font-family:var(--serif);font-weight:400;font-size:clamp(28px,2.6vw,36px);color:var(--tinta);font-variant-numeric:lining-nums tabular-nums;line-height:1.1}
+
+/* ---------- Opciones (piedra, oro, talla) ---------- */
+.c3-fila{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:start;gap:10px;margin:10px 0}
+.c3-fila > span{font-size:var(--t-meta);color:var(--tinta2);padding-top:10px}
+.c3-ops{display:flex;flex-wrap:wrap;gap:6px}
+.opc{position:relative;max-width:100%}
+.opc input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0;z-index:2}
+.opc > span{--c:6px;position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;font-size:var(--t-meta);line-height:1.25;background:var(--linea2);color:var(--tinta);
+  clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c));transition:background-color .25s,color .25s}
+.opc > span::before{content:'';position:absolute;inset:1px;z-index:-1;background:var(--papel);clip-path:polygon(calc(var(--c) - .4px) 0,calc(100% - var(--c) + .4px) 0,100% calc(var(--c) - .4px),100% calc(100% - var(--c) + .4px),calc(100% - var(--c) + .4px) 100%,calc(var(--c) - .4px) 100%,0 calc(100% - var(--c) + .4px),0 calc(var(--c) - .4px));transition:background-color .25s}
+.opc:hover > span{background:var(--tinta)}
+.opc input:checked + span{background:var(--tinta);color:var(--nacar)}
+.opc input:checked + span::before{background:var(--tinta)}
+.opc input:focus-visible + span{background:var(--esmeralda)}
+.opc input:focus-visible + span::before{inset:2.5px}
+.opc small{color:var(--tinta2);font-size:var(--t-etq);margin-left:2px}
+.opc input:checked + span small{color:rgba(236,235,227,.7)}
+/* tallas: cada una es un anillo */
+.f-c3talla .c3-ops{gap:6px}
+.f-c3talla .opc > span{clip-path:none;background:none;width:44px;height:44px;padding:0;justify-content:center;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--linea2);font-variant-numeric:tabular-nums}
+.f-c3talla .opc > span::before{display:none}
+.f-c3talla .opc:hover > span{box-shadow:inset 0 0 0 1.5px var(--tinta)}
+.f-c3talla .opc input:checked + span{background:var(--esmeralda);color:var(--nacar);box-shadow:inset 0 0 0 1.5px var(--esmeralda),0 0 0 3px var(--papel),0 0 0 4.5px var(--oro)}
+.f-c3talla .opc input:focus-visible + span{box-shadow:inset 0 0 0 3px var(--esmeralda)}
+.f-c3talla .opc:last-child > span{width:auto;border-radius:22px;padding:0 16px}
+/* piedra: gema facetada vista desde arriba */
+.muestra-piedra,.faceta{display:inline-block;width:16px;height:16px;flex:none;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);position:relative;vertical-align:-3px}
+.muestra-piedra::after,.faceta::after{content:'';position:absolute;inset:0;background:conic-gradient(from 22.5deg,rgba(255,255,255,.45) 0 12.5%,rgba(0,0,0,.18) 0 25%,rgba(255,255,255,.25) 0 37.5%,rgba(0,0,0,.28) 0 50%,rgba(255,255,255,.4) 0 62.5%,rgba(0,0,0,.15) 0 75%,rgba(255,255,255,.3) 0 87.5%,rgba(0,0,0,.24) 0);mix-blend-mode:soft-light}
+.muestra-piedra::before,.faceta::before{content:'';position:absolute;inset:28%;background:rgba(255,255,255,.35);clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);z-index:1}
+/* oro: lingote */
+.muestra-oro{display:inline-block;width:20px;height:11px;flex:none;clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);vertical-align:-1px}
+
+/* ---------- Colección ---------- */
+.coleccion{background:var(--nacar)}
+.titular-desliza{overflow:hidden;white-space:nowrap;margin-bottom:clamp(30px,4vw,56px)}
+.titular-desliza span{display:inline-block;font-family:var(--serif);font-size:clamp(72px,15vw,240px);line-height:.9;letter-spacing:-.03em;will-change:transform}
+.titular-desliza em{font-style:normal;color:transparent;-webkit-text-stroke:1.2px var(--tinta);margin-left:.3em}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:clamp(30px,4vw,48px)}
+.filtros button{--c:6px;position:relative;isolation:isolate;border:0;padding:10px 15px;cursor:pointer;font-size:var(--t-meta);font-weight:500;background:var(--linea2);color:var(--tinta);
+  clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
+.filtros button::before{content:'';position:absolute;inset:1px;z-index:-1;background:var(--nacar);clip-path:inherit}
+.filtros button b{font-weight:500;color:var(--tinta2);margin-left:6px}
+.filtros button[aria-pressed=true]{background:var(--tinta);color:var(--nacar)}
+.filtros button[aria-pressed=true]::before{background:var(--tinta)}
+.filtros button[aria-pressed=true] b{color:rgba(236,235,227,.7)}
+.filtros button:focus-visible{outline:none;background:var(--esmeralda)}
+.mosaico{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:dense;gap:clamp(40px,5vw,72px) clamp(16px,2.4vw,34px);align-items:start}
+.pieza{position:relative;display:flex;flex-direction:column;text-decoration:none;color:inherit}
+.pieza:focus-visible{outline:none}.pieza:focus-visible .foto{box-shadow:0 0 0 3px var(--nacar),0 0 0 5px var(--esmeralda)}
+.pieza .foto{position:relative;overflow:hidden;aspect-ratio:4/5;background:var(--papel);border-radius:50% 50% 0 0/30% 30% 0 0;isolation:isolate}
+.pieza .foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.4s var(--curva),opacity .7s ease}
+.pieza .foto img.alt{opacity:0}
+.pieza .foto .sin{position:absolute;inset:0;display:grid;place-items:center}.pieza .foto .sin svg{width:28%;opacity:.35}
+.pieza .info{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;padding:18px 2px 0;border-top:1px solid var(--linea2);margin-top:14px}
+.pieza h3{font-size:clamp(20px,1.7vw,26px);line-height:1.15}
+.pieza .precio{grid-column:1;margin:0;font-size:var(--t-meta);color:var(--tinta2);font-variant-numeric:tabular-nums}
+.pieza .precio b{color:var(--tinta);font-weight:600}
+.gemas{grid-column:2;grid-row:1/span 2;display:flex;gap:4px;align-items:center;align-self:center}
+.gemas i{width:12px;height:12px;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+.gemas small{font-size:var(--t-etq);color:var(--tinta2);margin-left:2px}
+.marca-3d{position:absolute;top:18%;left:50%;transform:translateX(-50%);z-index:2;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(247,246,241,.85);color:var(--tinta);font-size:var(--t-etq);font-weight:600;border-radius:20px;backdrop-filter:blur(6px)}
+.marca-3d svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.pieza .ver{position:absolute;left:50%;bottom:16px;z-index:2;transform:translate(-50%,10px);display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--tinta);color:var(--nacar);font-size:var(--t-meta);font-weight:600;opacity:0;transition:opacity .45s var(--curva),transform .45s var(--curva);white-space:nowrap;
+  clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px)}
+.pieza .ver svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8}
+@media (hover:hover){.pieza:hover .foto img{transform:scale(1.05)}.pieza:hover .foto img.alt{opacity:1}.pieza:hover .ver,.pieza:focus-visible .ver{opacity:1;transform:translate(-50%,0)}}
+.pieza.f-estudio .foto{background:radial-gradient(100% 80% at 50% 30%,#FFFFFF,var(--papel) 60%,#E5E4DB)}
+.pieza.f-estudio .foto img{object-fit:contain;padding:12%}
+.pieza.f-amplia{grid-column:span 2}
+.pieza.f-amplia .foto{aspect-ratio:1.5;border-radius:50% 50% 0 0/42% 42% 0 0}
+.pieza.f-amplia h3{font-size:clamp(24px,2.3vw,34px)}
+
+/* ---------- Diseña tu joya ---------- */
+.personalizar{position:relative;padding:clamp(90px,11vw,160px) 0;background:var(--papel)}
+.personalizar .envol{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(34px,6vw,90px);align-items:start}
+.personalizar .envol > div:first-child{position:sticky;top:110px}
+.personalizar h2{font-size:clamp(42px,5.4vw,86px)}
+.personalizar .intro{color:var(--tinta2);font-size:clamp(16px,1.3vw,18.5px);margin:20px 0 34px;max-width:34ch}
+.tres-pasos{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--linea2);counter-reset:paso}
+.tres-pasos li{display:grid;grid-template-columns:52px 1fr;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--linea2)}
+.tres-pasos .ilus{width:52px}
+.tres-pasos b{display:block;font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.1}
+.tres-pasos span{font-size:var(--t-meta);color:var(--tinta2)}
+.derecha-diseno{position:relative;min-width:0}
+.teaser{position:relative;background:var(--noche);color:var(--nacar);padding:clamp(28px,4vw,48px);transition:opacity .35s ease,transform .45s var(--curva);
+  clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)}
+.teaser h3{font-size:clamp(30px,3vw,44px);margin-bottom:12px}
+.pide{margin:0 0 28px;color:rgba(236,235,227,.75);max-width:34ch}
+.pide span{color:var(--nacar)}
+.abrir-diseno{width:100%;min-height:58px;font-size:16px}
+.teaser .btn-oro{background:var(--nacar);color:var(--noche)}
+.teaser .btn-oro:hover{background:#fff}
+.abrir-diseno svg{width:20px;height:20px;transition:transform .4s}
+.abrir-diseno:hover svg{transform:rotate(90deg)}
+.teaser .nota-t{color:rgba(236,235,227,.62);font-size:var(--t-meta);margin:14px 0 0;text-align:center}
+.teaser.oculto{opacity:0;transform:translateY(-12px);pointer-events:none;position:absolute;inset:0 0 auto 0}
+.plegable{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .7s var(--curva),opacity .5s ease .1s}
+.plegable > div{overflow:hidden;min-height:0}
+.plegable.abierto{grid-template-rows:1fr;opacity:1}
+.plegable.abierto > div{overflow:visible}
+.form-diseno{position:relative;background:var(--nacar);padding:clamp(22px,3.4vw,40px);box-shadow:inset 0 0 0 1px var(--linea)}
+.form-diseno h3{font-size:clamp(28px,2.6vw,38px);margin-bottom:6px}
+.form-diseno .sub{color:var(--tinta2);margin:0 0 26px;font-size:var(--t-ui)}
+.cerrar-diseno{all:unset;cursor:pointer;position:absolute;top:18px;right:18px;width:40px;height:40px;display:grid;place-items:center;font-size:26px;line-height:1;color:var(--tinta2);z-index:2}
+.cerrar-diseno:hover{color:var(--tinta)}
+.cerrar-diseno:focus-visible{outline:2px solid var(--esmeralda)}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:22px 18px}
+.campos > *,.personalizar .envol > *,.form-diseno{min-width:0}
+.campo{display:flex;flex-direction:column;gap:4px;font-size:var(--t-meta);font-weight:500;color:var(--tinta2)}
+.campo.ancho{grid-column:1/-1}
+.campo input,.campo select,.campo textarea{font-size:16px;font-weight:400;background:transparent;border:0;border-bottom:1.5px solid var(--linea2);border-radius:0;padding:9px 0;color:var(--tinta);width:100%;transition:border-color .25s}
+.campo select{appearance:none;-webkit-appearance:none;background:linear-gradient(45deg,transparent 50%,var(--tinta) 50%) calc(100% - 9px) 55%/6px 6px no-repeat,linear-gradient(-45deg,transparent 50%,var(--tinta) 50%) calc(100% - 3px) 55%/6px 6px no-repeat;padding-right:24px}
+.campo textarea{resize:vertical;min-height:100px;line-height:1.5;border:1.5px solid var(--linea2);padding:12px}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:none;border-color:var(--esmeralda)}
+.campo small{font-weight:400;font-size:var(--t-etq);color:var(--tinta2)}
+.presu{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.presu label{position:relative}
+.presu input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;z-index:2}
+.presu span{--c:6px;display:block;font-size:var(--t-meta);font-weight:400;padding:9px 13px;color:var(--tinta);background:var(--papel);box-shadow:inset 0 0 0 1px var(--linea2);transition:background-color .2s,color .2s}
+.presu input:checked + span{background:var(--tinta);color:var(--nacar);box-shadow:none}
+.presu input:focus-visible + span{outline:2px solid var(--esmeralda);outline-offset:2px}
+.taller{grid-column:1/-1;min-width:0;padding:16px;background:var(--papel);box-shadow:inset 0 0 0 1px var(--linea)}
+.taller-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.taller-cab b{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--tinta)}
+.taller-cab small{color:var(--tinta2);font-size:var(--t-etq)}
+.modelos-base{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:thin}
+.modelos-base .opc{flex:none}
+.taller-visor{position:relative;aspect-ratio:4/3;overflow:hidden;background:radial-gradient(100% 80% at 50% 30%,#FFFFFF,var(--papel) 60%,#E3E2D9);touch-action:none;border-radius:50% 50% 0 0/26% 26% 0 0}
+.taller-visor canvas{width:100%!important;height:100%!important;display:block}
+.taller-visor .cargando,.v3d .cargando{position:absolute;inset:0;display:grid;place-items:center;color:var(--tinta2);font-size:var(--t-ui);padding:20px;text-align:center}
+.taller-grabado{margin-top:12px}
+.taller-grabado input[type=text]{width:100%;border:0;border-bottom:1.5px solid var(--linea2);padding:10px 0;background:transparent;color:var(--tinta);font-size:22px}
+.taller-grabado input[type=text]:focus{outline:none;border-color:var(--esmeralda)}
+.check{display:flex;gap:12px;align-items:center;cursor:pointer;padding:9px 0;font-size:var(--t-ui)}
+.check input,.consent input{width:18px;height:18px;accent-color:var(--esmeralda);flex:none}
+.sub-grabado{display:block;font-size:var(--t-meta);color:var(--tinta2);margin:16px 0 8px}
+.subir{position:relative;display:block;padding:22px;text-align:center;font-weight:400;color:var(--tinta2);font-size:var(--t-ui);cursor:pointer;background:var(--papel);
+  background-image:linear-gradient(90deg,var(--linea2) 50%,transparent 0),linear-gradient(90deg,var(--linea2) 50%,transparent 0),linear-gradient(0deg,var(--linea2) 50%,transparent 0),linear-gradient(0deg,var(--linea2) 50%,transparent 0);
+  background-size:10px 1.5px,10px 1.5px,1.5px 10px,1.5px 10px;background-position:0 0,0 100%,0 0,100% 0;background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;transition:background-color .2s}
+.subir:hover,.subir.encima{background-color:#fff}
+.subir svg{width:30px;height:30px;stroke:var(--esmeralda);fill:none;stroke-width:1.4;display:block;margin:0 auto 8px}
+.subir b{color:var(--tinta);font-weight:600}
+.subir input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.previas{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.previas div{position:relative;width:72px;height:72px;overflow:hidden;border-radius:50% 50% 0 0/30% 30% 0 0}
+.previas img{width:100%;height:100%;object-fit:cover}
+.previas button{all:unset;cursor:pointer;position:absolute;top:auto;bottom:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(19,38,31,.8);color:#fff;text-align:center;line-height:21px;font-size:15px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:var(--t-meta);color:var(--tinta2);margin:18px 0;cursor:pointer;line-height:1.45}
+.error-form{color:#9B1C2C;font-size:var(--t-ui);font-weight:500;margin:0 0 12px}
+.error-form:empty{display:none}
+.enviar{width:100%;min-height:56px;font-size:16px}
+.enviar[disabled]{opacity:.65;cursor:wait}
+.exito{text-align:center;padding:30px 10px}
+.exito .check-oro{width:84px;height:84px;margin:0 auto 22px;display:grid;place-items:center;background:var(--esmeralda);clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);animation:pop .6s cubic-bezier(.2,1.4,.4,1)}
+.exito .check-oro svg{width:38px;height:38px;stroke:var(--nacar);fill:none;stroke-width:2.4;stroke-dasharray:40;stroke-dashoffset:40;animation:traza .6s .35s forwards}
+.exito h3{font-size:34px;margin-bottom:10px}
+.exito p{color:var(--tinta2);margin:0 0 24px}
+@keyframes pop{from{transform:scale(0) rotate(-45deg)}to{transform:none}}
+@keyframes traza{to{stroke-dashoffset:0}}
+.est-letras{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:6px}
+.est-letras .opc{display:block}
+.est-letras .opc > span{display:block;text-align:center;padding:8px}
+.est-letras b{display:block;font-size:17px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.est-letras small{display:block;font-size:12px;line-height:1.25;margin:2px 0 0}
+.est-tamanos{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.est-tamanos i{font-style:normal;font-family:var(--serif)}
+
+/* ---------- Ilustraciones de línea ---------- */
+.ilus{width:100%;height:auto;color:var(--esmeralda);display:block}
+.ilus [pathLength]{stroke-dasharray:1;stroke-dashoffset:0}
+.ilus .pp{opacity:.9;color:var(--oro)}
+
+/* ---------- Marca ---------- */
+.marca-sec{position:relative;background:var(--nacar);padding:clamp(100px,14vw,200px) 0;overflow:hidden}
+.marca-sec .envol{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(30px,6vw,100px);align-items:center}
+.emblema{width:clamp(110px,16vw,230px);color:var(--oro);will-change:transform}
+.emblema svg{width:100%;height:auto;display:block}
+.frase-marca{font-family:var(--serif);font-size:clamp(34px,5.2vw,84px);line-height:1.06;letter-spacing:-.015em;margin:0;max-width:18ch}
+.frase-marca .pal{opacity:var(--o,.16);transition:opacity .25s}
+.firma-marca{margin:26px 0 0;color:var(--tinta2);font-size:var(--t-ui)}
+
+/* ---------- Proceso ---------- */
+.proceso{background:var(--papel)}
+.ruta{list-style:none;margin:0;padding:0;position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.ruta::before{content:'';position:absolute;left:0;right:0;top:27px;height:1.5px;background:var(--linea2)}
+.ruta::after{content:'';position:absolute;left:0;right:0;top:27px;height:1.5px;background:var(--esmeralda);transform-origin:left;transform:scaleX(var(--avance,0))}
+.etapa{position:relative;padding:0 18px 0 0}
+.etapa-n{position:relative;z-index:1;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--papel);box-shadow:inset 0 0 0 1.5px var(--linea2);font-family:var(--serif);font-size:22px;margin-bottom:22px;transition:background-color .4s,color .4s,box-shadow .4s}
+.etapa.hecha .etapa-n{background:var(--esmeralda);color:var(--nacar);box-shadow:inset 0 0 0 1.5px var(--esmeralda),0 0 0 4px var(--papel),0 0 0 5.5px var(--oro)}
+.etapa-il{width:74px;margin-bottom:12px}
+.etapa h3{font-size:clamp(22px,2vw,28px);margin:0 0 6px}
+.etapa p{margin:0;font-size:var(--t-meta);color:var(--tinta2);max-width:22ch}
+
+/* ---------- Pie ---------- */
+.pie2{background:var(--noche);color:var(--nacar);padding:clamp(70px,9vw,120px) 0 40px}
+.pie2 .envol{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px 60px}
+.pie-grande{font-family:var(--serif);font-size:clamp(44px,7vw,120px);line-height:.95;letter-spacing:-.02em;margin:0 0 28px}
+.pie2 .logo{margin:0 0 18px}
+.pie2 .logo svg{width:34px}
+.pie-nav{display:grid;gap:8px;align-content:start}
+.pie-nav a{font-family:var(--serif);font-size:clamp(24px,2.4vw,34px);text-decoration:none;color:var(--nacar);width:max-content;background:linear-gradient(var(--oro-claro),var(--oro-claro)) 0 100%/0 1px no-repeat;transition:background-size .4s var(--curva)}
+.pie-nav a:hover{background-size:100% 1px}
+.pie2 .legal{grid-column:1/-1;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid rgba(236,235,227,.18);padding-top:22px;margin:30px 0 0;color:rgba(236,235,227,.62);font-size:var(--t-meta)}
+.pie2 .btn-oro{background:var(--nacar);color:var(--noche)}
+
+/* ---------- Ficha de la joya ---------- */
+.ficha-capa{position:fixed;inset:0;z-index:60;background:var(--nacar);overflow-y:auto;overscroll-behavior:contain;animation:sube .55s var(--curva)}
+.ficha-top{position:sticky;top:0;z-index:5;background:var(--vidrio);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--linea)}
+.ficha-top .envol{display:flex;align-items:center;gap:16px;height:64px}
+.volver{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:10px;font-size:var(--t-ui);font-weight:500;margin-right:auto}
+.volver svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;transition:transform .3s}
+.volver:hover svg{transform:translateX(-4px)}
+.volver:focus-visible{outline:2px solid var(--esmeralda);outline-offset:3px}
+.ficha{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);grid-template-areas:"gal cab" "gal info";column-gap:clamp(30px,5vw,80px);row-gap:18px;padding:32px 0 100px;align-items:start}
+.ficha > div{min-width:0}
+.ficha-cab{grid-area:cab;padding-top:8px}
+.ficha h1{font-size:clamp(38px,4.4vw,68px);margin:0}
+.h1-piedra{display:block;font-size:.5em;margin-top:10px;color:var(--esmeralda);letter-spacing:0}
+.ficha .galeria{grid-area:gal;position:sticky;top:84px;align-self:start;min-width:0}
+.ficha-info{grid-area:info;min-width:0;display:flex;flex-direction:column}
+.lupa{position:relative;aspect-ratio:1;overflow:hidden;background:radial-gradient(100% 80% at 50% 30%,#FFFFFF,var(--papel) 60%,#E3E2D9);cursor:zoom-in;border-radius:50% 50% 0 0/34% 34% 0 0}
+.lupa img{width:100%;height:100%;object-fit:cover;transition:transform .25s ease,opacity .35s}
+.lupa.zoom img{transform:scale(2.1)}
+.lupa video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.lupa.modo-video,.lupa.modo-3d{cursor:default}
+.lupa.modo-3d{cursor:grab}.lupa.modo-3d:active{cursor:grabbing}
+.v3d{position:absolute;inset:0}
+.ctrl3d{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:6px;z-index:2}
+.ctrl3d button{all:unset;cursor:pointer;font-size:var(--t-etq);font-weight:600;background:rgba(247,246,241,.88);color:var(--tinta);padding:8px 13px;backdrop-filter:blur(6px);white-space:nowrap;
+  clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
+.ctrl3d button:hover{background:var(--tinta);color:var(--nacar)}
+.ctrl3d button:focus-visible{background:var(--esmeralda);color:var(--nacar)}
+.pista-3d{position:absolute;top:22%;left:50%;transform:translateX(-50%);z-index:2;font-size:var(--t-etq);color:var(--tinta2);white-space:nowrap;pointer-events:none;transition:opacity .6s}
+.pista-3d.fuera{opacity:0}
+.taller-visor .pista-3d{top:24%}.taller-visor .ctrl3d{bottom:10px}
+.miniaturas{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.miniaturas button{all:unset;cursor:pointer;position:relative;width:70px;height:70px;overflow:hidden;background:var(--papel);opacity:.55;transition:opacity .25s;border-radius:50% 50% 0 0/30% 30% 0 0}
+.miniaturas button[aria-current=true]{opacity:1;box-shadow:inset 0 -2.5px 0 var(--esmeralda)}
+.miniaturas button:focus-visible{opacity:1;outline:2px solid var(--esmeralda);outline-offset:2px}
+.miniaturas img{width:100%;height:100%;object-fit:cover}
+.miniaturas button.video::after{content:'';position:absolute;inset:0;background:rgba(19,38,31,.3) center/34% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.5v13l10.5-6.5z' fill='%23fff'/%3E%3C/svg%3E")}
+.miniaturas button.m3d{display:grid;place-items:center;color:var(--esmeralda);font-size:var(--t-etq);font-weight:700;text-align:center;line-height:1}
+.miniaturas button.m3d svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;display:block;margin:6px auto 2px}
+.miniaturas .mini-sep{flex-basis:100%;font-size:var(--t-etq);color:var(--tinta2);margin:6px 0 -2px}
+.btn-ampliar{all:unset;cursor:pointer;position:absolute;right:14px;bottom:14px;display:inline-flex;align-items:center;gap:8px;font-size:var(--t-etq);font-weight:600;background:rgba(247,246,241,.88);padding:8px 13px;z-index:2;
+  clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
+.btn-ampliar svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+.btn-ampliar:focus-visible{background:var(--esmeralda);color:var(--nacar)}
+.foto-ref{position:absolute;left:50%;top:16%;transform:translateX(-50%);z-index:2;max-width:calc(100% - 40px);text-align:center;font-size:var(--t-etq);line-height:1.35;color:var(--tinta);background:rgba(247,246,241,.9);padding:6px 12px;border-radius:14px}
+.vh-ref{top:auto;bottom:60px}
+.config3d{position:relative;margin-top:6px;padding:20px 0 6px;border-top:1px solid var(--linea2)}
+.c3-titulo{font-family:var(--serif);font-size:24px;margin:0 0 8px}
+.c3-grab{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;font-size:var(--t-meta);color:var(--esmeralda);font-weight:600;
+  background:linear-gradient(90deg,currentColor 50%,transparent 0) 0 0/8px 1.5px repeat-x,linear-gradient(90deg,currentColor 50%,transparent 0) 0 100%/8px 1.5px repeat-x,linear-gradient(0deg,currentColor 50%,transparent 0) 0 0/1.5px 8px repeat-y,linear-gradient(0deg,currentColor 50%,transparent 0) 100% 0/1.5px 8px repeat-y}
+.c3-grab.activo{background:var(--tinta);color:var(--nacar)}
+.c3-grab small{font-weight:400;opacity:.75;font-size:var(--t-etq)}
+.c3-grab:focus-visible{outline:2px solid var(--esmeralda);outline-offset:2px}
+.c3-quitar{all:unset;cursor:pointer;font-size:var(--t-meta);color:var(--tinta2);text-decoration:underline;text-underline-offset:3px;padding:9px 6px}
+.c3-ayuda{margin:-2px 0 8px 94px}
+.c3-link{all:unset;cursor:pointer;font-size:var(--t-meta);font-weight:600;color:var(--esmeralda);text-decoration:underline;text-underline-offset:4px}
+.c3-link:focus-visible{outline:2px solid var(--esmeralda);outline-offset:2px}
+.guia-talla{margin-top:10px;padding:14px 16px;background:var(--papel);font-size:var(--t-meta);line-height:1.5;color:var(--tinta2);box-shadow:inset 3px 0 0 var(--oro)}
+.guia-talla ol{margin:0 0 6px;padding-left:18px}.guia-talla li{margin:2px 0}.guia-talla b{color:var(--tinta)}.guia-talla p{margin:0}
+.c3-nota{margin:0;font-size:var(--t-meta);color:var(--tinta2)}
+.c3-fila.falta .c3-ops{outline:1.5px dashed #9B1C2C;outline-offset:5px}
+.c3-falta{margin:2px 0 8px 94px;font-size:var(--t-meta);color:#9B1C2C;font-weight:500}
+.estudio{margin:6px 0 10px;padding:18px;background:var(--papel);box-shadow:inset 0 0 0 1px var(--linea);animation:sube .45s var(--curva);min-width:0;max-width:100%}
+.est-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.est-cab .ceja{font-family:var(--serif);font-size:22px;color:var(--tinta)}
+.est-listo{all:unset;cursor:pointer;font-size:var(--t-meta);font-weight:600;padding:8px 16px;background:var(--tinta);color:var(--nacar);clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
+.est-listo:focus-visible{background:var(--esmeralda)}
+#eTexto{width:100%;border:0;border-bottom:1.5px solid var(--linea2);padding:10px 0;background:transparent;color:var(--tinta);font-size:24px}
+#eTexto:focus{outline:none;border-color:var(--esmeralda)}
+.est-info{display:flex;justify-content:space-between;margin:8px 0 12px;color:var(--tinta2);font-size:var(--t-meta)}
+.est-info b{color:var(--tinta)}
+.ficha .galeria.con-estudio .lupa{aspect-ratio:4/3}
+.ficha .galeria.con-estudio .miniaturas{display:none}
+.vista-grabado{margin-top:12px;height:64px;border-radius:999px;background:linear-gradient(180deg,#F4D98E,#C49022 55%,#8A6414);display:grid;place-items:center;color:rgba(70,48,10,.85);font-size:20px;letter-spacing:.06em;text-shadow:0 1px 0 rgba(255,240,200,.6);box-shadow:inset 0 2px 6px rgba(0,0,0,.25);overflow:hidden;white-space:nowrap;padding:0 24px}
+.total{position:sticky;bottom:0;margin-top:20px;padding:18px 0;background:var(--nacar);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;z-index:3;box-shadow:0 -1px 0 var(--linea2)}
+.total .t-precio span{display:block;color:var(--tinta2);font-size:var(--t-meta)}
+.total b{display:block;font-family:var(--serif);font-weight:400;font-variant-numeric:lining-nums tabular-nums;font-size:clamp(34px,3.6vw,48px);line-height:1.05}
+.nota{color:var(--tinta2);font-size:var(--t-meta);margin:12px 0 0}
+.confianza{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.confianza li{display:grid;gap:8px;align-content:start;font-size:var(--t-meta);color:var(--tinta2);line-height:1.4;padding-top:12px;border-top:1px solid var(--linea2)}
+.confianza b{color:var(--tinta);font-weight:600}
+.confianza svg{width:22px;height:22px;fill:none;stroke:var(--esmeralda);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.detalles{margin-top:30px}
+.detalles .desc{margin:0 0 16px;color:var(--tinta2);max-width:60ch;white-space:pre-line}
+.specs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0;border-top:1px solid var(--linea2)}
+.specs span{display:flex;flex-direction:column;padding:12px 12px 12px 0;font-size:var(--t-etq);color:var(--tinta2);border-bottom:1px solid var(--linea2)}
+.specs span b{font-weight:500;color:var(--tinta);font-size:var(--t-ui)}
+.relacionadas{padding:20px 0 100px}
+.relacionadas h2{font-size:clamp(32px,3.6vw,54px);margin-bottom:32px}
+.relacionadas .mosaico{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* ---------- Perfil ---------- */
+dialog.dlg-perfil{border:0;padding:0;width:min(580px,calc(100vw - 24px));max-height:calc(100vh - 24px);background:var(--nacar);color:var(--tinta);box-shadow:0 40px 90px rgba(12,43,35,.35)}
+dialog.dlg-perfil::backdrop{background:rgba(12,43,35,.6);backdrop-filter:blur(4px)}
+.dlg-perfil form{padding:clamp(22px,4vw,36px);position:relative}
+.dlg-perfil h3{font-size:34px;margin:0 0 8px}
+.dlg-perfil .sub{color:var(--tinta2);font-size:var(--t-ui);margin:0 0 22px}
+.dlg-perfil .aviso-pedido{background:var(--papel);box-shadow:inset 3px 0 0 var(--esmeralda);padding:12px 14px;font-size:var(--t-ui);margin:0 0 18px}
+.dlg-perfil .acciones-p{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+.dlg-perfil .borrar{all:unset;cursor:pointer;color:#9B1C2C;font-size:var(--t-meta);margin-right:auto;align-self:center;text-decoration:underline}
+.cerrar-p{all:unset;cursor:pointer;position:absolute;top:14px;right:14px;width:40px;height:40px;display:grid;place-items:center;color:var(--tinta2);font-size:26px}
+.cerrar-p:focus-visible{outline:2px solid var(--esmeralda)}
+
+/* ---------- Visor de fotos ---------- */
+.visor{position:fixed;inset:0;z-index:90;background:var(--noche);display:flex;align-items:center;justify-content:center;animation:aparece .3s ease}
+.lienzo{position:absolute;inset:0;display:grid;place-items:center;touch-action:none;overflow:hidden;cursor:zoom-in}
+.lienzo.acercado{cursor:grab}
+.lienzo img{max-width:min(92vw,1100px);max-height:84vh;object-fit:contain;background:#fff;transform-origin:center;transition:transform .25s ease;user-select:none;-webkit-user-drag:none}
+.lienzo.arrastrando img{transition:none}
+.cerrar-v,.nav-v{all:unset;cursor:pointer;position:absolute;z-index:2;width:48px;height:48px;display:grid;place-items:center;background:rgba(236,235,227,.12);color:var(--nacar);clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+.cerrar-v:hover,.nav-v:hover,.cerrar-v:focus-visible,.nav-v:focus-visible{background:var(--nacar);color:var(--noche)}
+.cerrar-v{top:max(16px,env(safe-area-inset-top));right:16px;font-size:26px}
+.nav-v svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav-v.izq{left:16px;top:50%;margin-top:-24px}.nav-v.der{right:16px;top:50%;margin-top:-24px}
+.pie-visor{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));text-align:center;color:rgba(236,235,227,.7);font-size:var(--t-meta);z-index:2;pointer-events:none}
+.pie-visor b{color:var(--oro-claro);font-weight:600;margin-right:10px}
+@keyframes aparece{from{opacity:0}to{opacity:1}}
+@keyframes sube{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+
+/* ---------- Pantallas medianas y celular ---------- */
+@media (max-width:1024px){
+  .personalizar .envol{grid-template-columns:1fr}
+  .personalizar .envol > div:first-child{position:static}
+  .destacada .envol{grid-template-columns:1fr}
+  .relacionadas .mosaico{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:860px){
+  .top nav,.top #topWhats{display:none!important}
+  .btn-menu{display:inline-flex}
+  .btn-perfil span{display:none}
+  .seq-paso h1,.seq-paso h2{font-size:clamp(38px,10.5vw,64px)}
+  #inicio .seq-lienzo{right:auto;left:50%;top:max(64px,7vh);width:min(100vw,62vh);height:min(100vw,62vh);transform:translateX(-50%)}
+  #inicio .seq-paso{left:clamp(18px,5vw,64px);right:clamp(18px,5vw,64px);top:auto;bottom:clamp(64px,10vh,110px);transform:none;max-width:none}
+  #inicio .seq-paso.p0 h1{font-size:clamp(44px,12.5vw,76px)}
+  #inicio .seq-paso p{margin-top:12px}
+  #inicio .bajar{display:none}
+  #piedras .seq-lienzo{left:50%;top:auto;bottom:0;width:min(100vw,58vh);height:min(100vw,58vh);transform:translateX(-50%)}
+  #piedras .seq-textos{justify-content:flex-start;padding-top:max(84px,11vh)}
+  #piedras h2{font-size:clamp(34px,9.6vw,54px);max-width:12ch}
+  #piedras .intro{margin:10px 0 18px;font-size:15.5px}
+  .lista-piedras{grid-template-columns:repeat(2,max-content);gap:2px 20px}
+  .lista-piedras li{font-size:clamp(24px,7vw,34px)}
+  .lista-piedras li.activa{transform:none}
+  #piedras .nota-p{display:none}
+  #collar .seq-lienzo{left:50%;width:min(100vw,100vh);height:min(100vw,100vh)}
+  #collar .seq-paso{top:max(88px,11vh);left:clamp(18px,5vw,64px);right:clamp(18px,5vw,64px);max-width:none;text-align:center}
+  #collar .seq-paso h2{max-width:14ch;margin:0 auto}
+  #collar .seq-paso h2{font-size:clamp(34px,9.6vw,56px)}
+  #collar .seq-paso.abajo{left:clamp(18px,5vw,64px);right:clamp(18px,5vw,64px);max-width:none;text-align:center}
+  #collar .seq-paso.abajo .cta{justify-content:center}
+  .cab-sec{grid-template-columns:1fr}
+  .mosaico{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marca-sec .envol{grid-template-columns:1fr}
+  .ruta{grid-template-columns:1fr;gap:26px}
+  .ruta::before,.ruta::after{left:27px;right:auto;top:0;bottom:0;width:1.5px;height:auto}
+  .ruta::after{transform:scaleY(var(--avance,0));transform-origin:top}
+  .etapa{display:grid;grid-template-columns:56px 1fr;column-gap:18px;padding:0}
+  .etapa-n{margin:0;grid-row:span 3}
+  .etapa-il{display:none}
+  .pie2 .envol{grid-template-columns:1fr}
+  .ficha{grid-template-columns:1fr;grid-template-areas:"cab" "gal" "info";padding-top:18px}
+  .ficha .galeria{position:static}
+  .ficha h1{font-size:clamp(34px,9.6vw,48px)}
+  .ficha{padding-bottom:120px}
+  .ficha-info .total{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:20;padding:12px 18px calc(12px + env(safe-area-inset-bottom));flex-wrap:nowrap}
+  .total b{font-size:clamp(26px,7vw,32px)}
+  .total .btn-oro{padding:0 16px;flex:none}
+  .confianza{grid-template-columns:1fr}
+  .confianza li{grid-template-columns:24px 1fr;align-items:start;gap:10px}
+  .nav-v{width:42px;height:42px;top:auto!important;bottom:70px;margin:0!important}.nav-v.izq{left:calc(50% - 56px)}.nav-v.der{right:calc(50% - 56px)}
+}
+@media (max-width:560px){
+  .mosaico,.relacionadas .mosaico{gap:34px 12px}
+  .pieza.f-amplia{grid-column:span 2}
+  .pieza h3{font-size:18px}
+  .pieza .info{grid-template-columns:1fr;padding-top:12px;margin-top:10px}
+  .gemas{grid-column:1;grid-row:auto;margin-top:2px}
+  .marca-3d{font-size:11px;padding:4px 8px}
+  .campos{grid-template-columns:1fr}
+  .c3-fila{grid-template-columns:1fr;gap:6px}
+  .c3-fila > span{padding-top:0}
+  .c3-ayuda,.c3-falta{margin-left:0}
+  .top .envol{height:64px}
+  .logo span:last-child{font-size:18px}
+}
+@media (pointer:coarse){.opc > span{min-height:42px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .menu-movil{transition:none}
+}
+
+/* ---------- Añadidos ---------- */
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top.sobre-noche{color:var(--nacar)}
+.top.sobre-noche.solida{background:rgba(12,43,35,.72);box-shadow:0 1px 0 rgba(236,235,227,.12)}
+.top.sobre-noche .btn-perfil.con-perfil svg{stroke:var(--oro-claro)}
+.top.sobre-noche .btn-oro{background:var(--nacar);color:var(--noche)}
+.cinta2{overflow:hidden;background:var(--noche);color:var(--nacar);padding:22px 0;border-top:1px solid rgba(236,235,227,.1)}
+.pista2{display:flex;align-items:center;gap:28px;white-space:nowrap;width:max-content;will-change:transform}
+.pista2 span{font-family:var(--serif);font-size:clamp(24px,3vw,42px);line-height:1}
+.pista2 .faceta{width:18px;height:18px}
+#vitrina{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(30px,6vw,90px);align-items:center}
+.destacada .envol{display:block}
+.vh-lado h2{font-size:clamp(36px,4.4vw,70px);margin:0 0 14px}
+.vh-intro{color:var(--tinta2);max-width:34ch;margin:0 0 30px;font-size:clamp(16px,1.3vw,18px)}
+.seq.estatico{height:auto}
+.seq.estatico .seq-fijo{position:relative;height:auto;display:block;padding:clamp(100px,12vw,150px) 0 clamp(60px,8vw,100px)}
+.seq.estatico .seq-lienzo{position:relative!important;inset:auto!important;transform:none!important;margin:0 auto 30px;width:min(560px,86vw)!important;height:min(560px,86vw)!important}
+.seq.estatico .lista-piedras li{opacity:1}
+.seq.estatico .seq-paso{translate:none!important;visibility:visible!important}
+.seq.estatico .seq-textos{padding-top:0!important}
+.seq.estatico.sin-cuadros .seq-lienzo,.seq.estatico .aro-avance,.seq.estatico .bajar{display:none}
+.seq.estatico .seq-paso{position:relative!important;inset:auto!important;transform:none!important;opacity:1!important;margin:0 0 44px;max-width:none!important;text-align:left!important}
+.seq.estatico .seq-textos{display:block}
+@media (max-width:1024px){#vitrina{grid-template-columns:1fr}}
+@media (max-width:860px){.cinta2{padding:16px 0}.pista2{gap:18px}.mm-nav a{flex-direction:column;gap:2px}.mm-nav span{font-size:clamp(40px,12vw,64px)}}
+
+</style>
+</head>
+<body>
+
+
+<header class="top" id="top">
+  <div class="envol">
+    <a class="logo" href="#inicio" aria-label="Atelier & Co, inicio"><span class="logo-svg"></span><span>ATELIER<small>&amp;</small>CO</span></a>
+    <nav aria-label="Secciones"><a href="#coleccion" data-ir="coleccion">Colección</a><a href="#personaliza" data-sec="personaliza" data-ir="personaliza" data-abrir-diseno>Diseña</a><a href="#historia" data-sec="historia" data-ir="historia">Marca</a><a href="#proceso" data-sec="proceso" data-ir="proceso">Proceso</a></nav>
+    <button type="button" class="btn-perfil" id="btnPerfil" aria-label="Mi perfil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/></svg><span id="perfilTxt">Mi perfil</span></button>
+    <button type="button" class="btn-menu" id="btnMenu" aria-label="Abrir el menú" aria-expanded="false" aria-controls="menuMovil"><svg class="gema-menu" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2.5h8l5.5 5.5v8L16 21.5H8L2.5 16V8z"/><path d="M9.6 7.2h4.8l2.4 2.4v4.8l-2.4 2.4H9.6l-2.4-2.4V9.6z"/></svg><span>Menú</span></button>
+    <a class="btn-oro" id="topWhats" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.4.4 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z"/></svg><span>Escríbenos</span></a>
+  </div>
+</header>
+<div class="menu-movil" id="menuMovil" hidden>
+  <div class="mm-cab"><span class="mm-logo"><span class="logo-svg"></span>ATELIER<small>&amp;</small>CO</span><button type="button" class="mm-cerrar" id="mmCerrar" aria-label="Cerrar el menú">Cerrar</button></div>
+  <nav class="mm-nav" aria-label="Menú">
+    <a href="#coleccion" style="--i:0"><span>Colección</span><i>Piezas listas para personalizar</i></a>
+    <a href="#personaliza" data-sec="personaliza" data-abrir-diseno style="--i:1"><span>Diseña tu joya</span><i>Cuéntanos tu idea</i></a>
+    <a href="#historia" data-sec="historia" style="--i:2"><span>La marca</span><i>Hecho a mano en Colombia</i></a>
+    <a href="#proceso" data-sec="proceso" style="--i:3"><span>Proceso</span><i>Del boceto a tu mano</i></a>
+  </nav>
+  <div class="mm-pie"><button type="button" class="btn-linea" id="mmPerfil">Mi perfil</button><a class="btn-oro" id="mmWhats" target="_blank" rel="noopener" hidden>WhatsApp</a></div>
+</div>
+
+<main id="app"><p class="estado">Cargando la colección…</p></main>
+<div id="ficha" class="ficha-capa" hidden role="dialog" aria-modal="true" aria-label="Detalle de la joya"></div>
+
+<script>
+/* Datos de conexión (solo lectura del catálogo publicado) */
+const CONFIG = {
+  SUPABASE_URL: 'https://wnhybdxchskqijfylbvv.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_5mNmWpk_qKa2RgFRATyF-Q_rcEXQ9sv'
+};
+const LOGO_D = "M481,1154 C476,1153 461,1147 450,1141 C448,1140 442,1137 438,1135 C435,1133 431,1131 430,1130 C429,1130 425,1127 420,1125 C415,1122 409,1119 408,1118 C406,1116 400,1113 395,1110 C391,1107 382,1102 377,1098 C372,1095 364,1089 360,1087 C356,1084 350,1080 348,1078 C346,1076 340,1072 336,1068 C296,1036 268,1005 259,983 C250,958 250,974 251,654 C251,503 251,506 247,501 C241,497 236,500 222,517 C182,563 159,620 154,680 C154,692 153,704 152,708 C151,720 152,818 153,838 C156,861 155,979 153,981 C149,987 142,979 113,940 C94,914 65,864 53,834 C50,828 47,821 46,818 C41,807 31,782 29,774 C28,771 25,764 24,760 C16,741 1,686 0,675 C-0,665 1,662 12,647 C22,633 27,628 41,616 C48,610 56,603 59,600 C74,587 83,580 92,572 C97,567 107,558 114,552 C121,546 130,538 134,534 C146,524 157,514 163,509 C165,507 174,499 182,492 C190,485 199,477 201,475 C204,472 210,467 215,462 C220,458 228,451 233,447 C242,440 245,436 248,430 C249,428 250,399 251,332 C252,313 252,311 254,307 C259,297 270,296 282,307 C288,312 310,328 316,332 C319,333 326,338 333,342 C339,347 347,352 349,354 C352,355 357,358 359,360 C362,361 367,365 371,367 C374,370 380,374 385,376 C393,381 397,383 410,393 C415,396 421,400 424,402 C436,408 444,421 452,446 C459,468 459,459 460,709 C460,862 460,932 461,935 C462,937 465,944 467,949 C473,960 476,962 487,964 C494,966 503,964 509,961 C514,958 523,943 525,935 C526,932 526,862 526,709 C527,459 527,468 534,446 C542,421 550,408 562,402 C565,400 571,396 576,393 C589,383 593,381 601,376 C606,374 612,370 615,367 C619,365 624,361 627,360 C629,358 634,355 637,354 C639,352 647,347 653,342 C660,338 667,333 670,332 C676,328 698,312 704,307 C716,296 727,297 732,307 C734,311 734,313 735,332 C736,399 737,428 738,430 C741,436 744,440 753,447 C758,451 766,458 771,462 C776,467 782,472 785,475 C787,477 796,485 804,492 C812,499 821,507 823,509 C829,514 840,524 852,534 C856,538 865,546 872,552 C879,558 889,567 894,572 C903,580 912,587 927,600 C930,603 938,610 945,616 C959,628 964,633 974,647 C985,662 986,665 986,675 C985,686 970,741 962,760 C961,764 958,771 957,774 C955,782 945,807 940,818 C939,821 936,828 933,834 C921,864 892,914 873,940 C844,979 837,987 833,981 C831,979 830,861 833,838 C834,818 835,720 834,708 C833,704 832,692 832,680 C827,620 804,563 764,517 C750,500 745,497 739,501 C735,506 735,503 735,654 C736,974 736,958 727,983 C718,1005 690,1036 650,1068 C646,1072 640,1076 638,1078 C636,1080 630,1084 626,1087 C622,1089 614,1095 609,1098 C604,1102 595,1107 591,1110 C586,1113 580,1116 578,1118 C577,1119 571,1122 566,1125 C561,1127 557,1130 556,1130 C555,1131 551,1133 548,1135 C544,1137 538,1140 536,1141 C510,1155 496,1158 481,1154 Z M144,393 C137,386 127,377 122,373 C79,337 76,333 78,325 C81,316 99,281 109,266 C111,263 115,257 118,253 C122,246 125,242 142,222 C147,216 152,210 153,208 C157,202 163,201 165,205 C166,208 166,400 165,402 C162,408 158,406 144,393 Z M483,403 C478,401 473,398 449,380 C440,373 429,365 426,363 C421,360 401,345 380,329 C356,312 351,308 346,305 C343,303 339,301 338,299 C336,298 333,295 329,293 C315,283 297,269 293,264 C289,260 279,240 277,233 C273,219 287,193 304,182 C308,180 313,177 316,175 C319,172 325,169 328,167 C331,165 338,161 343,157 C348,154 353,151 353,151 C353,151 356,149 359,147 C362,145 368,141 373,138 C378,134 389,128 398,122 C423,106 413,108 493,108 C573,108 563,106 588,122 C597,128 608,134 613,138 C618,141 624,145 627,147 C630,149 633,151 633,151 C633,151 638,154 643,157 C648,161 655,165 658,167 C661,169 667,172 670,175 C673,177 678,180 682,182 C699,193 713,219 709,233 C707,240 697,260 693,264 C689,269 671,283 657,293 C653,295 650,298 648,299 C647,301 643,303 640,305 C635,308 630,312 606,329 C585,345 565,360 560,363 C557,365 546,373 537,380 C513,398 508,401 503,403 C497,405 489,405 483,403 Z M822,403 C820,402 820,211 821,206 C823,201 829,202 833,208 C834,210 839,216 844,222 C861,242 864,246 868,253 C871,257 875,263 877,266 C887,281 905,316 908,325 C910,333 907,337 864,373 C859,377 849,386 842,393 C828,406 825,407 822,403 Z M446,74 C437,72 435,67 435,51 C436,38 438,32 447,20 C458,6 470,0 493,0 C521,0 535,9 547,33 C552,42 553,62 549,68 C544,75 544,75 494,76 C461,76 449,75 446,74 Z";
+const LOGO_VB = "0 0 985 1155";
+const escarabajo = (color = 'currentColor') => `<svg viewBox="${LOGO_VB}" aria-hidden="true"><path fill="${color}" fill-rule="evenodd" d="${LOGO_D}"/></svg>`;
+
+const glifo = (n, cls = '') => `<span class="gl ${cls}" style="--g:var(--g-${n})" aria-hidden="true"></span>`;
+const divisor = (a = 'espiral', b = 'sol', c = 'rana') => `<div class="divisor-g" aria-hidden="true">${glifo(a)}${glifo(b, 'grande')}${glifo(c)}</div>`;
+const ANILLO_GLIFOS = '';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => '$\u00a0' + Math.round(Number(n) || 0).toLocaleString('es-CO');
+const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
+const fTalla = v => String(Math.round(v * 100) / 100).replace('.', ',');
+const fDec = n => (Number(n) || 0).toLocaleString('es-CO', { maximumFractionDigits: 3 });
+const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const conPuntero = matchMedia('(hover: hover) and (pointer: fine)').matches;
+const FLECHA = '<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+const CHISPA = '<svg viewBox="0 0 24 24"><path d="M12 0c.7 6.3 5.7 11.3 12 12-6.3.7-11.3 5.7-12 12-.7-6.3-5.7-11.3-12-12C6.3 11.3 11.3 6.3 12 0z"/></svg>';
+
+function tallasDe(t) {
+  const r = [], paso = Math.max(0.05, Number(t.paso) || 1);
+  for (let v = Number(t.min); v <= Number(t.max) + 1e-9 && r.length < 200; v += paso) r.push(Math.round(v * 100) / 100);
+  return r;
+}
+// Misma fórmula que la app de contabilidad
+function precioJ(p, sel = {}) {
+  let peso = p.peso;
+  if (p.talla) peso += ((typeof sel.talla === 'number' ? sel.talla : p.talla.base) - p.talla.base) * p.talla.gramos;
+  peso = Math.max(0, peso);
+  const mat = p.materiales && p.materiales.length ? (p.materiales[sel.material || 0] || p.materiales[0]) : null;
+  // Oro: la calidad (18k / 14k) define el precio del gramo y el color puede tener un recargo
+  const q = p.oro && p.oro.quilates.length ? (p.oro.quilates[sel.quilate ?? p.oro.quilateBase ?? 0] || p.oro.quilates[0]) : null;
+  const col = p.oro && p.oro.colores.length ? (p.oro.colores[sel.color ?? p.oro.colorBase ?? 0] || p.oro.colores[0]) : null;
+  const metal = peso * (q ? q.precioGramo : mat ? mat.precioGramo : p.precioGramo) * (1 + (p.merma || 0) / 100) + (col ? col.extra : 0);
+  const cal = p.calidades && p.calidades.length ? (p.calidades[sel.calidad || 0] || p.calidades[0]) : null;
+  const piedras = cal && cal.valor ? cal.valor : p.piedrasValor * (cal ? cal.factor / 100 : 1);   // una calidad puede tener su propio valor de piedras
+  const letras = sel.grabadoOn ? (sel.grabado || '').replace(/\s/g, '').length : 0;
+  const grabado = p.grabado && letras ? p.grabado.precio + p.grabado.precioLetra * letras : 0;
+  const adic = sum((p.adicionales || []).filter((a, i) => (sel.adicionales || []).includes(i)), a => a.precio);
+  let total = metal + piedras + p.fijos + grabado + adic;
+  if (p.redondear && total > 0) total = Math.ceil(total / 1000) * 1000;
+  return total;
+}
+function precioDesde(p) {
+  const tallas = p.talla ? [p.talla.min, p.talla.max] : [undefined];
+  const mats = p.materiales && p.materiales.length ? p.materiales.map((_, i) => i) : [0];
+  const cals = p.calidades && p.calidades.length ? p.calidades.map((_, i) => i) : [0];
+  const qs = p.oro ? p.oro.quilates.map((_, i) => i) : [undefined], cs = p.oro ? p.oro.colores.map((_, i) => i) : [undefined];
+  let min = Infinity;
+  tallas.forEach(t => mats.forEach(m => cals.forEach(c => qs.forEach(qq => cs.forEach(cc => { min = Math.min(min, precioJ(p, { talla: t, material: m, calidad: c, quilate: qq, color: cc })); })))));
+  return isFinite(min) ? min : 0;
+}
+const colorPiedraCss = n => { n = String(n || '').toLowerCase();
+  return /esmeralda/.test(n) ? 'radial-gradient(circle at 35% 30%,#8FF0C4,#0F8A5B 70%)' : /rub/.test(n) ? 'radial-gradient(circle at 35% 30%,#FF9AAE,#B0102E 70%)'
+    : /zafiro/.test(n) ? 'radial-gradient(circle at 35% 30%,#9EC5FF,#1B3F9E 70%)' : /circ|zirc/.test(n) ? 'radial-gradient(circle at 35% 30%,#FFFFFF,#BFD7E6 70%)'
+    : /amatista/.test(n) ? 'radial-gradient(circle at 35% 30%,#E0B8FF,#6B2C9E 70%)' : 'radial-gradient(circle at 35% 30%,#FFFFFF,#D6DCE2 60%,#9AA6B0)'; };
+const colorOroCss = n => /blanco/i.test(n) ? 'linear-gradient(135deg,#F4F4F2,#C9CCCF)' : /rosa/i.test(n) ? 'linear-gradient(135deg,#F2C3AE,#C98A70)' : 'linear-gradient(135deg,#F6DE8D,#C9962E)';
+const esPersonalizable = p => !!(p.talla || (p.oro && (p.oro.quilates.length > 1 || p.oro.colores.length > 1)) || (p.materiales && p.materiales.length > 1) || (p.calidades && p.calidades.length > 1) || p.grabado || (p.adicionales && p.adicionales.length));
+
+const DISENO_BASE = {
+  tema: 'noche',
+  titulo: 'Oro con alma colombiana',
+  subtitulo: 'Hecho a mano. Hecho a tu medida.',
+  cinta: 'Hecho a mano en Colombia, Esmeraldas colombianas, Oro de 18 quilates, Diseño a la medida, Asesoría personalizada',
+  historia: 'Una joya no se compra: se hereda.',
+  destacadaId: '',
+  secciones: { personaliza: true, valores: true, historia: true, proceso: true, contacto: true }
+};
+let CAT = null, D = DISENO_BASE, filtro = '', sel = {}, fotoActual = 0, precioMostrado = 0;
+
+/* ---------- Carga ---------- */
+async function cargar() {
+  $$('.logo-svg').forEach(x => { x.innerHTML = escarabajo('#A98234'); });
+  try {
+    const r = await fetch(CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/atelier_catalogo?id=eq.publico&select=data', { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
+    if (!r.ok) throw new Error(r.status);
+    const filas = await r.json();
+    CAT = filas.length ? filas[0].data : { joyas: [] };
+  } catch (e) {
+    $('#app').innerHTML = '<p class="estado">No pudimos cargar la colección. Revisa tu conexión y recarga la página.</p>';
+    return;
+  }
+  CAT.joyas = CAT.joyas || [];
+  D = { ...DISENO_BASE, ...(CAT.diseno || {}), secciones: { ...DISENO_BASE.secciones, ...((CAT.diseno || {}).secciones || {}) } };
+  document.querySelector('meta[name=color-scheme]').content = 'light';
+  document.querySelector('meta[name=theme-color]').content = '#ECEBE3';
+  const w = whatsGeneral(); if (w) { $('#topWhats').href = w; $('#topWhats').hidden = false; $('#mmWhats').href = w; $('#mmWhats').hidden = false; }
+  $$('.top nav [data-sec], .menu-movil [data-sec]').forEach(a => { a.hidden = !D.secciones[a.dataset.sec]; });
+  pintarInicio();
+  pintarBotonPerfil();
+  ruta();
+}
+const numeroWhats = () => (CAT.whatsapp || '').replace(/\D/g, '');
+const whatsGeneral = () => numeroWhats() ? `https://wa.me/${numeroWhats()}?text=${encodeURIComponent((perfil() ? `Hola, soy ${perfil().nombre}. ` : 'Hola, ') + 'Quiero información sobre las joyas de Atelier & Co.')}` : '';
+
+/* ---------- Perfil del cliente (se guarda solo en este dispositivo) ---------- */
+const LS_PERFIL = 'atelier_perfil_v1';
+function perfil() { try { const x = JSON.parse(localStorage.getItem(LS_PERFIL) || 'null'); return x && x.nombre ? x : null; } catch (e) { return null; } }
+function lineasDatos(pf) {
+  if (!pf || !pf.nombre) return [];
+  return ['', '*Mis datos*', `Nombre: ${pf.nombre}`, pf.cedula ? `Cédula: ${pf.cedula}` : '', pf.celular ? `Celular: ${pf.celular}` : '', pf.correo ? `Correo: ${pf.correo}` : '',
+    pf.direccion ? `Dirección: ${pf.direccion}${pf.ciudad ? ', ' + pf.ciudad : ''}` : (pf.ciudad ? `Ciudad: ${pf.ciudad}` : '')].filter((x, i) => i < 2 || x);
+}
+function guardarPerfil(datos, silencioso) {
+  const actual = perfil() || {};
+  const nuevo = { ...actual, ...Object.fromEntries(Object.entries(datos).filter(([k, v]) => v !== undefined)), actualizado: new Date().toISOString() };
+  try { localStorage.setItem(LS_PERFIL, JSON.stringify(nuevo)); } catch (e) { }
+  pintarBotonPerfil(); rellenarFormulario();
+  const top = $('#topWhats'); if (top && top.href) top.href = whatsGeneral();
+  const mw = $('#mmWhats'); if (mw) mw.href = whatsGeneral();
+}
+function pintarBotonPerfil() {
+  const pf = perfil(), b = $('#btnPerfil'); if (!b) return;
+  $('#perfilTxt').textContent = pf ? 'Hola, ' + pf.nombre.split(' ')[0] : 'Mi perfil';
+  b.classList.toggle('con-perfil', !!pf); b.setAttribute('aria-label', pf ? 'Mi perfil: ' + pf.nombre : 'Crear mi perfil');
+}
+// Rellena el formulario "Diseña tu joya" con los datos del perfil (sin borrar lo que el cliente ya escribió)
+function rellenarFormulario() {
+  const f = $('#formDiseno'), pf = perfil(); if (!f || !pf || !f.elements.nombre) return;
+  const poner = (campo, valor) => { const el = f.elements[campo]; if (el && !el.value && valor) el.value = valor; };
+  poner('nombre', pf.nombre); poner('telefono', pf.celular); poner('correo', pf.correo); poner('cedula', pf.cedula); poner('direccion', pf.direccion); poner('ciudad', pf.ciudad);
+}
+function abrirPerfil(op = {}) {
+  let d = $('#dlgPerfil');
+  if (!d) { d = document.createElement('dialog'); d.id = 'dlgPerfil'; d.className = 'dlg-perfil'; document.body.appendChild(d); }
+  const pf = perfil() || {}, campo = (n, t, extra = '') => `<label class="campo${extra.includes('ancho') ? ' ancho' : ''}">${t}<input name="${n}" value="${esc(pf[n] || '')}" ${extra.replace('ancho', '')}></label>`;
+  d.innerHTML = `<form method="dialog" novalidate>
+    <button type="button" class="cerrar-p" aria-label="Cerrar">×</button>
+    <h3>${pf.nombre ? 'Mi perfil' : 'Crea tu perfil'}</h3>
+    <p class="sub">Guarda tus datos una vez y los usamos para llenar tus pedidos y cotizaciones. Se guardan solo en este dispositivo.</p>
+    ${op.pedido ? '<p class="aviso-pedido">Con tu perfil, tus datos van incluidos en el pedido por WhatsApp y no tienes que escribirlos.</p>' : ''}
+    <div class="campos">
+      ${campo('nombre', 'Nombre completo', 'autocomplete="name" maxlength="120" required')}
+      ${campo('celular', 'Celular / WhatsApp', 'type="tel" inputmode="tel" autocomplete="tel" maxlength="30" required placeholder="300 123 4567"')}
+      ${campo('cedula', 'Cédula', 'inputmode="numeric" maxlength="20"')}
+      ${campo('correo', 'Correo electrónico', 'type="email" autocomplete="email" maxlength="160"')}
+      ${campo('direccion', 'Dirección de entrega', 'ancho autocomplete="street-address" maxlength="200" placeholder="Ej: Calle 10 # 20-30, apto 401"')}
+      ${campo('ciudad', 'Ciudad', 'autocomplete="address-level2" maxlength="80" placeholder="Ej: Villavicencio"')}
+    </div>
+    <label class="consent"><input type="checkbox" name="acepto" ${pf.nombre ? 'checked' : ''}> Autorizo a Atelier &amp; Co a usar estos datos para atender mis pedidos, conforme a la Ley 1581 de 2012 de protección de datos personales.</label>
+    <p class="error-form" id="errPerfil" role="alert"></p>
+    <div class="acciones-p">
+      ${pf.nombre ? '<button type="button" class="borrar" id="borrarPerfil">Borrar mis datos</button>' : ''}
+      ${op.pedido ? '<button type="button" class="btn-linea" id="sinPerfil">Seguir sin datos</button>' : ''}
+      <button type="submit" class="btn-oro" id="okPerfil">${op.pedido ? 'Guardar y pedir' : 'Guardar mi perfil'}</button>
+    </div></form>`;
+  const f = d.querySelector('form');
+  d.querySelector('.cerrar-p').onclick = () => d.close();
+  f.onsubmit = e => {
+    e.preventDefault();
+    const v = n => (f.elements[n].value || '').trim(), er = d.querySelector('#errPerfil');
+    if (v('nombre').length < 2) return er.textContent = 'Escribe tu nombre.';
+    if (v('celular').replace(/\D/g, '').length < 7) return er.textContent = 'Escribe tu número de celular.';
+    if (v('correo') && !/^\S+@\S+\.\S+$/.test(v('correo'))) return er.textContent = 'Revisa el correo electrónico.';
+    if (!f.elements.acepto.checked) return er.textContent = 'Necesitamos tu autorización para guardar tus datos.';
+    guardarPerfil({ nombre: v('nombre'), celular: v('celular'), cedula: v('cedula'), correo: v('correo'), direccion: v('direccion'), ciudad: v('ciudad') });
+    d.close(); if (op.alGuardar) op.alGuardar();
+  };
+  const bp = d.querySelector('#borrarPerfil'); if (bp) bp.onclick = () => { if (!confirm('¿Borrar tus datos de este dispositivo?')) return; localStorage.removeItem(LS_PERFIL); pintarBotonPerfil(); d.close(); };
+  const sp = d.querySelector('#sinPerfil'); if (sp) sp.onclick = () => { sessionStorage.setItem('atelier_sin_perfil', '1'); d.close(); if (op.alOmitir) op.alOmitir(); };
+  d.showModal();
+  setTimeout(() => { const n = f.elements.nombre; if (n && !n.value) n.focus(); }, 60);
+}
+$('#btnPerfil').onclick = () => abrirPerfil();
+// Al pedir por WhatsApp sin perfil, se ofrece crearlo para que los datos vayan en el mensaje
+document.addEventListener('click', e => {
+  const a = e.target.closest('#pedir,#pedir2'); if (!a || perfil() || sessionStorage.getItem('atelier_sin_perfil')) return;
+  e.preventDefault();
+  abrirPerfil({ pedido: true,
+    alGuardar: () => { const j = CAT.joyas.find(x => x.id === decodeURIComponent(location.hash.slice(1))); if (j) total(j); window.open($('#pedir').href, '_blank', 'noopener'); },
+    alOmitir: () => window.open(a.href, '_blank', 'noopener') });
+}, true);
+
+/* ---------- Variantes: una sola joya en la colección, con selector de piedra en la ficha ---------- */
+const grupoDe = j => j.grupo || j.id;
+function miembrosDe(j) {
+  const g = grupoDe(j);
+  return CAT.joyas.filter(x => grupoDe(x) === g).sort((a, b) => (a.id === g ? -1 : b.id === g ? 1 : String(a.variante).localeCompare(String(b.variante), 'es')));
+}
+function representantes() {
+  const vistos = new Set(), r = [];
+  CAT.joyas.forEach(j => { const g = grupoDe(j); if (vistos.has(g)) return; vistos.add(g); r.push(miembrosDe(j)[0]); });
+  return r;
+}
+const desdeGrupo = j => Math.min(...miembrosDe(j).map(precioDesde));
+// Si una variante no tiene fotos, video o modelo 3D, usa los de la joya principal
+// Nombres: si la joya tiene variantes, el nombre base no lleva la piedra ("Anillo Ola Esmeralda" → "Anillo Ola")
+// y cada variante se muestra como "Anillo Ola · Rubí"
+const sinTildes = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function nombreBase(p) {
+  const vars = miembrosDe(p); if (vars.length < 2) return p.nombre;
+  const piedras = new Set(vars.map(v => sinTildes(v.variante)).filter(Boolean));
+  const t = String(p.nombre || '').split(/\s+/).filter(w => !piedras.has(sinTildes(w)));
+  while (t.length && /^(de|con|y)$/i.test(t[t.length - 1])) t.pop();
+  return t.join(' ') || p.nombre;
+}
+const nombreConPiedra = p => miembrosDe(p).length > 1 && p.variante ? `${nombreBase(p)} · ${p.variante}` : p.nombre;
+function conHerencia(p) {
+  const base = miembrosDe(p)[0] || p, deBase = base.fotos || [];
+  const propias = p.id === base.id ? (p.fotos || []) : (p.fotos || []).filter(u => !deBase.includes(u));
+  const prestadas = !propias.length && p.id !== base.id && deBase.length > 0;
+  // fotosPrestadas: la variante no tiene fotos de su piedra y muestra las de la principal (otra piedra)
+  return { ...p, fotos: propias.length ? propias : deBase, fotosPrestadas: prestadas, piedraDeFotos: prestadas ? (base.variante || nombrePiedra(base)) : '',
+    // un video copiado de la principal también muestra otra piedra: no se usa en la variante
+    video: (p.video && !(prestadas && base.video && p.video.url === base.video.url) ? p.video : null) || (prestadas ? null : base.video) || null, modelo: p.modelo || base.modelo || null };
+}
+let selVariante = null;
+
+/* ---------- Vitrina del banner: la joya en 3D, que el cliente cambia antes de entrar ---------- */
+function joyaVitrina() {
+  const d = joyaHero(); if (!d) return null;
+  if (conHerencia(d).modelo) return d;
+  return representantes().find(j => conHerencia(j).modelo) || d;
+}
+let VH = null, VHestado = null, obsVitrina = null, VHcargar = null;
+
+function montarVitrinaHero(j) {
+  if (VH) { VH.destruir(); VH = null; }
+  const o = j.oro;
+  VHestado = { joya: j, color: o ? (o.colorBase || 0) : undefined };
+  const nombreMetal = () => { const x = VHestado.joya; return x.oro ? `Oro ${x.oro.quilates[x.oro.quilateBase || 0].nombre} ${x.oro.colores.length ? x.oro.colores[VHestado.color].nombre.toLowerCase() : ''}` : metalActual(x); };
+  const actualizar = () => {
+    const x = VHestado.joya, pr = $('#vhPrecio'), ir = $('#vhIr');
+    if (pr) pr.textContent = fmt(precioJ(x, VHestado.color === undefined ? {} : { color: VHestado.color }));
+    if (ir) ir.href = '#' + encodeURIComponent(x.id);
+    const nm = $('#vhNombre'); if (nm) nm.textContent = nombreConPiedra(x);
+    if (VH) { VH.colorPiedra(nombrePiedra(x)); VH.color(nombreMetal()); }
+    const xh = conHerencia(x), img = $('#vhVisor img'), ref = $('#vhRef');
+    if (img && !xh.fotosPrestadas && xh.fotos[0]) img.src = xh.fotos[0];
+    if (ref) { ref.hidden = !(xh.fotosPrestadas && !VH); ref.textContent = `Foto en ${String(xh.piedraDeFotos).toLowerCase()} · cargando tu piedra en 3D`; }
+    if (xh.fotosPrestadas && !VH && VHcargar) VHcargar();
+  };
+  $$('#vitrina input[name=vhVar]').forEach(r => r.onchange = () => { VHestado.joya = CAT.joyas.find(x => x.id === r.value) || j; actualizar(); });
+  $$('#vitrina input[name=vhColor]').forEach(r => r.onchange = () => { VHestado.color = +r.value; actualizar(); });
+  // al entrar, la ficha abre con lo que el cliente ya escogió aquí
+  const ir = $('#vhIr'); if (ir) ir.onclick = () => { if (VHestado.color !== undefined) selGuardada[grupoDe(VHestado.joya)] = { ...(selGuardada[grupoDe(VHestado.joya)] || {}), color: VHestado.color }; };
+  actualizar();
+  const base = conHerencia(j), cont = $('#vh3d');
+  if (!base.modelo || !cont) return;
+  // El banner usa el modelo completo en todos los dispositivos; solo espera un toque si el cliente activó el ahorro de datos
+  const urlM = base.modelo.url, urlP = base.modelo.piedras, urlF = base.modelo.fijas;
+  const ahorro = !!(navigator.connection && navigator.connection.saveData);
+  const cargar = () => {
+    if (VH || cont.dataset.cargando) return; cont.dataset.cargando = '1';
+    const pz = $('#vhPista'); if (pz && pz.classList.contains('boton')) { pz.textContent = 'Cargando…'; pz.classList.remove('boton'); }
+    visor3D(cont, urlM, nombreMetal(), { piedras: urlP, fijas: urlF, piedra: nombrePiedra(VHestado.joya), zoom: false, tactil: true }).then(v => {
+      if (!document.body.contains(cont)) { v.destruir(); return; }
+      VH = v; $('#vhVisor').classList.add('con-3d'); actualizar(); const rf = $('#vhRef'); if (rf) rf.hidden = true;
+      cont.addEventListener('giro-manual', () => { const pz = $('#vhPista'); if (pz) pz.classList.add('fuera'); }, { once: true });
+    }).catch(() => { delete cont.dataset.cargando; });
+  };
+  VHcargar = cargar;
+  if (ahorro) {   // con ahorro de datos, el 3D solo carga si el cliente lo pide
+    const pz = $('#vhPista'); if (pz) { pz.textContent = 'Toca para verla en 3D'; pz.classList.add('boton'); pz.onclick = cargar; pz.setAttribute('role', 'button'); pz.tabIndex = 0; pz.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cargar(); } }; }
+    const vis = $('#vhVisor'); if (vis) vis.addEventListener('click', cargar, { once: true });
+  } else { const oc = new IntersectionObserver(e => { if (e[0].isIntersecting) { oc.disconnect(); cargar(); } }, { rootMargin: '90% 0px' }); oc.observe($('#vitrina')); }   // el 3D carga cuando la vitrina se acerca
+  // se detiene cuando no se ve, para no gastar batería
+  if (obsVitrina) obsVitrina.disconnect();
+  obsVitrina = new IntersectionObserver(e => { if (VH) VH.pausar(!e[0].isIntersecting || !$('#ficha').hidden); }, { threshold: 0.05 });
+  obsVitrina.observe($('#vitrina'));
+}
+
+/* ---------- Antes de pedir: la talla debe estar elegida (o marcada "No sé mi talla") ---------- */
+window.addEventListener('click', e => {
+  const a = e.target.closest('#pedir'); if (!a) return;
+  const j = CAT && CAT.joyas.find(x => x.id === decodeURIComponent(location.hash.slice(1)));
+  if (!j || !j.talla || sel.talla !== undefined) return;
+  e.preventDefault(); e.stopPropagation();
+  const fila = $('#config3d input[name=c3talla]'); if (!fila) return;
+  const f = fila.closest('.c3-fila'); f.classList.add('falta');
+  let av = $('#avisoTalla'); if (!av) { f.insertAdjacentHTML('afterend', '<p class="c3-falta" id="avisoTalla" role="alert">Elige la talla o marca «No sé mi talla» para pedir.</p>'); }
+  f.scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'center' });
+  setTimeout(() => fila.focus({ preventScroll: true }), 400);
+}, true);
+
+/* ---------- Página principal ---------- */
+function joyaHero() {
+  return CAT.joyas.find(j => j.id === D.destacadaId) || representantes().find(j => ['destacada', 'amplia'].includes(j.presentacion)) || representantes()[0];
+}
+function tituloHero(t) {
+  // Resalta en cursiva dorada la última palabra del título
+  const p = esc(t).split(' '); if (p.length < 2) return esc(t);
+  const ult = p.pop(); return p.join(' ') + ' <em>' + ult + '</em>';
+}
+/* ---------- Ilustraciones de la marca: línea fina dorada con acentos de puntos picados ---------- */
+const IL = (cuerpo, extra = '') => `<svg class="ilus" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cuerpo}${extra}</svg>`;
+const PUNTOS = (x, y) => `<g class="pp" fill="currentColor" stroke="none"><circle cx="${x}" cy="${y}" r="1.4"/><circle cx="${x + 6}" cy="${y}" r="1.4"/><circle cx="${x + 12}" cy="${y}" r="1.4"/></g>`;
+const DESTELLO = (x, y, s = 1) => `<path pathLength="1" d="M${x} ${y - 6 * s}V${y + 6 * s}M${x - 6 * s} ${y}H${x + 6 * s}M${x - 3 * s} ${y - 3 * s}l${6 * s} ${6 * s}M${x + 3 * s} ${y - 3 * s}l${-6 * s} ${6 * s}" stroke-width="1.2"/>`;
+const ILUS = {
+  boceto: IL(`<rect pathLength="1" x="24" y="16" width="62" height="84" rx="3"/><path pathLength="1" d="M74 16v12h12"/>
+    <circle pathLength="1" cx="55" cy="66" r="15"/><circle pathLength="1" cx="55" cy="66" r="21" stroke-dasharray=".02 .03" opacity=".55"/>
+    <path pathLength="1" d="M48 45l7-8 7 8-7 8z"/><path pathLength="1" d="M48 45h14"/>
+    <path pathLength="1" d="M82 100l22-34 7 4-22 34-9 3z"/><path pathLength="1" d="M100 72l7 4"/>`, PUNTOS(32, 28)),
+  cera: IL(`<path pathLength="1" d="M60 18v74"/><path pathLength="1" d="M42 102h36l-7-10H49z"/>
+    <path pathLength="1" d="M60 32H48M60 50H72M60 68H48M60 84H72"/>
+    <circle pathLength="1" cx="41" cy="32" r="7"/><circle pathLength="1" cx="79" cy="50" r="7"/><circle pathLength="1" cx="41" cy="68" r="7"/><circle pathLength="1" cx="79" cy="84" r="6"/>
+    <path pathLength="1" d="M37 25l4-5 4 5M75 43l4-5 4 5M37 61l4-5 4 5"/>`, PUNTOS(84, 24)),
+  fundicion: IL(`<path pathLength="1" d="M22 34l34-9 6 28c1 7-3 12-10 13l-17 3c-7 1-12-3-13-10z"/><path pathLength="1" d="M56 25l14-11"/>
+    <path pathLength="1" d="M61 46c9 5 12 14 11 26"/><circle pathLength="1" cx="72" cy="79" r="2.6" fill="currentColor"/>
+    <rect pathLength="1" x="56" y="86" width="34" height="20" rx="3"/><path pathLength="1" d="M66 86l6-6 6 6"/>
+    <path pathLength="1" d="M28 84c-3-5 2-7 0-12M38 84c-3-5 2-7 0-12M48 84c-3-5 2-7 0-12" stroke-width="1.3"/>`, PUNTOS(92, 30)),
+  martillo: IL(`<path pathLength="1" d="M18 72h82l-7 8H78l5 18H38l5-18H26z"/><ellipse pathLength="1" cx="58" cy="67" rx="10" ry="4"/>
+    <path pathLength="1" d="M52 22l26 13-6 12-26-13z"/><path pathLength="1" d="M66 41l32 22"/>`,
+    DESTELLO(40, 54, .8) + DESTELLO(78, 56, .7) + PUNTOS(20, 106)),
+  estuche: IL(`<path pathLength="1" d="M20 70h80v28H20z"/><path pathLength="1" d="M20 70l10-36h80l-10 36"/><path pathLength="1" d="M32 70c10-10 46-10 56 0"/>
+    <circle pathLength="1" cx="60" cy="58" r="9"/><path pathLength="1" d="M55 46l5-6 5 6-5 5z"/>`,
+    DESTELLO(88, 22, .9) + DESTELLO(36, 26, .6) + PUNTOS(48, 84)),
+  anillo: IL(`<circle pathLength="1" cx="60" cy="72" r="25"/><circle pathLength="1" cx="60" cy="72" r="19"/>
+    <path pathLength="1" d="M46 42l14-16 14 16-14 12z"/><path pathLength="1" d="M46 42h28M53 42l7-16 7 16"/><path pathLength="1" d="M50 48l-3 6M70 48l3 6"/>`,
+    DESTELLO(94, 30) + DESTELLO(26, 44, .7) + PUNTOS(48, 106)),
+  esmeralda: IL(`<path pathLength="1" d="M40 20h40l16 16v48L80 100H40L24 84V36z"/><path pathLength="1" d="M45 30h30l11 11v38L75 90H45L34 79V41z"/>
+    <path pathLength="1" d="M50 40h20v40H50z"/><path pathLength="1" d="M40 20l10 20M80 20L70 40M96 36L70 40M96 84L70 80M80 100L70 80M40 100l10-20M24 84l26-4M24 36l26 4"/>`,
+    DESTELLO(104, 16, .7) + PUNTOS(10, 108)),
+  oro: IL(`<path pathLength="1" d="M16 96l10-18h32l10 18z"/><path pathLength="1" d="M62 96l10-18h32l10 18z"/><path pathLength="1" d="M39 78l10-18h32l10 18"/>
+    <path pathLength="1" d="M54 69h22" stroke-width="1.2"/>`,
+    DESTELLO(88, 40, .8) + DESTELLO(30, 52, .6) + PUNTOS(46, 34)),
+  medida: IL(`<path pathLength="1" d="M14 58l86-12v30l-86-12z"/><path pathLength="1" d="M30 57v8M44 55v11M58 53v14M72 51v17M86 49v20" stroke-width="1.1"/>
+    <ellipse pathLength="1" cx="64" cy="61" rx="6" ry="17"/><path pathLength="1" d="M60 44l4-6 4 6"/>`, PUNTOS(20, 90)),
+  idea: IL(`<circle pathLength="1" cx="60" cy="50" r="22"/><path pathLength="1" d="M50 72v10h20V72M52 90h16"/><path pathLength="1" d="M54 52l6-8 6 8-6 6z"/>`,
+    DESTELLO(96, 30, .8) + DESTELLO(24, 30, .6) + PUNTOS(48, 104))
+};
+
+// Solo la primera frase: la página muestra textos cortos aunque en el panel se haya escrito un párrafo
+const primeraFrase = t => { const todo = String(t || '').trim().replace(/\s+/g, ' '); if (todo.length <= 80) return todo; const x = todo.split(/(?<=[.!?])\s+/)[0] || ''; return x.length > 90 ? x.slice(0, 88).replace(/\s+\S*$/, '') + '…' : x; };
+const encabezado = (num, ceja, titulo, sub = '') => `<div class="enc2" data-rev><h2>${titulo}</h2>${sub ? `<p class="enc2-sub">${sub}</p>` : ''}</div>`;
+
+// Marca en el menú la sección que se está viendo
+let obsSecciones = null;
+function seccionActiva() {
+  if (obsSecciones) obsSecciones.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  obsSecciones = new IntersectionObserver(ent => ent.forEach(e => {
+    if (!e.isIntersecting) return;
+    $$('.top nav [data-ir]').forEach(a => a.classList.toggle('activo', a.dataset.ir === e.target.id));
+  }), { rootMargin: '-45% 0px -50% 0px' });
+  ['coleccion', 'personaliza', 'historia', 'proceso'].forEach(id => { const el = document.getElementById(id); if (el) obsSecciones.observe(el); });
+}
+// Menú completo en el celular
+
+$('#btnMenu').onclick = () => abrirMenu(true);
+$('#mmCerrar').onclick = () => abrirMenu(false);
+$$('#menuMovil .mm-nav a').forEach(a => a.addEventListener('click', () => abrirMenu(false)));
+$('#mmPerfil').onclick = () => { abrirMenu(false); abrirPerfil(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#menuMovil').hidden) abrirMenu(false); });
+
+/* ---------- Página principal: tres secuencias de scroll y las secciones del catálogo ---------- */
+const SEQ_BASE = 'secuencias/';
+const facetaHTML = n => `<i class="faceta" style="background:${colorPiedraCss(n)}" aria-hidden="true"></i>`;
+const AVANCE = `<svg class="aro-avance" viewBox="0 0 46 46" aria-hidden="true"><circle class="base" cx="23" cy="23" r="19"/><circle class="lleno" cx="23" cy="23" r="19" pathLength="1"/><circle class="piedra" cx="23" cy="23" r="3"/></svg>`;
+const palabras = t => esc(t).split(' ').map(w => `<span class="pal">${w}</span>`).join(' ');
+function pintarInicio() {
+  const h = joyaVitrina();
+  const cinta = String(D.cinta || '').split(',').map(x => x.trim()).filter(Boolean);
+  const cats = [...new Set(representantes().map(j => j.categoria).filter(Boolean))];
+  const piedras = [['Diamante', 0], ['Esmeralda', .28], ['Rubí', .53], ['Zafiro', .78]];
+  $('#app').innerHTML = `
+  <section class="seq" id="inicio" data-seq="anillo" data-cuadros="100" style="--alto:330vh">
+    <div class="seq-fijo">
+      <canvas class="seq-lienzo" aria-hidden="true"></canvas>
+      <div class="seq-textos">
+        <div class="seq-paso p0" data-de="-1" data-a=".3"><h1>${esc(D.titulo)}</h1><p>${esc(primeraFrase(D.subtitulo))}</p></div>
+        <div class="seq-paso" data-de=".36" data-a=".64"><h2>Una esmeralda colombiana sobre cuatro garras de oro.</h2><p>Cada pieza se funde, se engasta y se pule a mano.</p></div>
+        <div class="seq-paso" data-de=".7" data-a="2"><h2>Tu talla. Tu piedra. Tu grabado.</h2><p>Personaliza cualquier joya del catálogo y conoce su precio al instante.</p>
+          <div class="cta"><a class="btn-oro" href="#coleccion">Ver la colección</a>${D.secciones.personaliza ? `<a class="btn-linea" href="#personaliza" data-abrir-diseno>Diseñar la mía</a>` : ''}</div></div>
+      </div>
+      <a class="bajar" href="#coleccion"><i></i>Desliza para descubrirla</a>
+      ${AVANCE}
+    </div>
+  </section>
+
+  <section class="seq" id="piedras" data-seq="piedras" data-cuadros="100" style="--alto:300vh">
+    <div class="seq-fijo">
+      <canvas class="seq-lienzo" aria-hidden="true"></canvas>
+      <div class="seq-textos">
+        <h2>Una joya, cuatro piedras.</h2>
+        <p class="intro">En cada pieza eliges la piedra y ves el precio al instante.</p>
+        <ul class="lista-piedras">${piedras.map(([n, d], i) => `<li data-desde="${d}" class="${i ? '' : 'activa'}">${facetaHTML(n)}${n}</li>`).join('')}</ul>
+        <p class="nota-p"><a class="enlace" href="#coleccion">Elegir la mía en la colección</a></p>
+      </div>
+      ${AVANCE}
+    </div>
+  </section>
+
+  ${h ? `<section class="destacada" id="destacada"><div class="envol">${vitrinaHeroHTML(h)}</div></section>` : ''}
+
+  <section class="bloque coleccion" id="coleccion">
+    <div class="titular-desliza" data-scroll="desliza" aria-hidden="true"><span>Colección <em>Atelier &amp; Co</em> Colección</span></div>
+    <div class="envol">
+      <div class="cab-sec"><h2 class="sr">La colección</h2><p>Cada pieza se hace por pedido. Toca una para elegir la piedra, el oro, la talla y el grabado.</p></div>
+      ${cats.length > 1 ? `<div class="filtros" role="group" aria-label="Filtrar por tipo de joya">
+        <button aria-pressed="${!filtro}" data-f="">Todas<b>${representantes().length}</b></button>
+        ${cats.map(c => `<button aria-pressed="${filtro === c}" data-f="${esc(c)}">${esc(c)}<b>${representantes().filter(j => j.categoria === c).length}</b></button>`).join('')}</div>` : ''}
+      <div class="mosaico" id="mosaico"></div>
+    </div>
+  </section>
+
+  <section class="seq" id="collar" data-seq="collar" data-cuadros="100" style="--alto:300vh">
+    <div class="seq-fijo">
+      <canvas class="seq-lienzo" aria-hidden="true"></canvas>
+      <div class="seq-textos">
+        <div class="seq-paso" data-de="-1" data-a=".42"><h2>Cada eslabón se cierra a mano.</h2></div>
+        <div class="seq-paso abajo" data-de=".6" data-a="2"><p>Collares, cadenas y dijes a tu medida, en oro de 18 quilates.</p>
+          ${D.secciones.personaliza ? `<div class="cta"><a class="btn-linea sobre-noche" href="#personaliza" data-abrir-diseno>Diseñar mi collar</a></div>` : ''}</div>
+      </div>
+      ${AVANCE}
+    </div>
+  </section>
+
+  ${(D.secciones.valores && cinta.length) ? `<div class="cinta2" data-scroll="cinta" aria-label="${esc(cinta.join(', '))}"><div class="pista2">${[...cinta, ...cinta].map(t => `<span>${esc(t)}</span>${facetaHTML(['Esmeralda', 'Diamante', 'Rubí', 'Zafiro'][cinta.indexOf(t) % 4])}`).join('')}</div></div>` : ''}
+
+  ${D.secciones.personaliza ? seccionPersonaliza() : ''}
+
+  ${D.secciones.historia ? `<section class="marca-sec" id="historia" data-scroll="marca">
+    <div class="envol">
+      <div class="emblema">${escarabajo('currentColor')}</div>
+      <div><p class="frase-marca">${palabras(primeraFrase(D.historia))}</p><p class="firma-marca">Atelier &amp; Co, joyería hecha a mano en Colombia.</p></div>
+    </div>
+  </section>` : ''}
+
+  ${D.secciones.proceso ? `<section class="bloque proceso" id="proceso">
+    <div class="envol">
+      <div class="cab-sec"><h2>Del boceto a tu mano</h2><p>Así nace cada pieza en el taller.</p></div>
+      <ol class="ruta" data-scroll="ruta">
+        ${[['boceto', 'Boceto', 'Dibujamos tu idea contigo.'], ['cera', 'Modelo', 'La forma se modela en 3D y en cera.'], ['fundicion', 'Fundición', 'El oro toma la forma de la cera.'], ['martillo', 'Engaste', 'Piedra por piedra, a mano.'], ['estuche', 'Entrega', 'Pulida y lista en tu fecha.']]
+          .map(([il, t, d], k) => `<li class="etapa"><span class="etapa-n">${k + 1}</span><div class="etapa-il">${ILUS[il]}</div><h3>${t}</h3><p>${d}</p></li>`).join('')}
+      </ol>
+    </div>
+  </section>` : ''}
+
+  <footer class="pie2"><div class="envol">
+    <div>
+      <a class="logo" href="#inicio">${escarabajo('#D9B26A')}<span>ATELIER<small>&amp;</small>CO</span></a>
+      <p class="pie-grande">Hagamos tu joya.</p>
+      ${numeroWhats() ? `<a class="btn-oro" href="${whatsGeneral()}" target="_blank" rel="noopener" id="pieWhats">Escribirnos por WhatsApp</a>` : ''}
+    </div>
+    <nav class="pie-nav" aria-label="Pie de página"><a href="#coleccion">Colección</a>${D.secciones.personaliza ? '<a href="#personaliza" data-abrir-diseno>Diseña tu joya</a>' : ''}${D.secciones.historia ? '<a href="#historia">La marca</a>' : ''}${D.secciones.proceso ? '<a href="#proceso">Proceso</a>' : ''}</nav>
+    <p class="legal"><span>Hecho a mano en Colombia. Precios en pesos colombianos.</span><span>Atelier &amp; Co, ${new Date().getFullYear()}</span></p>
+  </div></footer>`;
+
+  pintarMosaico();
+  montarFormulario();
+  $$('[data-f]').forEach(b => b.onclick = () => {
+    filtro = b.dataset.f;
+    $$('[data-f]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    pintarMosaico();
+  });
+  activarEfectos();
+  seccionActiva();
+  montarSecuencias();
+  if (h) montarVitrinaHero(h);
+}
+
+/* ---------- Motor de secuencias: el scroll elige el fotograma ---------- */
+let SEQS = [], obsSeq = null;
+function montarSecuencias() {
+  SEQS.forEach(s => s.imgs.forEach(im => { if (im) im.src = ''; }));
+  SEQS = [];
+  if (obsSeq) obsSeq.disconnect();
+  obsSeq = new IntersectionObserver(es => es.forEach(e => { const s = SEQS.find(x => x.sec === e.target); if (s && e.isIntersecting) cargarCuadros(s); }), { rootMargin: '150% 0px' });
+  $$('[data-seq]').forEach(sec => {
+    const s = { sec, nombre: sec.dataset.seq, n: +sec.dataset.cuadros || 100, lienzo: sec.querySelector('.seq-lienzo'), imgs: [], listo: [], dibujado: -1, cargando: false,
+      pasos: [...sec.querySelectorAll('.seq-paso')], lista: [...sec.querySelectorAll('[data-desde]')], p: 0 };
+    s.ctx = s.lienzo.getContext('2d');
+    if (sinMovimiento) sec.classList.add('estatico');
+    SEQS.push(s); obsSeq.observe(sec);
+  });
+  medirLienzos();
+  const primera = SEQS[0]; if (primera) cargarCuadros(primera);
+  alDesplazar();
+}
+const rutaCuadro = (s, i) => `${SEQ_BASE}${s.nombre}/${String(i).padStart(3, '0')}.webp`;
+function medirLienzos() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  SEQS.forEach(s => {
+    const w = s.lienzo.clientWidth || 600, px = Math.round(w * dpr);
+    if (s.lienzo.width !== px) { s.lienzo.width = px; s.lienzo.height = px; s.dibujado = -1; }
+  });
+}
+function cargarCuadros(s) {
+  if (s.cargando) return; s.cargando = true;
+  // orden: primero y último, luego cada 8, cada 4, cada 2 y el resto (se ve fluido aunque falten cuadros)
+  const orden = [], visto = new Set(), pon = i => { if (i < s.n && !visto.has(i)) { visto.add(i); orden.push(i); } };
+  pon(0); pon(s.n - 1); [8, 4, 2, 1].forEach(paso => { for (let i = 0; i < s.n; i += paso) pon(i); });
+  const ahorro = !!(navigator.connection && navigator.connection.saveData);
+  let k = 0, activos = 0;
+  const siguiente = () => {
+    while (activos < 6 && k < orden.length) {
+      const i = orden[k++]; activos++;
+      const im = new Image(); im.decoding = 'async';
+      im.onload = () => { s.listo[i] = true; activos--; if (i === 0) s.sec.classList.add('con-cuadros'); dibujar(s); siguiente(); };
+      im.onerror = () => { activos--; if (i === 0) { s.sec.classList.add('sin-cuadros', 'estatico'); } else siguiente(); };
+      im.src = rutaCuadro(s, i); s.imgs[i] = im;
+      if (ahorro && k > 13) return;   // con ahorro de datos solo se cargan unos pocos cuadros
+    }
+  };
+  siguiente();
+}
+function dibujar(s) {
+  if (sinMovimiento && s.listo[s.n - 1]) { pintarCuadro(s, s.n - 1); return; }
+  const meta = Math.round(s.p * (s.n - 1));
+  let i = meta;
+  for (let d = 0; d < s.n; d++) { if (s.listo[meta - d]) { i = meta - d; break; } if (s.listo[meta + d]) { i = meta + d; break; } }
+  if (s.listo[i]) pintarCuadro(s, i);
+}
+function pintarCuadro(s, i) {
+  if (s.dibujado === i) return;
+  const c = s.lienzo; s.ctx.drawImage(s.imgs[i], 0, 0, c.width, c.height); s.dibujado = i;
+}
+const limitar = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+function actualizarSecuencias() {
+  const vh = innerHeight;
+  SEQS.forEach(s => {
+    const r = s.sec.getBoundingClientRect();
+    if (r.bottom < -vh || r.top > 2 * vh) return;
+    s.p = sinMovimiento ? 1 : limitar(-r.top / Math.max(1, r.height - vh));
+    s.sec.style.setProperty('--p', s.p.toFixed(4));
+    dibujar(s);
+    if (sinMovimiento || s.sec.classList.contains('estatico')) return;
+    const f = .06;
+    s.pasos.forEach(el => {
+      const de = +el.dataset.de, a = +el.dataset.a;
+      const ent = de < 0 ? 1 : limitar((s.p - de) / f), sal = a > 1 ? 1 : limitar((a - s.p) / f), v = Math.min(ent, sal);
+      el.style.opacity = v.toFixed(3);
+      el.style.translate = `0 ${((1 - ent) * 34 - (1 - sal) * 34).toFixed(1)}px`;
+      el.style.visibility = v < .01 ? 'hidden' : 'visible';
+    });
+    if (s.lista.length) { let act = 0; s.lista.forEach((li, k) => { if (s.p >= +li.dataset.desde - .02) act = k; }); s.lista.forEach((li, k) => li.classList.toggle('activa', k === act)); }
+  });
+  // movimiento ligado al scroll fuera de las secuencias
+  $$('[data-scroll]').forEach(el => {
+    const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > vh) return;
+    const p = limitar((vh - r.top) / (vh + r.height));
+    const tipo = el.dataset.scroll;
+    if (tipo === 'desliza') el.firstElementChild.style.transform = `translate3d(${(-p * 38).toFixed(2)}%,0,0)`;
+    else if (tipo === 'cinta') el.firstElementChild.style.transform = `translate3d(${(-p * 50).toFixed(2)}%,0,0)`;
+    else if (tipo === 'marca') {
+      const k = limitar((p - .15) / .5), em = el.querySelector('.emblema');
+      if (em) em.style.transform = `rotate(${((1 - k) * -28).toFixed(2)}deg) scale(${(.72 + .28 * k).toFixed(3)})`;
+      const pals = el.querySelectorAll('.pal'); pals.forEach((w, j) => w.style.setProperty('--o', (.16 + .84 * limitar(k * pals.length * 1.15 - j)).toFixed(3)));
+    } else if (tipo === 'ruta') {
+      const k = limitar((p - .25) / .45); el.style.setProperty('--avance', k.toFixed(3));
+      el.querySelectorAll('.etapa').forEach((e, j, t) => e.classList.toggle('hecha', k >= j / (t.length - 1) - .02));
+    }
+  });
+}
+addEventListener('resize', () => { medirLienzos(); SEQS.forEach(s => { s.dibujado = -1; }); actualizarSecuencias(); });
+
+/* ---------- Vitrina: la pieza destacada en 3D, que el cliente gira y cambia ---------- */
+function vitrinaHeroHTML(j) {
+  const vars = miembrosDe(j), base = conHerencia(j), o = j.oro;
+  const foto = base.fotos && base.fotos[0];
+  const filaV = vars.length > 1 ? `<div class="c3-fila" role="radiogroup" aria-label="Piedra"><span>Piedra</span><div class="c3-ops">${vars.map(v => `<label class="opc"><input type="radio" name="vhVar" value="${esc(v.id)}" ${v.id === j.id ? 'checked' : ''}><span><i class="muestra-piedra" style="background:${colorPiedraCss(v.variante)}"></i>${esc(v.variante || v.nombre)}</span></label>`).join('')}</div></div>` : '';
+  const filaC = o && o.colores.length > 1 ? `<div class="c3-fila" role="radiogroup" aria-label="Color del oro"><span>Oro</span><div class="c3-ops">${o.colores.map((c, i) => `<label class="opc"><input type="radio" name="vhColor" value="${i}" ${i === (o.colorBase || 0) ? 'checked' : ''}><span><i class="muestra-oro" style="background:${colorOroCss(c.nombre)}"></i>${esc(c.nombre)}</span></label>`).join('')}</div></div>` : '';
+  return `<div class="vh" id="vitrina">
+      <div class="vh-escena">
+        <div class="vh-visor" id="vhVisor">${foto ? `<img src="${esc(foto)}" alt="${esc(j.nombre)}">` : `<div class="sin">${escarabajo('#A98234')}</div>`}<div class="vh-3d" id="vh3d"></div></div>
+        <span class="foto-ref vh-ref" id="vhRef" hidden></span>
+        ${base.modelo ? `<span class="vh-pista" id="vhPista">${conPuntero ? 'Arrástrala para girarla' : 'Deslízala de lado para girarla'}</span>` : ''}
+      </div>
+      <div class="vh-lado">
+        <h2>Pruébala antes de pedirla</h2>
+        <p class="vh-intro">Gírala, cambia la piedra y el color del oro: así se verá la tuya.</p>
+        <div class="vh-panel">
+          <p class="vh-nombre" id="vhNombre">${esc(nombreConPiedra(j))}</p>
+          ${filaV}${filaC}
+          <div class="vh-pie"><p class="vh-precio">Desde <b id="vhPrecio">${fmt(precioDesde(j))}</b></p><a class="btn-oro" id="vhIr" href="#${encodeURIComponent(j.id)}">Personalizarla</a></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Menú: se abre como un aro que crece desde el botón ---------- */
+function abrirMenu(si) {
+  const m = $('#menuMovil'), b = $('#btnMenu'); if (!m) return;
+  if (si) { m.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('abierto'))); document.body.style.overflow = 'hidden'; setTimeout(() => { const a = m.querySelector('.mm-nav a'); if (a) a.focus({ preventScroll: true }); }, 350); }
+  else { m.classList.remove('abierto'); setTimeout(() => { m.hidden = true; }, sinMovimiento ? 0 : 650); if ($('#ficha').hidden) document.body.style.overflow = ''; b.focus({ preventScroll: true }); }
+  b.setAttribute('aria-expanded', si);
+}
+
+/* ---------- Diseña tu joya a la medida ---------- */
+const PRESUPUESTOS = ['Menos de $2 millones', '$2 a $5 millones', '$5 a $10 millones', '$10 a $20 millones', 'Más de $20 millones', 'Aún no lo sé'];
+const TIPOS = ['Anillo de compromiso', 'Argollas de matrimonio', 'Anillo', 'Aretes', 'Collar o dije', 'Pulsera', 'Otra joya'];
+const METALES = ['Oro amarillo', 'Oro blanco', 'Oro rosa', 'Plata', 'Aún no lo sé'];
+let fotosRef = [];
+function seccionPersonaliza() {
+  const hoy = new Date(); hoy.setDate(hoy.getDate() + 7);
+  const min = hoy.toISOString().slice(0, 10);
+  return `<section class="personalizar" id="personaliza">
+    <div class="envol">
+      <div>
+        <h2>Diseña la joya que imaginas</h2><p class="intro">Tú pones la idea; nosotros la dibujamos, la fundimos y la engastamos a mano.</p>
+        <ol class="tres-pasos">
+          <li>${ILUS.idea}<div><b>Tu idea</b><span>Fotos, bocetos o una descripción</span></div></li>
+          <li>${ILUS.fundicion}<div><b>La forjamos</b><span>En oro y con las piedras que elijas</span></div></li>
+          <li>${ILUS.estuche}<div><b>Es tuya</b><span>Lista para la fecha que necesites</span></div></li>
+        </ol>
+      </div>
+      <div class="derecha-diseno" data-rev style="--d:.15s">
+      <div class="teaser" id="teaser">
+        <h3>Tu joya en 3 minutos</h3>
+        <p class="pide"><span>Nos cuentas</span> tu idea, el presupuesto y la fecha; si tienes fotos de referencia, las subes aquí mismo.</p>
+        <button type="button" class="btn-oro abrir-diseno" id="abrirDiseno" aria-expanded="false" aria-controls="plegable"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Contar mi idea</button>
+        <p class="nota-t">Sin compromiso. Te respondemos por WhatsApp.</p>
+      </div>
+      <div class="plegable" id="plegable" inert><div>
+      <form class="form-diseno" id="formDiseno" novalidate>
+        <button type="button" class="cerrar-diseno" id="cerrarDiseno" aria-label="Cerrar el formulario">×</button>
+        <h3>Cuéntanos tu idea</h3>
+        <p class="sub">Te respondemos por WhatsApp con una propuesta. Sin compromiso.</p>
+        <div class="campos">
+          <label class="campo">Tipo de joya<select name="tipo">${TIPOS.map(t => `<option>${t}</option>`).join('')}</select></label>
+          <label class="campo">Metal que prefieres<select name="metal">${METALES.map(t => `<option>${t}</option>`).join('')}</select></label>
+          <div class="taller" id="taller">
+            <div class="taller-cab"><b>Visualízala en 3D</b><small>Escoge un modelo base y mira tu grabado dentro del anillo</small></div>
+            <div class="modelos-base" role="radiogroup" aria-label="Modelo base">${modelosBase().map((m, i) => `<label class="opc"><input type="radio" name="modeloBase" value="${i}" ${i === 0 ? 'checked' : ''}><span>${esc(m.nombre)}</span></label>`).join('')}</div>
+            <div class="taller-visor" id="tallerVisor"><span class="cargando">El modelo 3D se carga al abrir el formulario…</span></div>
+            <div class="taller-grabado">
+              <label class="check" style="border:0;padding:10px 0 6px"><input type="checkbox" id="tGrab" checked> Quiero un grabado láser</label>
+              <div id="tGrabCampos"></div>
+            </div>
+          </div>
+          <div class="campo ancho">Fotos de referencia <small>Hasta 5 imágenes: joyas que te gusten, bocetos o la piedra que ya tienes.</small>
+            <label class="subir" id="zonaSubir"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b>Toca para subir fotos</b> o arrástralas aquí<input type="file" id="archivosRef" accept="image/*" multiple></label>
+            <div class="previas" id="previas"></div></div>
+          <label class="campo ancho">Describe tu idea<textarea name="idea" maxlength="3000" placeholder="Ej: un anillo de compromiso en oro amarillo con una esmeralda ovalada, algo delicado, para talla 6."></textarea></label>
+          <div class="campo ancho">Presupuesto aproximado<div class="presu">${PRESUPUESTOS.map((p, i) => `<label><input type="radio" name="presupuesto" value="${p}" ${i === PRESUPUESTOS.length - 1 ? 'checked' : ''}><span>${p}</span></label>`).join('')}</div></div>
+          <label class="campo">¿Para cuándo la necesitas?<input type="date" name="fecha" min="${min}"></label>
+          <label class="campo">Ciudad<input name="ciudad" autocomplete="address-level2" placeholder="Ej: Villavicencio"></label>
+          <label class="campo">Tu nombre<input name="nombre" autocomplete="name" required maxlength="120"></label>
+          <label class="campo">WhatsApp<input name="telefono" type="tel" inputmode="tel" autocomplete="tel" required placeholder="300 123 4567" maxlength="30"></label>
+          <label class="campo">Cédula (opcional)<input name="cedula" inputmode="numeric" autocomplete="off" maxlength="20"></label>
+          <label class="campo">Correo (opcional)<input name="correo" type="email" autocomplete="email" maxlength="160"></label>
+          <label class="campo ancho">Dirección de entrega (opcional)<input name="direccion" autocomplete="street-address" maxlength="200" placeholder="Ej: Calle 10 # 20-30, apto 401"></label>
+        </div>
+        <label class="consent"><input type="checkbox" name="guardarPerfil" checked> Guardar mis datos en este dispositivo para mis próximos pedidos.</label>
+        <label class="consent" style="margin-top:0"><input type="checkbox" name="acepto" required> Autorizo a Atelier &amp; Co a usar mis datos solo para contactarme sobre esta solicitud, conforme a la Ley 1581 de 2012 de protección de datos personales.</label>
+        <p class="error-form" id="errorForm" role="alert"></p>
+        <button class="btn-oro enviar" type="submit" id="btnEnviar">Enviar mi idea</button>
+      </form>
+      </div></div>
+      </div>
+    </div>
+  </section>`;
+}
+/* ---------- Visualizador 3D del diseño a la medida ---------- */
+const MODELOS_BASE = [
+  { nombre: 'Argolla clásica', url: 'modelos/argolla-clasica.stl', tipos: ['Argollas de matrimonio'] },
+  { nombre: 'Solitario', url: 'modelos/solitario.stl', tipos: ['Anillo de compromiso'] },
+  { nombre: 'Argolla ancha', url: 'modelos/argolla-ancha.stl', tipos: [] },
+  { nombre: 'Argolla con piedras', url: 'modelos/argolla-piedras.stl', tipos: [] },
+  { nombre: 'Anillo sello', url: 'modelos/sello.stl', tipos: ['Anillo'] }
+];
+const modelosBase = () => [...MODELOS_BASE, ...(CAT && CAT.joyas ? CAT.joyas.filter(j => j.modelo && j.modelo.url).map(j => ({ nombre: j.nombre, url: j.modelo.url, tipos: [] })) : [])];
+const T = { grabado: '', fuente: 'clasica', tamFuente: 'm', modelo: 0, manual: false };
+let VT = null, cargandoVT = false;
+const fuenteT = () => FUENTES.find(f => f.id === T.fuente) || FUENTES[0];
+const tamT = () => TAMANOS.find(t => t.id === T.tamFuente) || TAMANOS[1];
+const grabadoT = () => ($('#tGrab') && $('#tGrab').checked) ? T.grabado : '';
+async function grabarT() {
+  if (!VT || !VT.puedeGrabar()) return;
+  const f = fuenteT(), t = tamT();
+  try { await cargarFuentes(); await Promise.all(f.css.split(',').slice(0, 2).map(n => document.fonts.load(`${f.estilo} ${f.peso} 40px ${n.trim()}`))); } catch (e) { }
+  if (VT) VT.grabado(grabadoT(), { fuente: `${f.estilo} ${f.peso} {t}px ${f.css}`, escala: Math.min(.86, t.escala * f.prop) });
+}
+function metalFormulario() { const m = ($('#formDiseno select[name=metal]') || {}).value || ''; return /aún/i.test(m) ? 'Oro amarillo' : m; }
+async function cargarModeloT() {
+  const cont = $('#tallerVisor'); if (!cont || cargandoVT) return;
+  const m = modelosBase()[T.modelo] || modelosBase()[0];
+  if (VT) { VT.destruir(); VT = null; }
+  cont.innerHTML = `<span class="cargando">Cargando ${esc(m.nombre.toLowerCase())}…</span>`;
+  cargandoVT = true;
+  try {
+    const v = await visor3D(cont, m.url, metalFormulario());
+    if (!document.body.contains(cont)) { v.destruir(); return; }
+    VT = v; const c = cont.querySelector('.cargando'); if (c) c.remove();
+    cont.insertAdjacentHTML('beforeend', `<span class="pista-3d" id="tPista">${conPuntero ? 'Arrastra para girarla. Usa la rueda para acercar.' : 'Desliza para girarla. Pellizca para acercar.'}</span>
+      <div class="ctrl3d"><button type="button" id="tGiro">Pausar giro</button><button type="button" id="tVerG">Ver grabado</button></div>`);
+    $('#tGiro').onclick = () => { VT.girar(!VT.girando()); $('#tGiro').textContent = VT.girando() ? 'Pausar giro' : 'Girar sola'; };
+    $('#tVerG').onclick = () => { if (!T.grabado.trim()) { const t = $('#tTexto'); if (t) t.focus(); return; } grabarT(); VT.mirarGrabado(); $('#tGiro').textContent = 'Girar sola'; };
+    cont.addEventListener('giro-manual', () => { const pz = $('#tPista'); if (pz) pz.classList.add('fuera'); const g = $('#tGiro'); if (g) g.textContent = 'Girar sola'; });
+    $('#tVerG').hidden = !VT.puedeGrabar();
+    await grabarT();
+  } catch (e) { cont.innerHTML = `<span class="cargando">${esc(e.message)}</span>`; }
+  finally { cargandoVT = false; }
+}
+function pintarCamposT() {
+  const c = $('#tGrabCampos'); if (!c) return;
+  if (!$('#tGrab').checked) { c.innerHTML = ''; return; }
+  const f = fuenteT(), muestra = T.grabado.trim().slice(0, 12) || 'Amor eterno';
+  const scroll = (c.querySelector('.est-letras') || {}).scrollLeft || 0;
+  c.innerHTML = `<input type="text" id="tTexto" maxlength="25" value="${esc(T.grabado)}" placeholder="Escribe tu mensaje" aria-label="Mensaje para el grabado" style="font-family:${f.css};font-style:${f.estilo};font-weight:${f.peso}">
+    <span class="sub-grabado">Tipo de letra</span>
+    <div class="est-letras" role="radiogroup" aria-label="Tipo de letra">${FUENTES.map(x => `<label class="opc"><input type="radio" name="tFuente" value="${x.id}" ${f.id === x.id ? 'checked' : ''}><span><b style="font-family:${x.css};font-style:${x.estilo};font-weight:${x.peso}">${esc(muestra)}</b><small title="Estilo ${x.nombre.toLowerCase()}">${nombreWord(x)}</small></span></label>`).join('')}</div>
+    <span class="sub-grabado">Tamaño de la letra</span>
+    <div class="est-tamanos" role="radiogroup" aria-label="Tamaño de la letra">${TAMANOS.map(t => `<label class="opc"><input type="radio" name="tTam" value="${t.id}" ${tamT().id === t.id ? 'checked' : ''}><span><i style="font-size:${Math.round(13 * t.px)}px">A</i>${t.nombre}</span></label>`).join('')}</div>`;
+  c.querySelector('.est-letras').scrollLeft = scroll;
+  const tx = $('#tTexto');
+  tx.oninput = () => { T.grabado = tx.value; c.querySelectorAll('.est-letras b').forEach(b => { b.textContent = tx.value.trim().slice(0, 12) || 'Amor eterno'; }); clearTimeout(tx._t); tx._t = setTimeout(grabarT, 120); };
+  const cambio = (nombre, clave) => c.querySelectorAll(`input[name=${nombre}]`).forEach(r => r.onchange = () => {
+    T[clave] = r.value; pintarCamposT(); grabarT(); if (VT && T.grabado.trim()) VT.mirarGrabado();
+    const foco = c.querySelector(`input[name=${nombre}][value="${r.value}"]`); if (foco) foco.focus({ preventScroll: true });
+  });
+  cambio('tFuente', 'fuente'); cambio('tTam', 'tamFuente');
+}
+function montarTaller() {
+  const tal = $('#taller'); if (!tal) return;
+  tal.querySelectorAll('input[name=modeloBase]').forEach(r => r.onchange = () => { T.modelo = +r.value; T.manual = true; cargarModeloT(); });
+  $('#tGrab').onchange = () => { pintarCamposT(); grabarT(); if ($('#tGrab').checked) { cargarFuentes(); const t = $('#tTexto'); if (t) t.focus(); } };
+  const f = $('#formDiseno');
+  f.elements.metal.addEventListener('change', () => { if (VT) VT.color(metalFormulario()); });
+  f.elements.tipo.addEventListener('change', () => {
+    if (T.manual) return;
+    const i = modelosBase().findIndex(m => m.tipos.includes(f.elements.tipo.value));
+    if (i >= 0 && i !== T.modelo) { T.modelo = i; const r = tal.querySelector(`input[name=modeloBase][value="${i}"]`); if (r) r.checked = true; cargarModeloT(); }
+  });
+  pintarCamposT();
+}
+async function comprimir(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const k = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(res => c.toBlob(res, 'image/jpeg', .82));
+  } finally { URL.revokeObjectURL(url); }
+}
+function pintarPrevias() {
+  $('#previas').innerHTML = fotosRef.map((f, i) => `<div><img src="${f.vista}" alt="Foto de referencia ${i + 1}"><button type="button" data-q="${i}" aria-label="Quitar foto ${i + 1}">×</button></div>`).join('');
+  $$('#previas [data-q]').forEach(b => b.onclick = () => { URL.revokeObjectURL(fotosRef[+b.dataset.q].vista); fotosRef.splice(+b.dataset.q, 1); pintarPrevias(); });
+}
+async function agregarFotos(lista) {
+  for (const f of [...lista]) {
+    if (fotosRef.length >= 5) { $('#errorForm').textContent = 'Puedes subir hasta 5 fotos.'; break; }
+    if (!f.type.startsWith('image/')) continue;
+    try { const blob = await comprimir(f); fotosRef.push({ blob, vista: URL.createObjectURL(blob) }); } catch (e) { $('#errorForm').textContent = 'Una de las fotos no se pudo leer. Prueba con JPG o PNG.'; }
+  }
+  pintarPrevias();
+}
+function abrirDiseno(desplazar = true) {
+  const pl = $('#plegable'); if (!pl) return;
+  if (!VT) setTimeout(cargarModeloT, 350);
+  cargarFuentes();
+  pl.classList.add('abierto'); pl.inert = false; $('#teaser').classList.add('oculto');
+  $('#abrirDiseno').setAttribute('aria-expanded', 'true');
+  if (desplazar) setTimeout(() => scrollTo({ top: $('#plegable').getBoundingClientRect().top + scrollY - 96, behavior: sinMovimiento ? 'auto' : 'smooth' }), 60);
+  setTimeout(() => { const t = $('#formDiseno select[name=tipo]'); if (t) t.focus({ preventScroll: true }); }, 700);
+}
+function cerrarDiseno() {
+  const pl = $('#plegable'); if (!pl) return;
+  if (VT) { VT.destruir(); VT = null; const tv = $('#tallerVisor'); if (tv) tv.innerHTML = '<span class="cargando">El modelo 3D se carga al abrir el formulario…</span>'; }
+  pl.classList.remove('abierto'); pl.inert = true; $('#teaser').classList.remove('oculto');
+  $('#abrirDiseno').setAttribute('aria-expanded', 'false');
+  scrollTo({ top: $('#personaliza').getBoundingClientRect().top + scrollY - 20, behavior: sinMovimiento ? 'auto' : 'smooth' });
+  $('#abrirDiseno').focus({ preventScroll: true });
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-abrir-diseno]'); if (!a || !$('#plegable')) return;
+  e.preventDefault(); abrirDiseno();
+});
+function montarFormulario() {
+  const form = $('#formDiseno'); if (!form) return;
+  $('#abrirDiseno').onclick = () => abrirDiseno();
+  montarTaller();
+  rellenarFormulario();
+  $('#cerrarDiseno').onclick = cerrarDiseno;
+  const zona = $('#zonaSubir');
+  $('#archivosRef').onchange = e => { agregarFotos(e.target.files); e.target.value = ''; };
+  ['dragenter', 'dragover'].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add('encima'); }));
+  ['dragleave', 'drop'].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove('encima'); }));
+  zona.addEventListener('drop', e => agregarFotos(e.dataTransfer.files));
+  pintarPrevias();
+  form.onsubmit = enviarSolicitud;
+}
+async function enviarSolicitud(e) {
+  e.preventDefault();
+  const f = e.target, v = n => (f.elements[n]?.value || '').trim(), err = $('#errorForm'); err.textContent = '';
+  if (v('idea').length < 10) return err.textContent = 'Cuéntanos un poco más de tu idea (al menos una frase).';
+  if (v('nombre').length < 2) return err.textContent = 'Escribe tu nombre.';
+  if (v('telefono').replace(/\D/g, '').length < 7) return err.textContent = 'Escribe un número de WhatsApp para poder responderte.';
+  if (!f.elements.acepto.checked) return err.textContent = 'Necesitamos tu autorización para usar tus datos y contactarte.';
+  const btn = $('#btnEnviar'); btn.disabled = true;
+  const base = CONFIG.SUPABASE_URL.replace(/\/+$/, ''), cab = { apikey: CONFIG.SUPABASE_ANON_KEY };
+  const urls = [];
+  try {
+    for (let i = 0; i < fotosRef.length; i++) {
+      btn.textContent = `Subiendo fotos (${i + 1} de ${fotosRef.length})…`;
+      const ruta = `solicitudes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const r = await fetch(`${base}/storage/v1/object/atelier-fotos/${ruta}`, { method: 'POST', headers: { ...cab, 'Content-Type': 'image/jpeg' }, body: fotosRef[i].blob });
+      if (!r.ok) throw new Error('fotos');
+      urls.push(`${base}/storage/v1/object/public/atelier-fotos/${ruta}`);
+    }
+    btn.textContent = 'Enviando…';
+    const conGrabado = grabadoT().trim();
+    const datos = { nombre: v('nombre'), telefono: v('telefono'), correo: v('correo') || null, ciudad: v('ciudad') || null, cedula: v('cedula') || null, direccion: v('direccion') || null, tipo: v('tipo'), metal: v('metal'),
+      idea: v('idea'), presupuesto: (f.querySelector('input[name=presupuesto]:checked') || {}).value || null, fecha_necesita: v('fecha') || null, fotos: urls,
+      modelo_base: (modelosBase()[T.modelo] || {}).nombre || null,
+      grabado: conGrabado || null, fuente: conGrabado ? nombreWord(fuenteT()) : null, tamano_letra: conGrabado ? tamT().nombre : null };
+    const enviar = cuerpo => fetch(`${base}/rest/v1/atelier_solicitudes`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(cuerpo) });
+    let r = await enviar(datos);
+    if (!r.ok && r.status === 400) {   // si aún no existen las columnas nuevas, se envía todo dentro de la idea
+      const { modelo_base, grabado, fuente, tamano_letra, cedula, direccion, ...resto } = datos;
+      resto.idea += `\n\nModelo base: ${modelo_base || '—'}` + (grabado ? `\nGrabado: "${grabado}" · ${fuente} · ${tamano_letra}` : '') + (cedula ? `\nCédula: ${cedula}` : '') + (direccion ? `\nDirección: ${direccion}` : '');
+      r = await enviar(resto);
+    }
+    if (!r.ok) throw new Error('datos');
+    if (f.elements.guardarPerfil && f.elements.guardarPerfil.checked) guardarPerfil({ nombre: datos.nombre, celular: datos.telefono, correo: datos.correo || '', cedula: datos.cedula || '', direccion: datos.direccion || '', ciudad: datos.ciudad || '' }, true);
+    exitoSolicitud(datos);
+  } catch (ex) {
+    btn.disabled = false; btn.textContent = 'Enviar mi idea';
+    err.innerHTML = 'No pudimos enviar tu solicitud en este momento.' + (numeroWhats() ? ` <a href="${whatsTexto(resumenSolicitud())}" target="_blank" rel="noopener" style="color:var(--acento)">Envíala por WhatsApp</a>.` : ' Inténtalo de nuevo en unos minutos.');
+  }
+}
+function resumenSolicitud(d) {
+  const f = $('#formDiseno'); d = d || { tipo: f.elements.tipo.value, metal: f.elements.metal.value, idea: f.elements.idea.value, presupuesto: (f.querySelector('input[name=presupuesto]:checked') || {}).value, fecha_necesita: f.elements.fecha.value, nombre: f.elements.nombre.value };
+  const gT = grabadoT().trim();
+  const datosForm = { nombre: f.elements.nombre.value.trim(), celular: f.elements.telefono.value.trim(), correo: f.elements.correo.value.trim(), cedula: f.elements.cedula.value.trim(), direccion: f.elements.direccion.value.trim(), ciudad: f.elements.ciudad.value.trim() };
+  return ['Hola, quiero diseñar una joya con Atelier & Co.', `*${d.tipo}* en ${String(d.metal).toLowerCase()}`, d.idea, `Modelo base: ${(modelosBase()[T.modelo] || {}).nombre || ''}`, gT ? `Grabado: "${gT}" · ${nombreWord(fuenteT())} · ${tamT().nombre}` : '', d.presupuesto ? `Presupuesto: ${d.presupuesto}` : '', d.fecha_necesita ? `La necesito para: ${d.fecha_necesita.split('-').reverse().join('/')}` : '', ...lineasDatos(datosForm.nombre ? datosForm : perfil())].filter(Boolean).join('\n');
+}
+const whatsTexto = t => `https://wa.me/${numeroWhats()}?text=${encodeURIComponent(t)}`;
+function exitoSolicitud(d) {
+  if (VT) { VT.destruir(); VT = null; }
+  fotosRef.forEach(f => URL.revokeObjectURL(f.vista)); fotosRef = [];
+  $('#formDiseno').innerHTML = `<div class="exito"><div class="check-oro"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h3>¡Recibimos tu idea, ${esc(d.nombre.split(' ')[0])}!</h3>
+    <p>Pronto te escribiremos al WhatsApp que nos dejaste con una propuesta de diseño y precio.</p>
+    ${numeroWhats() ? `<a class="btn-oro" href="${whatsTexto(resumenSolicitud(d))}" target="_blank" rel="noopener">Escribirnos ahora por WhatsApp</a>` : ''}</div>`;
+}
+
+/* ---------- Plantillas de presentación ---------- */
+// Formas de tarjeta: las presentaciones antiguas se agrupan en las tres nuevas
+const FORMA = { clasica: 'clasica', estudio: 'estudio', amplia: 'amplia', destacada: 'amplia', vitrina: 'estudio' };
+const formaDe = p => FORMA[p] || 'clasica';
+// Puntos de color con las piedras (variantes) o, si no hay variantes, con los colores del oro
+function gemasDe(j) {
+  const vars = miembrosDe(j);
+  if (vars.length > 1) {
+    const nombres = vars.map(v => v.variante || v.nombre);
+    return `<span class="gemas" title="Disponible en ${esc(nombres.join(', '))}" aria-label="Disponible en ${esc(nombres.join(', '))}">${nombres.slice(0, 5).map(n => `<i style="background:${colorPiedraCss(n)}"></i>`).join('')}${nombres.length > 5 ? `<small>+${nombres.length - 5}</small>` : ''}</span>`;
+  }
+  if (j.oro && j.oro.colores && j.oro.colores.length > 1) {
+    const nombres = j.oro.colores.map(c => 'oro ' + c.nombre.toLowerCase());
+    return `<span class="gemas" title="En ${esc(nombres.join(', '))}" aria-label="En ${esc(nombres.join(', '))}">${j.oro.colores.map(c => `<i style="background:${colorOroCss(c.nombre)}"></i>`).join('')}</span>`;
+  }
+  return '';
+}
+const CUBO_MINI = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"/><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2"/></svg>';
+function tarjetaHTML(j, i, opciones = {}) {
+  const forma = formaDe(opciones.forzar || j.presentacion);
+  const f = (conHerencia(j).fotos) || [];
+  const foto = f.length ? `<img src="${esc(f[0])}" alt="${esc(nombreBase(j))}" loading="lazy">${f[1] && forma !== 'estudio' ? `<img class="alt" src="${esc(f[1])}" alt="" loading="lazy">` : ''}` : `<div class="sin">${escarabajo('#A98234')}</div>`;
+  const conModelo = !!conHerencia(j).modelo;
+  const desde = esPersonalizable(j) || miembrosDe(j).length > 1;
+  return `<a class="pieza f-${forma}" href="#${encodeURIComponent(j.id)}">
+      <div class="foto">${foto}${conModelo ? `<span class="marca-3d">${CUBO_MINI}3D</span>` : ''}<span class="ver">Personalizar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      <div class="info"><h3>${esc(nombreBase(j))}</h3><p class="precio">${desde ? 'Desde ' : ''}<b>${fmt(desdeGrupo(j))}</b></p>${gemasDe(j)}</div></a>`;
+}
+
+function pintarMosaico() {
+  const m = $('#mosaico'); if (!m) return;
+  const L = representantes().filter(j => !filtro || j.categoria === filtro);
+  m.innerHTML = L.length ? L.map((j, i) => tarjetaHTML(j, i)).join('') : '<p class="estado" style="grid-column:1/-1;padding:40px">Muy pronto verás aquí nuestras joyas.</p>';
+  activarEfectos(m);
+}
+
+/* ---------- Efectos: aparición, inclinación, paralaje, luz ---------- */
+let observador = null;
+function activarEfectos(raiz = document) {
+  if (!observador) observador = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visto');
+      e.target.querySelectorAll?.('[data-cuenta]').forEach(contar);
+      observador.unobserve(e.target);
+    }
+  }), { threshold: .14, rootMargin: '0px 0px -40px 0px' });
+  raiz.querySelectorAll('[data-rev]:not(.visto)').forEach(el => sinMovimiento ? el.classList.add('visto') : observador.observe(el));
+  raiz.querySelectorAll('.valores,.pasos').forEach(el => observador.observe(el.closest('[data-rev]') || el));
+  if (conPuntero && !sinMovimiento) raiz.querySelectorAll('[data-tilt]').forEach(inclinar);
+  raiz.querySelectorAll('[data-carrusel]').forEach(carrusel);
+  if (conPuntero && !sinMovimiento) raiz.querySelectorAll('[data-video]').forEach(c => {
+    if (c._vid) return; c._vid = true; const v = c.querySelector('video.prev'); if (!v) return;
+    c.addEventListener('mouseenter', () => { v.play().then(() => c.classList.add('reproduciendo')).catch(() => {}); });
+    c.addEventListener('mouseleave', () => { c.classList.remove('reproduciendo'); v.pause(); });
+  });
+  raiz.querySelectorAll('[data-giro]').forEach(giro);
+}
+function carrusel(card) {
+  if (card._car) return; card._car = true;
+  const imgs = [...card.querySelectorAll('.slides img')], puntos = [...card.querySelectorAll('.puntos i')];
+  let i = 0, t = null;
+  const ir = k => { i = (k + imgs.length) % imgs.length; imgs.forEach((im, n) => im.classList.toggle('activa', n === i)); puntos.forEach((p, n) => p.classList.toggle('activa', n === i)); };
+  const auto = () => { clearInterval(t); if (!sinMovimiento) t = setInterval(() => ir(i + 1), 3200); };
+  card.addEventListener('click', e => {
+    const d = e.target.closest('[data-dir]'), p = e.target.closest('[data-ir]');
+    if (d || p) { e.preventDefault(); e.stopPropagation(); ir(d ? i + +d.dataset.dir : +p.dataset.ir); auto(); }
+  });
+  let x0 = null;
+  card.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  card.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { ir(i + (dx < 0 ? 1 : -1)); auto(); card._arrastro = true; setTimeout(() => card._arrastro = false, 50); } x0 = null; });
+  card.addEventListener('click', e => { if (card._arrastro) e.preventDefault(); }, true);
+  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? auto() : clearInterval(t)), { threshold: .3 }).observe(card);
+}
+function giro(card) {
+  if (card._giro) return; card._giro = true;
+  const zona = card.querySelector('.foto'), imgs = [...zona.querySelectorAll('img')], barra = zona.querySelector('.barra-giro i');
+  const mostrar = x => { const k = Math.min(imgs.length - 1, Math.max(0, Math.floor(x * imgs.length))); imgs.forEach((im, n) => im.classList.toggle('activa', n === k)); barra.style.width = ((k + 1) / imgs.length * 100) + '%'; };
+  zona.addEventListener('mousemove', e => { const r = zona.getBoundingClientRect(); mostrar((e.clientX - r.left) / r.width); });
+  zona.addEventListener('mouseleave', () => mostrar(0));
+  let movio = false;
+  zona.addEventListener('touchmove', e => { const r = zona.getBoundingClientRect(); mostrar((e.touches[0].clientX - r.left) / r.width); movio = true; }, { passive: true });
+  zona.addEventListener('touchend', () => { setTimeout(() => movio = false, 60); });
+  card.addEventListener('click', e => { if (movio) e.preventDefault(); }, true);
+  mostrar(0);
+}
+function contar(el) {
+  const fin = +el.dataset.cuenta, t0 = performance.now();
+  const paso = t => { const k = Math.min(1, (t - t0) / 1200); el.textContent = Math.round(fin * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(paso); };
+  sinMovimiento ? (el.textContent = fin) : requestAnimationFrame(paso);
+}
+function inclinar(el) {
+  if (el._tilt) return; el._tilt = true;
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    el.style.transform = `perspective(1000px) rotateX(${(0.5 - y) * 7}deg) rotateY(${(x - 0.5) * 9}deg) translateY(-4px)`;
+    el.style.setProperty('--sx', x * 100 + '%'); el.style.setProperty('--sy', y * 100 + '%');
+  });
+  el.addEventListener('mouseleave', () => { el.style.transform = ''; });
+}
+// Barra superior sólida y paralaje
+let esperando = false;
+function alDesplazar() {
+  if (esperando) return; esperando = true;
+  requestAnimationFrame(() => {
+    esperando = false;
+    const top = $('#top'); top.classList.toggle('solida', scrollY > 30);
+    const oscuro = [document.getElementById('collar'), $('.cinta2'), $('.pie2')].some(el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.top <= 36 && r.bottom >= 36; });
+    top.classList.toggle('sobre-noche', oscuro);
+    actualizarSecuencias();
+  });
+}
+addEventListener('scroll', alDesplazar, { passive: true });
+// Luz que sigue al cursor y joya del banner que responde al movimiento
+document.addEventListener('mousemove', e => {
+  if (!sinMovimiento && $('#emblema')) { const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5; $('#emblema').style.transform = `perspective(1200px) rotateY(${x * 16}deg) rotateX(${-y * 12}deg)`; }
+  const hero = $('.hero'); if (!hero || sinMovimiento) return;
+  const r = hero.getBoundingClientRect(); if (e.clientY > r.bottom) return;
+  hero.style.setProperty('--mx', (e.clientX - r.left) + 'px'); hero.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  const j = $('#heroJoya'); if (!j) return;
+  const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
+  j.style.transform = `perspective(1200px) rotateY(${x * 14}deg) rotateX(${-y * 12}deg)`;
+});
+// En el celular, la joya del banner se inclina con el teléfono
+addEventListener('deviceorientation', e => {
+  const j = $('#heroJoya'); if (!j || sinMovimiento || e.gamma == null || !$('#ficha').hidden) return;
+  const g = Math.max(-20, Math.min(20, e.gamma)), b = Math.max(-20, Math.min(20, (e.beta || 0) - 40));
+  j.style.transform = `perspective(1200px) rotateY(${g * .6}deg) rotateX(${-b * .5}deg)`;
+});
+
+/* ---------- Ficha de la joya ---------- */
+function ruta() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const j = id && CAT && CAT.joyas.find(x => x.id === id);
+  const capa = $('#ficha');
+  if (j) {
+    const mismo = selVariante && grupoDe(j) === selVariante.grupo;
+    const modeloActual = MEDIOS_ACT.find(m => m.t === '3d'), modeloNuevo = conHerencia(j).modelo;
+    const suave = mismo && selVariante.en3d && V3 && modeloActual && modeloNuevo && modeloActual.u === modeloNuevo.url && $('#lupa') && $('#lupa').classList.contains('modo-3d');
+    if (!suave) cerrar3D();
+    sel = mismo ? { ...selVariante.sel } : { ...(selGuardada[grupoDe(j)] || {}) };
+    fotoActual = 0; precioMostrado = mismo ? selVariante.precio : 0;
+    abrirFicha(j, mismo ? selVariante.scroll : 0, mismo && selVariante.en3d, suave); selVariante = null;
+  }
+  else if (!capa.hidden) { cerrar3D(); capa.hidden = true; document.body.style.overflow = ''; if (VH) VH.pausar(false); document.title = 'Atelier & Co, alta joyería colombiana'; }
+}
+addEventListener('hashchange', ruta);
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#ficha').hidden && (!$('#visor') || $('#visor').hidden)) cerrarFicha(); });
+function cerrarFicha() {
+  location.hash = 'coleccion';
+  setTimeout(() => { if (!$('#ficha').hidden) { $('#ficha').hidden = true; document.body.style.overflow = ''; } }, 60);
+}
+function ajustarSel(p) {
+  if (p.talla && sel.talla !== 'nose' && !tallasDe(p.talla).includes(sel.talla)) delete sel.talla;   // el cliente la elige; no viene marcada
+  sel.material = sel.material || 0; sel.calidad = sel.calidad || 0; sel.adicionales = sel.adicionales || [];
+  if (p.oro) { if (!(sel.quilate < p.oro.quilates.length)) sel.quilate = p.oro.quilateBase || 0; if (!(sel.color < p.oro.colores.length)) sel.color = p.oro.colorBase || 0; }
+}
+function diferencia(p, cambio) {
+  const d = precioJ(p, { ...sel, ...cambio }) - precioJ(p, sel);
+  return d === 0 ? '' : (d > 0 ? '+' : '−') + fmt(Math.abs(d));
+}
+function abrirFicha(p, scroll = 0, en3d = false, suave = false) {
+  if (VH) VH.pausar(true);
+  p = conHerencia(p);
+  ajustarSel(p);
+  document.title = p.nombre + ', Atelier & Co';
+  const fotos = p.fotos || [];
+  const medios = [...fotos.map(u => ({ t: 'foto', u, prestada: p.fotosPrestadas }))];
+  if (p.video) medios.splice(Math.min(1, medios.length), 0, { t: 'video', u: p.video.url, poster: p.video.poster });
+  // con fotos de otra piedra, el 3D (que sí muestra la piedra elegida) va primero
+  if (p.modelo) medios.splice(p.fotosPrestadas ? 0 : Math.min(p.video ? 2 : 1, medios.length), 0, { t: '3d', u: p.modelo.url, piedras: p.modelo.piedras || '', fijas: p.modelo.fijas || '' });
+  if (p.fotosPrestadas && p.modelo) en3d = true;
+  const capa = $('#ficha');
+  const mat = p.materiales && p.materiales.length ? p.materiales[sel.material] : null;
+  const specs = [...(p.categoria ? [['Tipo', p.categoria]] : []), ['Metal', p.oro ? nombreOro(p) : mat ? mat.nombre : p.metal]];
+  if (p.peso) specs.push(['Peso aprox.', fDec(p.peso) + ' g']);
+  (p.piedras || []).forEach(s => specs.push([s.tipo, `${s.cantidad}${s.kilates ? ' × ' + fDec(s.kilates) + ' ct' : ''}`]));
+  const otras = representantes().filter(j => grupoDe(j) !== grupoDe(p)).sort((a, b) => (b.categoria === p.categoria) - (a.categoria === p.categoria)).slice(0, 3);
+  const lupaViva = suave ? $('#lupa') : null;   // el visor 3D ya cargado se reutiliza
+  capa.innerHTML = `
+    <div class="ficha-top"><div class="envol">
+      <button class="volver" id="volver"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Volver a la colección</button>
+      <a class="logo" href="#inicio" style="margin:0">${escarabajo('#A98234')}<span>ATELIER<small>&amp;</small>CO</span></a>
+    </div></div>
+    <div class="envol">
+      <div class="ficha">
+        <div class="ficha-cab">
+          <h1>${miembrosDe(p).length > 1 && p.variante ? `${esc(nombreBase(p))} <span class="h1-piedra">en ${esc(String(p.variante).toLowerCase())}</span>` : esc(p.nombre)}</h1>
+        </div>
+        <div class="galeria">
+          <div class="lupa" id="lupa"></div>
+          ${medios.length > 1 ? `<div class="miniaturas">${medios.map((m, i) => `${m.prestada && !(medios[i - 1] && medios[i - 1].prestada) ? `<span class="mini-sep">Fotos de referencia en ${esc(String(p.piedraDeFotos).toLowerCase())}</span>` : ''}<button data-medio="${i}" class="${m.t === 'video' ? 'video' : m.t === '3d' ? 'm3d' : ''}" aria-label="${m.t === 'video' ? 'Ver el video' : m.t === '3d' ? 'Ver la joya en 3D' : 'Ver foto ' + (i + 1)}" aria-current="${i === 0}">${m.t === '3d' ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"/><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2"/></svg>3D` : `<img src="${esc(m.t === 'video' ? (m.poster || fotos[0] || '') : m.u)}" alt="">`}</button>`).join('')}</div>` : ''}
+        </div>
+        <div class="ficha-info">
+          <div class="estudio" id="estudio" hidden></div>
+          <div class="config3d" id="config3d" hidden></div>
+          <div class="total" id="total"></div>
+          <p class="nota">Precio de referencia en pesos colombianos. Lo confirmamos contigo al pedir.</p>
+          <ul class="confianza">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span><b>10 días hábiles</b> de fabricación</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg><span><b>Envío</b> a todo Colombia</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/></svg><span><b>Garantía</b> del oro y de las piedras, y 6 meses por defectos de fábrica</span></li>
+          </ul>
+          <div class="detalles">
+            ${p.descripcion ? `<p class="desc">${esc(p.descripcion)}</p>` : ''}
+            <div class="specs" id="specs">${specs.map(([a, b]) => `<span data-k="${esc(a)}">${esc(a)} <b>${esc(b)}</b></span>`).join('')}</div>
+          </div>
+        </div>
+      </div>
+      ${otras.length ? `<div class="relacionadas"><h2>También te puede gustar</h2><div class="mosaico">${otras.map((j, i) => tarjetaHTML(j, i, { forzar: 'clasica' })).join('')}</div></div>` : ''}
+    </div>`;
+  capa.hidden = false; capa.scrollTop = scroll; document.body.style.overflow = 'hidden';
+  $('#volver').onclick = cerrarFicha;
+  $$('#ficha [data-medio]').forEach(b => b.onclick = () => pintarMedio(p, medios, +b.dataset.medio));
+  const b3 = $('#btn3d'); if (b3) b3.onclick = () => { pintarMedio(p, medios, medios.findIndex(m => m.t === '3d')); $('#lupa').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  if (lupaViva) { const nueva = $('#lupa'); nueva.replaceWith(lupaViva); }
+  const lupa = $('#lupa');
+  if (!lupa._eventos) { lupa._eventos = true;
+  lupa.addEventListener('mousemove', e => { const img = $('#fotoP'); if (!img || !lupa.classList.contains('modo-foto')) return; const r = lupa.getBoundingClientRect(); img.style.transformOrigin = `${(e.clientX - r.left) / r.width * 100}% ${(e.clientY - r.top) / r.height * 100}%`; lupa.classList.add('zoom'); });
+  lupa.addEventListener('mouseleave', () => lupa.classList.remove('zoom'));
+  lupa.addEventListener('click', e => { if (lupa.classList.contains('modo-foto') && !e.target.closest('button')) abrirVisor(MEDIOS_ACT.filter(m => m.t === 'foto').map(m => m.u), fotoActual); });
+  }
+  MEDIOS_ACT = medios; mirarPendiente = false; estudio = false;
+  pintarConfig(p);
+  const i3 = medios.findIndex(m => m.t === '3d');
+  if (lupaViva && V3) {
+    // misma pieza, otra piedra: se cambia el color en el visor abierto
+    V3.colorPiedra(nombrePiedra(p)); V3.color(metalActual(p)); aplicarGrabado3D();
+    $$('#ficha [data-medio]').forEach(x => x.setAttribute('aria-current', +x.dataset.medio === i3));
+    pintarConfig(p);
+  } else pintarMedio(p, medios, en3d && i3 >= 0 ? i3 : 0);
+  controles(p); total(p, true);
+  activarEfectos(capa);
+}
+let V3 = null, MEDIOS_ACT = [], mirarPendiente = false, estudio = false, guiaAbierta = false;
+const selGuardada = {};   // últimas opciones del cliente por joya (se conservan al salir del 3D y al volver a abrirla)
+/* ---------- Configurador bajo el modelo 3D: piedra, oro y color ---------- */
+function pintarConfig(p) {
+  const c = $('#config3d'); if (!c) return;
+  const vars = miembrosDe(p), o = p.oro, filas = [];
+  const dif = cambio => { const d = diferencia(p, cambio); return d && !cambio.__sinPrecio ? `<small>${d}</small>` : ''; };
+  const radios = (titulo, nombre, ops) => filas.push(`<div class="c3-fila f-${nombre}" role="radiogroup" aria-label="${titulo}"><span>${titulo}</span><div class="c3-ops">${ops.map(x => `<label class="opc"><input type="radio" name="${nombre}" value="${esc(String(x.v))}" ${x.on ? 'checked' : ''}><span>${x.html}</span></label>`).join('')}</div></div>`);
+  if (vars.length > 1) radios('Piedra', 'c3var', vars.map(v => ({ v: v.id, on: v.id === p.id, html: `<i class="muestra-piedra" style="background:${colorPiedraCss(v.variante)}"></i>${esc(v.variante || v.nombre)}` })));
+  if (p.talla) {
+    radios(esc(p.talla.etiqueta || 'Talla'), 'c3talla', [...tallasDe(p.talla).map(t => ({ v: t, on: t === sel.talla, html: fTalla(t) })), { v: 'nose', on: sel.talla === 'nose', html: 'No sé mi talla' }]);
+    filas.push(`<div class="c3-ayuda" id="ayudaTalla"><button type="button" class="c3-link" id="verGuia" aria-expanded="${!!guiaAbierta}" aria-controls="guiaTalla">¿Cuál es mi talla?</button>
+      <div class="guia-talla" id="guiaTalla" ${guiaAbierta ? '' : 'hidden'}><ol><li>Toma un anillo que le quede bien en ese dedo.</li><li>Mide por dentro, de borde a borde, en milímetros.</li><li>Marca <b>No sé mi talla</b> y envíanos la medida: te decimos cuál es.</li></ol><p>¿Es sorpresa? Toma prestado un anillo que use en ese dedo. Si después hay que cambiar la talla, tiene un costo adicional.</p></div></div>`);
+  }
+  if (o && o.colores.length > 1) radios('Color', 'c3color', o.colores.map((x, i) => ({ v: i, on: i === sel.color, html: `<i class="muestra-oro" style="background:${colorOroCss(x.nombre)}"></i>${esc(x.nombre)}` })));
+  if (o && o.quilates.length > 1) radios('Oro', 'c3quilate', o.quilates.map((x, i) => ({ v: i, on: i === sel.quilate, html: 'Oro ' + esc(x.nombre) + (i !== sel.quilate ? dif({ quilate: i }) : '') })));
+  if (!o && p.materiales && p.materiales.length > 1) radios('Metal', 'c3material', p.materiales.map((x, i) => ({ v: i, on: i === sel.material, html: esc(x.nombre) + (i !== sel.material ? dif({ material: i }) : '') })));
+  if (p.calidades && p.calidades.length > 1) {
+    radios('Calidad', 'c3calidad', p.calidades.map((x, i) => ({ v: i, on: i === sel.calidad, html: esc(x.nombre) + (i !== sel.calidad ? dif({ calidad: i }) : '') })));
+    filas.push(`<div class="c3-ayuda"><p class="c3-nota">Cambia la calidad de las piedras: a mayor calidad, mejor color y pureza.</p></div>`);
+  }
+  if (p.grabado) filas.push(`<div class="c3-fila"><span>Grabado</span><div class="c3-ops">${sel.grabadoOn
+      ? `<button type="button" class="c3-grab activo" id="c3Grab">✎ ${(sel.grabado || '').trim() ? `«${esc(sel.grabado.trim())}»` : 'Escribir mi mensaje'}<small>${esc(nombreWord(fuenteSel()))} · ${esc(tamSel().nombre)}</small></button><button type="button" class="c3-quitar" id="c3SinGrab">Quitar</button>`
+      : `<button type="button" class="c3-grab" id="c3Grab">+ Grabado láser <small>desde ${fmt(p.grabado.precio + (p.grabado.precioLetra || 0))}</small></button>`}</div></div>`);
+  if (p.adicionales && p.adicionales.length) filas.push(`<div class="c3-fila"><span>Extras</span><div class="c3-ops">${p.adicionales.map((a, i) => `<label class="opc"><input type="checkbox" name="c3adic" value="${i}" ${sel.adicionales.includes(i) ? 'checked' : ''}><span>${sel.adicionales.includes(i) ? '✓ ' : '+ '}${esc(a.nombre)}<small>${fmt(a.precio)}</small></span></label>`).join('')}</div></div>`);
+  if (!filas.length) { c.hidden = true; c.innerHTML = ''; return; }
+  c.innerHTML = `<p class="c3-titulo">Personaliza tu joya</p>${filas.join('')}`;
+  c.hidden = false;
+  c.querySelectorAll('input[name=c3var]').forEach(r => r.onchange = () => {
+    selVariante = { grupo: grupoDe(p), sel: { ...sel }, precio: precioMostrado, scroll: $('#ficha').scrollTop, en3d: $('#lupa') && $('#lupa').classList.contains('modo-3d') };
+    location.hash = encodeURIComponent(r.value);
+  });
+  const cambiar = (nombre, clave, numero = true) => c.querySelectorAll(`input[name=${nombre}]`).forEach(r => r.onchange = () => {
+    sel[clave] = numero ? +r.value : r.value; pintarConfig(p); total(p);
+    const nom = metalActual(p); if (V3) V3.color(nom); const sp = $('#specs [data-k="Metal"] b'); if (sp) sp.textContent = nom;
+    const foco = c.querySelector(`input[name=${nombre}][value="${r.value}"]`); if (foco) foco.focus({ preventScroll: true });
+  });
+  c.querySelectorAll('input[name=c3talla]').forEach(r => r.onchange = () => {
+    sel.talla = r.value === 'nose' ? 'nose' : +r.value; pintarConfig(p); total(p);
+    const foco = c.querySelector(`input[name=c3talla][value="${r.value}"]`); if (foco) foco.focus({ preventScroll: true });
+  });
+  const vg = $('#verGuia'); if (vg) vg.onclick = () => { guiaAbierta = !guiaAbierta; $('#guiaTalla').hidden = !guiaAbierta; vg.setAttribute('aria-expanded', guiaAbierta); };
+  cambiar('c3color', 'color'); cambiar('c3quilate', 'quilate'); cambiar('c3material', 'material'); cambiar('c3calidad', 'calidad');
+  c.querySelectorAll('input[name=c3adic]').forEach(ch => ch.onchange = () => {
+    const i = +ch.value; sel.adicionales = sel.adicionales.filter(x => x !== i); if (ch.checked) sel.adicionales.push(i);
+    pintarConfig(p); total(p); const f = c.querySelector(`input[name=c3adic][value="${i}"]`); if (f) f.focus({ preventScroll: true });
+  });
+  const bg = $('#c3Grab'); if (bg) bg.onclick = () => { if (estudio) { const t = $('#eTexto'); if (t) t.focus(); } else entrarEstudio(p); };
+  const sg = $('#c3SinGrab'); if (sg) sg.onclick = () => { sel.grabadoOn = false; if (estudio) salirEstudio(p); else { pintarConfig(p); total(p); } aplicarGrabado3D(); };
+}
+/* ---------- Estudio de grabado: el menú del mensaje se pone justo debajo del modelo 3D ---------- */
+function entrarEstudio(p) {
+  estudio = true; sel.grabadoOn = true; cargarFuentes();
+  const i3 = MEDIOS_ACT.findIndex(m => m.t === '3d');
+  if (i3 < 0) { /* joya sin modelo 3D: solo el panel de grabado con su vista previa */ }
+  else if (V3 && $('#lupa').classList.contains('modo-3d')) {
+    aplicarGrabado3D(); if (V3.puedeGrabar()) { V3.mirarGrabado(); const g3 = $('#g3d'); if (g3) g3.textContent = 'Girar sola'; }
+  } else { mirarPendiente = true; pintarMedio(p, MEDIOS_ACT, i3); }
+  pintarEstudio(p); controles(p); total(p);
+  const capa = $('#ficha'), lupa = $('#lupa');
+  // en celular se sube hasta el visor (el panel queda justo debajo); en computador, hasta el panel de grabado (el visor queda fijo a su lado)
+  const subir = modo => { const alto = ($('.ficha-top') || {}).offsetHeight || 68, ancla = matchMedia('(min-width: 821px)').matches ? ($('#estudio') || lupa) : lupa; capa.scrollTo({ top: Math.max(0, ancla.getBoundingClientRect().top + capa.scrollTop - alto - 14), behavior: modo }); };
+  setTimeout(() => subir(sinMovimiento ? 'auto' : 'smooth'), 60);
+  setTimeout(() => subir('auto'), 900);   // corrige si el contenido cambió de alto mientras subía
+  setTimeout(() => { const t = $('#eTexto'); if (t && !t.value) t.focus({ preventScroll: true }); }, 500);
+}
+function salirEstudio(p) {
+  estudio = false;
+  const e = $('#estudio'); if (e) { e.hidden = true; e.innerHTML = ''; }
+  const gal = $('#ficha .galeria'); if (gal) gal.classList.remove('con-estudio');
+  controles(p); total(p);
+}
+function pintarEstudio(p) {
+  const e = $('#estudio'); if (!e || !p.grabado) return;
+  $('#ficha .galeria').classList.add('con-estudio'); e.hidden = false;
+  const f = fuenteSel(), muestra = (sel.grabado || '').trim().slice(0, 12) || 'Amor eterno';
+  const scroll = (e.querySelector('.est-letras') || {}).scrollLeft || 0;
+  e.innerHTML = `<div class="est-cab"><span class="ceja">Tu grabado</span><button type="button" class="est-listo" id="estListo">Listo</button></div>
+    <input id="eTexto" maxlength="${p.grabado.max}" value="${esc(sel.grabado || '')}" placeholder="Escribe tu mensaje" aria-label="Mensaje para el grabado" style="font-family:${f.css};font-style:${f.estilo};font-weight:${f.peso}">
+    <div class="est-info"><small id="eCuenta">${(sel.grabado || '').length} de ${p.grabado.max} caracteres</small><small>Precio: <b id="ePrecio">${fmt(precioJ(p, sel))}</b></small></div>
+    <div class="est-letras" role="radiogroup" aria-label="Tipo de letra">${FUENTES.map(x => `<label class="opc"><input type="radio" name="eFuente" value="${x.id}" ${f.id === x.id ? 'checked' : ''}><span><b style="font-family:${x.css};font-style:${x.estilo};font-weight:${x.peso}">${esc(muestra)}</b><small title="Estilo ${x.nombre.toLowerCase()}">${nombreWord(x)}</small></span></label>`).join('')}</div>
+    <div class="est-tamanos" role="radiogroup" aria-label="Tamaño de la letra">${TAMANOS.map(t => `<label class="opc"><input type="radio" name="eTam" value="${t.id}" ${tamSel().id === t.id ? 'checked' : ''}><span><i style="font-size:${Math.round(13 * t.px)}px">A</i>${t.nombre}</span></label>`).join('')}</div>
+    ${p.modelo ? '' : `<div class="vista-grabado" id="vistaGrab" aria-hidden="true" style="font-family:${f.css};font-style:${f.estilo};font-weight:${f.peso};font-size:${Math.round(22 * f.prop * tamSel().px)}px">${esc(sel.grabado || 'Tu mensaje aquí')}</div>`}`;
+  e.querySelector('.est-letras').scrollLeft = scroll;
+  const tx = $('#eTexto');
+  tx.oninput = () => {
+    sel.grabado = tx.value;
+    $('#eCuenta').textContent = `${tx.value.length} de ${p.grabado.max} caracteres`;
+    const vg = $('#vistaGrab'); if (vg) vg.textContent = tx.value || 'Tu mensaje aquí';
+    e.querySelectorAll('.est-letras b').forEach(b => { b.textContent = tx.value.trim().slice(0, 12) || 'Amor eterno'; });
+    clearTimeout(tx._t); tx._t = setTimeout(aplicarGrabado3D, 120); total(p);
+    const bg = $('#c3Grab'); if (bg && bg.firstChild) bg.firstChild.textContent = '✎ ' + (tx.value.trim() ? `«${tx.value.trim()}»` : 'Escribir mi mensaje');
+  };
+  const cambio = (nombre, clave) => e.querySelectorAll(`input[name=${nombre}]`).forEach(r => r.onchange = () => {
+    sel[clave] = r.value; pintarEstudio(p); aplicarGrabado3D(); total(p);
+    const foco = e.querySelector(`input[name=${nombre}][value="${r.value}"]`); if (foco) foco.focus({ preventScroll: true });
+  });
+  cambio('eFuente', 'fuente'); cambio('eTam', 'tamFuente');
+  $('#estListo').onclick = () => salirEstudio(p);
+}
+/* Tipos de letra para el grabado (los más pedidos en joyería) */
+const FUENTES = [
+  // Fuentes de Word / Office. En computadores con Office se ven exactas; en celulares
+  // se muestra una fuente gratuita muy parecida (la segunda de cada lista).
+  { id: 'clasica', nombre: 'Clásica', word: 'Garamond', cursiva: true, css: "Garamond, 'EB Garamond', Georgia, serif", estilo: 'italic', peso: 400, prop: 1.05 },
+  { id: 'caligrafia', nombre: 'Caligrafía', word: 'Edwardian Script ITC', css: "'Edwardian Script ITC', 'Pinyon Script', cursive", estilo: 'normal', peso: 400, prop: 1.2 },
+  { id: 'cancilleresca', nombre: 'Cancilleresca', word: 'Monotype Corsiva', css: "'Monotype Corsiva', Quintessential, cursive", estilo: 'normal', peso: 400, prop: 1.05 },
+  { id: 'manuscrita', nombre: 'Manuscrita', word: 'Brush Script MT', css: "'Brush Script MT', Yellowtail, cursive", estilo: 'normal', peso: 400, prop: 1.05 },
+  { id: 'romana', nombre: 'Romana', word: 'Castellar', css: "Castellar, Cinzel, 'Times New Roman', serif", estilo: 'normal', peso: 400, prop: .8 },
+  { id: 'moderna', nombre: 'Moderna', word: 'Century Gothic', css: "'Century Gothic', Questrial, Arial, sans-serif", estilo: 'normal', peso: 400, prop: .85 },
+  { id: 'gotica', nombre: 'Gótica', word: 'Old English Text MT', css: "'Old English Text MT', UnifrakturMaguntia, 'Times New Roman', serif", estilo: 'normal', peso: 400, prop: 1 },
+  { id: 'maquina', nombre: 'Máquina de escribir', word: 'Courier New', css: "'Courier New', 'Courier Prime', monospace", estilo: 'normal', peso: 400, prop: .9 }
+];
+const TAMANOS = [{ id: 'p', nombre: 'Pequeña', escala: .44, px: .8 }, { id: 'm', nombre: 'Mediana', escala: .58, px: 1 }, { id: 'g', nombre: 'Grande', escala: .74, px: 1.22 }];
+const fuenteSel = () => FUENTES.find(f => f.id === sel.fuente) || FUENTES[0];
+const tamSel = () => TAMANOS.find(t => t.id === sel.tamFuente) || TAMANOS[1];
+let fuentesCargadas = null;
+function cargarFuentes() {
+  if (fuentesCargadas) return fuentesCargadas;
+  const l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=EB+Garamond:ital@1&family=Pinyon+Script&family=Quintessential&family=Yellowtail&family=Cinzel&family=Questrial&family=UnifrakturMaguntia&family=Courier+Prime&display=swap';
+  document.head.appendChild(l);
+  fuentesCargadas = new Promise(res => { l.onload = res; l.onerror = res; setTimeout(res, 4000); });
+  return fuentesCargadas;
+}
+const nombreWord = f => f.word + (f.cursiva ? ' (cursiva)' : '');
+const opcGrabado = () => { const f = fuenteSel(), t = tamSel(); return { fuente: `${f.estilo} ${f.peso} {t}px ${f.css}`, escala: Math.min(.86, t.escala * f.prop) }; };
+async function aplicarGrabado3D() {
+  if (!V3 || !V3.puedeGrabar()) return;
+  const f = fuenteSel();
+  try { await cargarFuentes(); await Promise.all(f.css.split(',').slice(0, 2).map(n => document.fonts.load(`${f.estilo} ${f.peso} 40px ${n.trim()}`))); } catch (e) { }
+  if (V3) V3.grabado(textoGrabado(), opcGrabado());
+}
+const textoGrabado = () => sel.grabadoOn ? (sel.grabado || '') : '';
+function cerrar3D() { if (V3) { V3.destruir(); V3 = null; } }
+const nombreOro = p => `Oro ${p.oro.quilates[sel.quilate ?? 0].nombre}${p.oro.colores.length ? ' ' + p.oro.colores[sel.color ?? 0].nombre.toLowerCase() : ''}`;
+// La piedra que se ve en el 3D: la de la variante elegida o la principal de la joya
+const nombrePiedra = p => p.variante || ((p.piedras || [])[0] || {}).tipo || '';
+function metalActual(p) { return p.oro ? nombreOro(p) : p.materiales && p.materiales.length ? p.materiales[sel.material || 0].nombre : p.metal; }
+function aviso3D(txt) {
+  const pista = $('#pista3d'); if (!pista) return;
+  pista.textContent = txt; pista.classList.remove('fuera'); clearTimeout(pista._t); pista._t = setTimeout(() => pista.classList.add('fuera'), 3500);
+}
+function pintarMedio(p, medios, i) {
+  const lupa = $('#lupa'), m = medios[i]; if (!lupa) return;
+  if (estudio && (!m || m.t !== '3d')) salirEstudio(p);
+  $('#ficha .galeria').classList.toggle('en-3d', !!m && m.t === '3d');
+  cerrar3D(); lupa.classList.remove('zoom', 'modo-foto', 'modo-video', 'modo-3d');
+  $$('#ficha [data-medio]').forEach(x => x.setAttribute('aria-current', +x.dataset.medio === i));
+  if (!m) { lupa.innerHTML = `<div class="sin" style="position:absolute;inset:0;display:grid;place-items:center;background:var(--superficie)">${escarabajo('#A98234').replace('<svg', '<svg style="width:30%;opacity:.35"')}</div>`; return; }
+  if (m.t === 'foto') {
+    fotoActual = (p.fotos || []).indexOf(m.u);
+    lupa.classList.add('modo-foto');
+    lupa.innerHTML = `<img id="fotoP" src="${esc(m.u)}" alt="${esc(p.nombre)}${m.prestada ? ' (foto de referencia en ' + esc(String(p.piedraDeFotos).toLowerCase()) + ')' : ''}">${m.prestada ? `<span class="foto-ref">Foto de referencia en ${esc(String(p.piedraDeFotos).toLowerCase())}${p.modelo ? ' · tu piedra se ve en 3D' : ''}</span>` : ''}<button type="button" class="btn-ampliar" id="btnAmpliar" aria-label="Ver la foto en pantalla completa"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M10.5 7.5v6M7.5 10.5h6"/></svg>Ampliar</button>`;
+    $('#btnAmpliar').onclick = ev => { ev.stopPropagation(); abrirVisor(p.fotos, fotoActual); };
+  } else if (m.t === 'video') {
+    lupa.classList.add('modo-video');
+    lupa.innerHTML = `<video src="${esc(m.u)}" ${m.poster ? `poster="${esc(m.poster)}"` : ''} autoplay muted loop playsinline controls aria-label="Video de ${esc(p.nombre)}"></video>`;
+  } else {
+    lupa.classList.add('modo-3d');
+    lupa.innerHTML = `<div class="v3d" id="v3d"><span class="cargando">Cargando la joya en 3D…</span></div>
+      <span class="pista-3d" id="pista3d">${conPuntero ? 'Arrastra para girarla. Usa la rueda para acercar.' : 'Desliza para girarla. Pellizca para acercar.'}</span>
+      <div class="ctrl3d"><button type="button" id="g3d">Pausar giro</button><button type="button" id="r3d">Centrar</button><button type="button" id="gr3d" hidden>Ver grabado</button></div>`;
+    const cont = $('#v3d');
+    visor3D(cont, m.u, metalActual(p), { piedras: m.piedras, fijas: m.fijas, piedra: nombrePiedra(p) }).then(v => {
+      if (!document.body.contains(cont)) { v.destruir(); return; }
+      V3 = v; const c = cont.querySelector('.cargando'); if (c) c.remove();
+      if (p.grabado && V3.puedeGrabar()) {
+        $('#gr3d').hidden = false;
+        $('#gr3d').onclick = () => {
+          if (!textoGrabado().trim()) { entrarEstudio(p); aviso3D('Escribe tu mensaje y lo verás grabado dentro del anillo.'); return; }
+          aplicarGrabado3D(); V3.mirarGrabado(); $('#g3d').textContent = 'Girar sola';
+        };
+        aplicarGrabado3D();
+        if (mirarPendiente) { mirarPendiente = false; V3.mirarGrabado(); $('#g3d').textContent = 'Girar sola'; }
+      }
+      $('#g3d').onclick = () => { V3.girar(!V3.girando()); $('#g3d').textContent = V3.girando() ? 'Pausar giro' : 'Girar sola'; };
+      $('#r3d').onclick = () => { V3.reiniciar(); $('#g3d').textContent = 'Pausar giro'; };
+      cont.addEventListener('giro-manual', () => { $('#pista3d').classList.add('fuera'); $('#g3d').textContent = 'Girar sola'; });
+    }).catch(e => { const c = cont.querySelector('.cargando'); if (c) c.textContent = e.message; });
+  }
+}
+// Las opciones ahora viven en el menú bajo la foto o el modelo 3D
+function controles(p) { pintarConfig(p); }
+function total(p, inicial) {
+  const precio = precioJ(p, sel), w = numeroWhats();
+  let enlace = '';
+  if (w) {
+    const l = ['Hola, me interesa esta joya del catálogo de Atelier & Co:', `*${nombreConPiedra(p)}*`];
+    if (p.talla) l.push(`${p.talla.etiqueta}: ${sel.talla === 'nose' ? 'no la sé, ayúdenme a medirla' : fTalla(sel.talla)}`);
+    if (p.oro) l.push(`Oro: ${p.oro.quilates[sel.quilate].nombre}` + (p.oro.colores.length ? ` · Color: ${p.oro.colores[sel.color].nombre}` : ''));
+    else if (p.materiales && p.materiales.length) l.push(`Metal: ${p.materiales[sel.material].nombre}`);
+    if (p.calidades && p.calidades.length > 1) l.push(`Calidad de las piedras: ${p.calidades[sel.calidad].nombre}`);
+    if (p.grabado && sel.grabadoOn && (sel.grabado || '').trim()) l.push(`Grabado: "${sel.grabado.trim()}"`, `Tipo de letra: ${nombreWord(fuenteSel())} · Tamaño: ${tamSel().nombre}`);
+    const ad = (p.adicionales || []).filter((a, i) => sel.adicionales.includes(i)).map(a => a.nombre);
+    if (ad.length) l.push(`Adicionales: ${ad.join(', ')}`);
+    l.push(`Precio: ${fmt(precio).replace('\u00a0', ' ')}`, location.href, ...lineasDatos(perfil()));
+    enlace = `https://wa.me/${w}?text=${encodeURIComponent(l.join('\n'))}`;
+  }
+  const t = $('#total');
+  if (!t.firstChild || inicial) t.innerHTML = `<div class="t-precio"><span>Tu joya</span><b id="precio" aria-live="polite">${fmt(precio)}</b></div>${enlace ? `<a class="btn-oro" id="pedir" href="${enlace}" target="_blank" rel="noopener">Pedir por WhatsApp</a>` : ''}`;
+  else if ($('#pedir')) $('#pedir').href = enlace;
+  const p2 = $('#pedir2'); if (p2 && enlace) p2.href = enlace;
+  const ep = $('#ePrecio'); if (ep) ep.textContent = fmt(precio);
+  const cp = $('#c3Precio'); if (cp) cp.textContent = fmt(precio);
+  selGuardada[grupoDe(p)] = { ...sel };
+  animarPrecio(precioMostrado || precio, precio);
+  precioMostrado = precio;
+}
+function animarPrecio(de, a) {
+  const el = $('#precio'); if (!el) return;
+  if (sinMovimiento || de === a) { el.textContent = fmt(a); return; }
+  const t0 = performance.now();
+  const paso = t => { const k = Math.min(1, (t - t0) / 500); el.textContent = fmt(de + (a - de) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(paso); };
+  requestAnimationFrame(paso);
+}
+
+
+/* ---------- Visor 3D de modelos STL (three.js se carga solo cuando se necesita) ---------- */
+const THREE_BASE = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
+let cargaThree = null;
+function cargarThree() {
+  if (window.THREE && THREE.STLLoader && THREE.OrbitControls && THREE.BufferGeometryUtils) return Promise.resolve();
+  if (cargaThree) return cargaThree;
+  const s = src => new Promise((res, rej) => { const e = document.createElement('script'); e.src = THREE_BASE + src; e.onload = res; e.onerror = () => rej(new Error('No se pudo cargar el visor 3D. Revisa tu conexión.')); document.head.appendChild(e); });
+  cargaThree = s('build/three.min.js').then(() => Promise.all([s('examples/js/loaders/STLLoader.js'), s('examples/js/controls/OrbitControls.js'), s('examples/js/utils/BufferGeometryUtils.js')]));
+  cargaThree.catch(() => { cargaThree = null; });
+  return cargaThree;
+}
+const colorMetal = n => { n = String(n || '').toLowerCase(); return /blanco|plata|platino|acero|rodio/.test(n) ? 0xE4E6E8 : /rosa/.test(n) ? 0xE6A78B : 0xE0AE47; };
+// Aleaciones: color real del metal pulido (sRGB), brillo y rugosidad
+function aleacion(n) {
+  n = String(n || '').toLowerCase();
+  if (/plata/.test(n)) return { color: 0xEDEFF1, rugosidad: 0.16, brillo: 1.25 };
+  if (/blanco|platino|rodio/.test(n)) return { color: 0xE9ECEF, rugosidad: 0.1, brillo: 1.35 };   // oro blanco con baño de rodio
+  if (/rosa/.test(n)) return { color: 0xF0B39A, rugosidad: 0.12, brillo: 1.25 };
+  if (/14k|10k/.test(n)) return { color: 0xF2CF84, rugosidad: 0.13, brillo: 1.2 };             // un poco más pálido que el 18k
+  return { color: 0xF5C66A, rugosidad: 0.12, brillo: 1.25 };                                      // oro amarillo 18k
+}
+// Propiedades ópticas de cada piedra: color, índice de refracción y "fuego"
+function gema(n) {
+  n = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const G = (color, ior, extra = {}) => ({ color, ior, ...extra });
+  if (/esmeralda/.test(n)) return G(0x0D9A58, 1.57, { profundo: 0x03482A, brillo: 1.4 });
+  if (/rubi/.test(n)) return G(0xD0123A, 1.77, { profundo: 0x5C0414, brillo: 1.5 });
+  if (/zafiro/.test(n)) return G(0x2150D6, 1.77, { profundo: 0x0A1C66, brillo: 1.5 });
+  if (/amatista/.test(n)) return G(0x9A4FD8, 1.54, { profundo: 0x3D1466, brillo: 1.4 });
+  if (/espinela/.test(n)) return G(0xE8487E, 1.72, { profundo: 0x6A0F30, brillo: 1.5 });
+  if (/topacio/.test(n)) return G(0x62BDEB, 1.62, { profundo: 0x1C5B80, brillo: 1.5 });
+  if (/citrino/.test(n)) return G(0xF0A626, 1.55, { profundo: 0x7A4608, brillo: 1.4 });
+  if (/aguamarina/.test(n)) return G(0x86D8E6, 1.58, { profundo: 0x2E7A88, brillo: 1.5 });
+  if (/granate/.test(n)) return G(0x8C1022, 1.76, { profundo: 0x33040B, brillo: 1.4 });
+  if (/circon|zirc|moissan/.test(n)) return G(0xF7FAFF, 2.15, { blanca: true, fuego: 0.75, brillo: 2.6 });
+  return G(0xF7FAFF, 2.42, { blanca: true, fuego: 0.5, brillo: 3 });                                   // diamante (natural o de laboratorio)
+}
+// Estudio de fotografía de joyería: fondo oscuro con paneles de luz que dan reflejos nítidos al metal y destellos a las piedras
+function escenaEstudio(oscuro) {
+  const s = new THREE.Scene();
+  // cúpula con degradado: claro arriba, oscuro abajo (da contraste a las facetas y volumen al metal)
+  const cup = new THREE.SphereGeometry(16, 48, 24), col = [], p = cup.attributes.position;
+  // para las piedras (oscuro) la cúpula es casi negra: así las facetas alternan zonas oscuras y destellos, como en una gema real
+  const arriba = new THREE.Color(oscuro ? 0x2a2622 : 0x9a948a), medio = new THREE.Color(oscuro ? 0x0b0a08 : 0x2c2822), abajo = new THREE.Color(oscuro ? 0x000000 : 0x050505);
+  for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 16, c = y > 0 ? medio.clone().lerp(arriba, Math.pow(y, 0.8)) : medio.clone().lerp(abajo, Math.min(1, -y * 1.6)); col.push(c.r, c.g, c.b); }
+  cup.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  s.add(new THREE.Mesh(cup, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const panel = (w, h, intensidad, pos, color = 0xffffff) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensidad), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); s.add(m);
+  };
+  panel(10, 3, 9, [0, 9, 3]);              // caja de luz superior
+  panel(2.4, 11, 6, [-10, 1, 3]);          // tira izquierda
+  panel(2.4, 11, 4.5, [10, 0, -3]);        // tira derecha
+  panel(8, 1.6, 3, [0, -7, 7]);            // relleno inferior
+  panel(4, 4, 2.5, [5, 4, -10], 0xffe7c4); // luz cálida trasera
+  panel(1.2, 1.2, 14, [-4, 6, 8]);         // punto brillante para los destellos
+  // muchas luces pequeñas alrededor: cada faceta refleja una distinta y la piedra "centellea"
+  for (let i = 0; i < (oscuro ? 40 : 26); i++) {
+    const n = oscuro ? 40 : 26, t = i * 2.399963, y = 1 - (i + 0.5) / n * 2, rr = Math.sqrt(1 - y * y);
+    panel(oscuro ? 0.7 : 0.9, oscuro ? 0.7 : 0.9, (oscuro ? 16 : 10) + (i % 3) * 6, [Math.cos(t) * rr * 13, y * 13, Math.sin(t) * rr * 13], i % 4 === 0 ? 0xfff0d8 : 0xffffff);
+  }
+  if (oscuro) for (let i = 0; i < 14; i++) {   // destellos puntuales para las piedras
+    const t = i * 2.399963 + 1.1, y = 0.9 - (i + 0.5) / 14 * 1.6, rr = Math.sqrt(1 - y * y);
+    panel(0.45, 0.45, 26 + (i % 2) * 10, [Math.cos(t) * rr * 12, y * 12, Math.sin(t) * rr * 12]);
+  }
+  return s;
+}
+// Encuentra el aro del anillo dentro del modelo: eje, centro, radio interior y ancho de la banda
+function medirAro(geo) {
+  const p = geo.attributes.position, n = p.count, paso = Math.max(1, Math.floor(n / 20000));
+  const bb = geo.boundingBox, ext = [bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z];
+  const eje = ext.indexOf(Math.min(...ext)), arriba = eje === 2 ? 1 : 2, lado = [0, 1, 2].find(k => k !== eje && k !== arriba);
+  const c = (i, k) => k === 0 ? p.getX(i) : k === 1 ? p.getY(i) : p.getZ(i);
+  const umin = bb.min.getComponent(lado), umax = bb.max.getComponent(lado), vmin = bb.min.getComponent(arriba);
+  const Ro = (umax - umin) / 2, cu = (umin + umax) / 2, cv = vmin + Ro;
+  let Ri = Infinity, amin = Infinity, amax = -Infinity;
+  for (let i = 0; i < n; i += paso) {
+    const du = c(i, lado) - cu, dv = c(i, arriba) - cv, d = Math.hypot(du, dv);
+    if (d < Ri) Ri = d;
+    if (dv < -Ro * 0.75) { const a = c(i, eje); if (a < amin) amin = a; if (a > amax) amax = a; }
+  }
+  if (!(Ri > Ro * 0.45) || !(amax > amin)) return null;   // no parece un anillo
+  return { eje, arriba, lado, cu, cv, ca: (amin + amax) / 2, Ri, Ro, ancho: amax - amin };
+}
+// Color de cada piedra en 3D
+function colorPiedra3D(n) {
+  n = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return /esmeralda/.test(n) ? 0x0B8F52 : /rubi/.test(n) ? 0xC0102F : /zafiro/.test(n) ? 0x1E47C8 : /amatista/.test(n) ? 0x8A3FC7
+    : /espinela/.test(n) ? 0xE0457B : /topacio/.test(n) ? 0x5FB7E8 : /citrino/.test(n) ? 0xE8A21E : /aguamarina/.test(n) ? 0x7FD3E0 : /granate/.test(n) ? 0x7A0F1E : 0xF2F6FF;
+}
+// Autovalores de una matriz simétrica 3×3 (de mayor a menor)
+function autovalores(a, b, c, d, e, f) {
+  const p1 = d * d + e * e + f * f;
+  if (p1 < 1e-18) return [a, b, c].sort((x, y) => y - x);
+  const q = (a + b + c) / 3, p2 = (a - q) ** 2 + (b - q) ** 2 + (c - q) ** 2 + 2 * p1, p = Math.sqrt(p2 / 6);
+  const A = (a - q) / p, B = (b - q) / p, C = (c - q) / p, D = d / p, E = e / p, Fq = f / p;
+  const r = (A * (B * C - E * E) - D * (D * C - E * Fq) + Fq * (D * E - B * Fq)) / 2;
+  const phi = r <= -1 ? Math.PI / 3 : r >= 1 ? 0 : Math.acos(r) / 3;
+  const e1 = q + 2 * p * Math.cos(phi), e3 = q + 2 * p * Math.cos(phi + 2 * Math.PI / 3);
+  return [e1, 3 * q - e1 - e3, e3];
+}
+// Separa el modelo en cuerpos sueltos y reconoce las piedras: son piezas compactas que no son el aro ni garras alargadas
+function separarPiedras(geo) {
+  const pos = geo.attributes.position, nT = pos.count / 3;
+  if (nT > 700000) return null;
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox, diag = bb.max.distanceTo(bb.min) || 1, q = diag * 2e-5;
+  const ids = new Map(), padre = [];
+  const raiz = a => { while (padre[a] !== a) { padre[a] = padre[padre[a]]; a = padre[a]; } return a; };
+  const A = pos.array;
+  const vid = i => { const k = Math.round(A[3 * i] / q) + ',' + Math.round(A[3 * i + 1] / q) + ',' + Math.round(A[3 * i + 2] / q); let id = ids.get(k); if (id === undefined) { id = padre.length; ids.set(k, id); padre.push(id); } return id; };
+  const triV = new Int32Array(nT * 3);
+  for (let t = 0; t < nT; t++) {
+    const a = vid(3 * t), b = vid(3 * t + 1), c = vid(3 * t + 2); triV[3 * t] = a; triV[3 * t + 1] = b; triV[3 * t + 2] = c;
+    const ra = raiz(a), rb = raiz(b), rc = raiz(c); padre[rb] = ra; padre[raiz(c)] = ra; void rc;
+  }
+  const comp = new Map();
+  for (let t = 0; t < nT; t++) {
+    const r = raiz(triV[3 * t]); let c = comp.get(r);
+    if (!c) { c = { tris: [], min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] }; comp.set(r, c); }
+    c.tris.push(t);
+    for (let k = 0; k < 3; k++) { const i = 3 * t + k; for (let e = 0; e < 3; e++) { const v = A[3 * i + e]; if (v < c.min[e]) c.min[e] = v; if (v > c.max[e]) c.max[e] = v; } }
+  }
+  if (comp.size < 2) return null;
+  const esPiedra = c => {
+    const ext = [0, 1, 2].map(e => c.max[e] - c.min[e]), d = Math.hypot(...ext);
+    if (d > diag * 0.45) return false;                                   // el aro o una pieza grande
+    if (c.tris.length < 8) return false;
+    // forma de la pieza por componentes principales: las garras y rieles son alargados aunque estén inclinados
+    let n = 0, mx = 0, my = 0, mz = 0; const paso = Math.max(1, Math.floor(c.tris.length / 1500)), P = [];
+    for (let k = 0; k < c.tris.length; k += paso) for (let v = 0; v < 3; v++) { const i = 3 * c.tris[k] + v; P.push(pos.getX(i), pos.getY(i), pos.getZ(i)); }
+    n = P.length / 3; for (let k = 0; k < n; k++) { mx += P[3 * k]; my += P[3 * k + 1]; mz += P[3 * k + 2]; } mx /= n; my /= n; mz /= n;
+    let xx = 0, yy = 0, zz = 0, xy = 0, yz = 0, xz = 0;
+    for (let k = 0; k < n; k++) { const x = P[3 * k] - mx, y = P[3 * k + 1] - my, z = P[3 * k + 2] - mz; xx += x * x; yy += y * y; zz += z * z; xy += x * y; yz += y * z; xz += x * z; }
+    const [e1, e2, e3] = autovalores(xx / n, yy / n, zz / n, xy / n, yz / n, xz / n);
+    // piedra: ancha en sus dos medidas mayores (redonda, oval, pera…); garra o riel: alargada como una línea; lámina: muy plana
+    return Math.sqrt(e1 / Math.max(e2, 1e-12)) < 2.6 && Math.sqrt(e1 / Math.max(e3, 1e-12)) < 8;
+  };
+  const piedra = [], metal = [];
+  comp.forEach(c => { const destino = esPiedra(c) ? piedra : metal; for (let k = 0; k < c.tris.length; k++) destino.push(c.tris[k]); });   // sin '...': en modelos grandes desbordaría la pila
+  if (!piedra.length || !metal.length) return null;
+  const hacer = lista => { const arr = new Float32Array(lista.length * 9); for (let k = 0; k < lista.length; k++) arr.set(A.subarray(9 * lista[k], 9 * lista[k] + 9), 9 * k); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3)); return g; };
+  return { metal: hacer(metal), piedras: hacer(piedra) };
+}
+async function visor3D(cont, url, metal, opc = {}) {
+  await cargarThree();
+  const cargarSTL = u => new Promise((res, rej) => new THREE.STLLoader().load(u, res, undefined, () => rej(new Error('No se pudo abrir el modelo 3D.'))));
+  let geo = await cargarSTL(url), geoP = null, geoF = null;
+  if (opc.piedras) { try { geoP = await cargarSTL(opc.piedras); } catch (e) { geoP = null; } }
+  // diamantes fijos: piedras que siempre son diamante, sin importar la variante que escoja el cliente
+  if (opc.fijas) { try { geoF = await cargarSTL(opc.fijas); } catch (e) { geoF = null; } }
+  if (!geoP && opc.separar !== false) { let sp = null; try { sp = separarPiedras(geo); } catch (e) { sp = null; } if (sp) { geo.dispose(); geo = sp.metal; geoP = sp.piedras; } }
+  const ancho = () => cont.clientWidth || 400, alto = () => cont.clientHeight || 400;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setSize(ancho(), alto(), false);
+  renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3;
+  renderer.domElement.style.cssText = 'width:100%;height:100%;display:block;touch-action:none';
+  cont.appendChild(renderer.domElement);
+  const escena = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(renderer);
+  escena.environment = pm.fromScene(escenaEstudio(), 0.02).texture;
+  escena.add(new THREE.HemisphereLight(0xfff6e8, 0x2a2118, 0.25));
+  const luz = new THREE.DirectionalLight(0xfff1d6, 0.9); luz.position.set(3, 5, 4); escena.add(luz);
+  const luz2 = new THREE.DirectionalLight(0xdfe8ff, 0.5); luz2.position.set(-4, 2, -3); escena.add(luz2);
+  // centrar metal y piedras con el mismo desplazamiento
+  geo.computeBoundingBox(); const caja = geo.boundingBox.clone();
+  if (geoP) { geoP.computeBoundingBox(); caja.union(geoP.boundingBox); }
+  if (geoF) { geoF.computeBoundingBox(); caja.union(geoF.boundingBox); }
+  const centro = caja.getCenter(new THREE.Vector3());
+  geo.translate(-centro.x, -centro.y, -centro.z);
+  // metal liso: normales suaves en las curvas y aristas nítidas (sin el efecto de "facetas" del STL)
+  try { const g2 = THREE.BufferGeometryUtils.toCreasedNormals(geo, Math.PI / 5); geo.dispose(); geo = g2; } catch (e) { geo.computeVertexNormals(); }
+  geo.computeBoundingBox();
+  const mat = new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.12, clearcoat: 0.35, clearcoatRoughness: 0.08 });
+  function pintarMetal(nombre) { const a = aleacion(nombre); mat.color.setHex(a.color).convertSRGBToLinear(); mat.roughness = a.rugosidad; mat.envMapIntensity = a.brillo; }
+  pintarMetal(metal);
+  const malla = new THREE.Mesh(geo, mat); malla.rotation.x = -Math.PI / 2; escena.add(malla);
+  // Piedras en dos capas: la interior (facetas del pabellón vistas a través de la piedra) y la exterior, semitransparente,
+  // con los destellos de la superficie. Usan un entorno oscuro de alto contraste, como una gema fotografiada en estudio.
+  let matP = null, matP2 = null, envPiedras = null;
+  if (geoP) {
+    geoP.translate(-centro.x, -centro.y, -centro.z); geoP.computeVertexNormals();
+    envPiedras = pm.fromScene(escenaEstudio(true), 0.02).texture;
+    matP = new THREE.MeshPhysicalMaterial({ side: THREE.BackSide, metalness: 1, roughness: 0.02, flatShading: true, envMap: envPiedras, iridescenceIOR: 1.9, iridescenceThicknessRange: [120, 480] });
+    matP2 = new THREE.MeshPhysicalMaterial({ side: THREE.FrontSide, transparent: true, metalness: 1, roughness: 0, flatShading: true, envMap: envPiedras, depthWrite: false, iridescenceIOR: 1.9, iridescenceThicknessRange: [120, 480] });
+    pintarPiedra(opc.piedra);
+    const interior = new THREE.Mesh(geoP, matP), exterior = new THREE.Mesh(geoP, matP2); exterior.renderOrder = 2;
+    malla.add(interior, exterior);
+  }
+  let matF = null, matF2 = null;
+  if (geoF) {
+    geoF.translate(-centro.x, -centro.y, -centro.z); geoF.computeVertexNormals();
+    envPiedras = envPiedras || pm.fromScene(escenaEstudio(true), 0.02).texture;
+    matF = new THREE.MeshPhysicalMaterial({ side: THREE.BackSide, metalness: 1, roughness: 0.02, flatShading: true, envMap: envPiedras, iridescenceIOR: 1.9, iridescenceThicknessRange: [120, 480] });
+    matF2 = new THREE.MeshPhysicalMaterial({ side: THREE.FrontSide, transparent: true, metalness: 1, roughness: 0, flatShading: true, envMap: envPiedras, depthWrite: false, iridescenceIOR: 1.9, iridescenceThicknessRange: [120, 480] });
+    ponerGema(matF, matF2, 'Diamante');                     // no cambia con colorPiedra()
+    const fi = new THREE.Mesh(geoF, matF), fe = new THREE.Mesh(geoF, matF2); fe.renderOrder = 2;
+    malla.add(fi, fe);
+  }
+  function pintarPiedra(n) { if (matP) ponerGema(matP, matP2, n); }
+  function ponerGema(matP, matP2, n) {
+    const g = gema(n);
+    if (g.blanca) {
+      // diamante y circón: facetas oscuras y claras que alternan, con un toque de "fuego" de colores
+      matP.color.setHex(0xDDE4EA).convertSRGBToLinear(); matP.emissive.setHex(0x0C0F12); matP.envMapIntensity = 4.4; matP.iridescence = g.fuego * 0.7;
+      matP2.color.setHex(0xF4F7FA).convertSRGBToLinear(); matP2.emissive.setHex(0x0A0C0E); matP2.opacity = 0.8; matP2.envMapIntensity = 4.6; matP2.roughness = 0; matP2.iridescence = g.fuego * 0.45;
+    } else {
+      // piedras de color: cuerpo profundo y saturado, con reflejos teñidos y destellos blancos
+      matP.color.setHex(g.color).convertSRGBToLinear(); matP.emissive.setHex(g.profundo).convertSRGBToLinear().multiplyScalar(0.7); matP.envMapIntensity = 3.4; matP.iridescence = 0;
+      matP2.color.setHex(g.color).convertSRGBToLinear(); matP2.emissive.setHex(g.profundo).convertSRGBToLinear().multiplyScalar(0.4); matP2.opacity = 0.84; matP2.envMapIntensity = 3.6; matP2.roughness = 0; matP2.iridescence = 0;
+    }
+    matP.needsUpdate = true; matP2.needsUpdate = true;
+  }
+  const r = caja.getBoundingSphere(new THREE.Sphere()).radius || 1;
+  const camara = new THREE.PerspectiveCamera(32, ancho() / alto(), r / 100, r * 100);
+  const inicio = () => { camara.position.set(r * 2.2, r * 1.4, r * 3.0); camara.lookAt(0, 0, 0); };
+  inicio();
+  const ctr = new THREE.OrbitControls(camara, renderer.domElement);
+  ctr.enableDamping = true; ctr.dampingFactor = 0.08; ctr.autoRotate = true; ctr.autoRotateSpeed = 1.8; ctr.enablePan = false;
+  if (opc.zoom === false) ctr.enableZoom = false;                       // en el banner la rueda debe seguir bajando la página
+  if (opc.tactil) renderer.domElement.style.touchAction = 'pan-y';     // y en el celular el dedo puede seguir deslizando hacia abajo
+  ctr.minDistance = r * 0.9; ctr.maxDistance = r * 7;
+  ctr.addEventListener('start', () => { ctr.autoRotate = false; anim = null; cont.dispatchEvent(new CustomEvent('giro-manual')); });
+  // ----- Grabado láser dentro del aro -----
+  const aro = medirAro(geo);
+  let grabadoMalla = null, anim = null;
+  const vec = k => new THREE.Vector3(k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0);
+  const FUENTE_3D = "italic 500 {t}px 'Bodoni Moda', Didot, 'Times New Roman', serif";
+  const fuenteCanvas = (f, t) => (f || FUENTE_3D).replace('{t}', t);
+  function textura(texto, alturaMundo, arco, fuente) {
+    const H = 160, W = Math.min(4096, Math.max(256, Math.round(H * arco / alturaMundo)));
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+    let tam = H * 0.62; x.font = fuenteCanvas(fuente, tam);
+    while (x.measureText(texto).width > W * 0.94 && tam > 20) { tam -= 4; x.font = fuenteCanvas(fuente, tam); }
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = 'rgba(255,240,200,.55)'; x.fillText(texto, W / 2 + 2, H / 2 + 2);   // brillo del borde tallado
+    x.fillStyle = 'rgba(58,36,6,.95)'; x.fillText(texto, W / 2, H / 2);                 // fondo del surco
+    const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+    t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, -1);  // se lee bien desde adentro del aro
+    return t;
+  }
+  function grabar(texto, opc = {}) {
+    if (grabadoMalla) { malla.remove(grabadoMalla); grabadoMalla.geometry.dispose(); grabadoMalla.material.map.dispose(); grabadoMalla.material.dispose(); grabadoMalla = null; }
+    texto = String(texto || '').trim(); if (!texto || !aro) return !!aro;
+    const alturaT = aro.ancho * (opc.escala || 0.58);
+    const med = document.createElement('canvas').getContext('2d'); med.font = fuenteCanvas(opc.fuente, 100);
+    const proporcion = med.measureText(texto).width / 100 * 0.62;                       // ancho del texto frente a su altura
+    const arco = Math.max(alturaT * 2, alturaT * proporcion + alturaT * 0.9);
+    const span = Math.min(Math.PI * 1.15, arco / aro.Ri);
+    const g = new THREE.CylinderGeometry(aro.Ri * 0.992, aro.Ri * 0.992, alturaT, 96, 1, true, -span / 2, span);
+    const m = new THREE.MeshStandardMaterial({ map: textura(texto, alturaT, span * aro.Ri, opc.fuente), transparent: true, metalness: 0.7, roughness: 0.45, side: THREE.BackSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    grabadoMalla = new THREE.Mesh(g, m);
+    const Y = vec(aro.eje), Z = vec(aro.arriba).multiplyScalar(-1), X = new THREE.Vector3().crossVectors(Y, Z);
+    grabadoMalla.matrix.makeBasis(X, Y, Z);
+    const pos = new THREE.Vector3(); pos.setComponent(aro.eje, aro.ca); pos.setComponent(aro.lado, aro.cu); pos.setComponent(aro.arriba, aro.cv);
+    grabadoMalla.matrix.setPosition(pos); grabadoMalla.matrixAutoUpdate = false;
+    malla.add(grabadoMalla);
+    return true;
+  }
+  function mirarGrabado() {
+    if (!aro) return;
+    malla.updateMatrixWorld();
+    const centro = new THREE.Vector3(); centro.setComponent(aro.eje, aro.ca); centro.setComponent(aro.lado, aro.cu); centro.setComponent(aro.arriba, aro.cv);
+    const c = malla.localToWorld(centro.clone());
+    const dirEje = vec(aro.eje).applyQuaternion(malla.quaternion), dirArriba = vec(aro.arriba).applyQuaternion(malla.quaternion);
+    const destino = c.clone().add(dirEje.multiplyScalar(aro.Ri * 3.1)).add(dirArriba.multiplyScalar(aro.Ri * 1.35));
+    ctr.autoRotate = false;
+    anim = { desde: camara.position.clone(), hasta: destino, tDesde: ctr.target.clone(), tHasta: c.clone().add(vec(aro.arriba).applyQuaternion(malla.quaternion).multiplyScalar(-aro.Ri * 0.45)), t0: performance.now() };
+  }
+  let vivo = true, pausado = false;
+  const bucle = () => {
+    if (!vivo) return;
+    if (pausado) { requestAnimationFrame(bucle); return; }
+    if (anim) {
+      const k = Math.min(1, (performance.now() - anim.t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      camara.position.lerpVectors(anim.desde, anim.hasta, e); ctr.target.lerpVectors(anim.tDesde, anim.tHasta, e);
+      if (k === 1) anim = null;
+    }
+    ctr.update(); renderer.render(escena, camara); requestAnimationFrame(bucle);
+  };
+  bucle();
+  const ro = new ResizeObserver(() => { const W = ancho(), H = alto(); if (!W || !H) return; renderer.setSize(W, H, false); camara.aspect = W / H; camara.updateProjectionMatrix(); });
+  ro.observe(cont);
+  return {
+    color: m => pintarMetal(m),
+    colorPiedra: n => pintarPiedra(n),
+    tienePiedras: () => !!matP,
+    tieneFijas: () => !!matF,
+    girar: si => { ctr.autoRotate = si; },
+    girando: () => ctr.autoRotate,
+    pausar: si => { pausado = !!si; },
+    reiniciar: () => { anim = null; inicio(); ctr.target.set(0, 0, 0); ctr.autoRotate = true; ctr.update(); },
+    puedeGrabar: () => !!aro,
+    grabado: (texto, opc) => grabar(texto, opc),
+    mirarGrabado,
+    destruir: () => { vivo = false; grabar(''); ro.disconnect(); ctr.dispose(); pm.dispose(); renderer.dispose(); geo.dispose(); mat.dispose(); if (geoP) geoP.dispose(); if (matP) matP.dispose(); if (matP2) matP2.dispose(); if (geoF) geoF.dispose(); if (matF) matF.dispose(); if (matF2) matF2.dispose(); if (envPiedras) envPiedras.dispose(); renderer.domElement.remove(); }
+  };
+}
+
+/* ---------- Visor de fotos a pantalla completa ---------- */
+const V = { fotos: [], i: 0, s: 1, x: 0, y: 0, punteros: new Map(), d0: 0, s0: 1, ultimoToque: 0, movido: false, origen: null };
+function abrirVisor(fotos, i) {
+  if (!fotos || !fotos.length) return;
+  V.fotos = fotos; V.i = i || 0;
+  let v = $('#visor');
+  if (!v) {
+    v = document.createElement('div'); v.id = 'visor'; v.className = 'visor';
+    v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true'); v.setAttribute('aria-label', 'Foto ampliada');
+    v.innerHTML = `<div class="lienzo" id="lienzo"><img id="visorImg" alt="" draggable="false"></div>
+      <button class="cerrar-v" id="cerrarV" aria-label="Cerrar">×</button>
+      <button class="nav-v izq" id="antV" aria-label="Foto anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="nav-v der" id="sigV" aria-label="Foto siguiente"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <p class="pie-visor"><b id="contV"></b>${conPuntero ? 'Rueda o doble clic para acercar. Arrastra para mover.' : 'Pellizca o toca dos veces para acercar. Desliza para cambiar.'}</p>`;
+    document.body.appendChild(v);
+    $('#cerrarV').onclick = cerrarVisor;
+    $('#antV').onclick = () => irVisor(-1);
+    $('#sigV').onclick = () => irVisor(1);
+    montarGestos($('#lienzo'));
+  }
+  v.hidden = false; mostrarVisor(); $('#cerrarV').focus();
+}
+function cerrarVisor() { const v = $('#visor'); if (v) v.hidden = true; const b = $('#btnAmpliar'); if (b) b.focus(); }
+function irVisor(d) { V.i = (V.i + d + V.fotos.length) % V.fotos.length; mostrarVisor(); }
+function mostrarVisor() {
+  V.s = 1; V.x = 0; V.y = 0; aplicarVisor();
+  $('#visorImg').src = V.fotos[V.i];
+  $('#contV').textContent = V.fotos.length > 1 ? `${V.i + 1} / ${V.fotos.length}` : '';
+  $('#antV').hidden = $('#sigV').hidden = V.fotos.length < 2;
+}
+function aplicarVisor() {
+  const img = $('#visorImg'); if (!img) return;
+  if (V.s <= 1.01) { V.s = 1; V.x = 0; V.y = 0; }
+  else { const w = img.offsetWidth, h = img.offsetHeight; const mx = (w * V.s - w) / 2 + 40, my = (h * V.s - h) / 2 + 40; V.x = Math.max(-mx, Math.min(mx, V.x)); V.y = Math.max(-my, Math.min(my, V.y)); }
+  img.style.transform = `translate(${V.x}px,${V.y}px) scale(${V.s})`;
+  $('#lienzo').classList.toggle('acercado', V.s > 1);
+}
+function zoomEn(px, py, nueva) {
+  const img = $('#visorImg'), r = img.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, k = nueva / V.s;
+  V.x += (px - cx) * (1 - k); V.y += (py - cy) * (1 - k); V.s = nueva; aplicarVisor();
+}
+function montarGestos(l) {
+  l.addEventListener('pointerdown', e => {
+    l.setPointerCapture(e.pointerId); V.punteros.set(e.pointerId, { x: e.clientX, y: e.clientY }); V.movido = false;
+    V.origen = { x: e.clientX, y: e.clientY, tx: V.x, ty: V.y };
+    if (V.punteros.size === 2) { const [a, b] = [...V.punteros.values()]; V.d0 = Math.hypot(a.x - b.x, a.y - b.y); V.s0 = V.s; }
+    l.classList.add('arrastrando');
+  });
+  l.addEventListener('pointermove', e => {
+    if (!V.punteros.has(e.pointerId)) return;
+    V.punteros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (V.punteros.size === 2) {
+      const [a, b] = [...V.punteros.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      V.s = Math.max(1, Math.min(4, V.s0 * d / V.d0)); V.movido = true; aplicarVisor(); return;
+    }
+    const dx = e.clientX - V.origen.x, dy = e.clientY - V.origen.y;
+    if (Math.abs(dx) + Math.abs(dy) > 6) V.movido = true;
+    if (V.s > 1) { V.x = V.origen.tx + dx; V.y = V.origen.ty + dy; aplicarVisor(); }
+  });
+  const fin = e => {
+    if (!V.punteros.has(e.pointerId)) return;
+    const dx = e.clientX - V.origen.x;
+    V.punteros.delete(e.pointerId); l.classList.remove('arrastrando');
+    if (V.punteros.size) return;
+    if (V.s === 1 && Math.abs(dx) > 60 && V.fotos.length > 1) { irVisor(dx < 0 ? 1 : -1); return; }
+    if (!V.movido) {
+      const ahora = Date.now();
+      if (ahora - V.ultimoToque < 320) { zoomEn(e.clientX, e.clientY, V.s > 1 ? 1 : 2.5); V.ultimoToque = 0; }
+      else { V.ultimoToque = ahora; const fuera = document.elementFromPoint(e.clientX, e.clientY) !== $('#visorImg'); if (fuera && V.s === 1) setTimeout(() => { if (V.ultimoToque === ahora) cerrarVisor(); }, 330); }
+    }
+  };
+  l.addEventListener('pointerup', fin); l.addEventListener('pointercancel', fin);
+  l.addEventListener('wheel', e => { e.preventDefault(); zoomEn(e.clientX, e.clientY, Math.max(1, Math.min(4, V.s * (e.deltaY < 0 ? 1.2 : 1 / 1.2)))); }, { passive: false });
+}
+addEventListener('keydown', e => {
+  const v = $('#visor'); if (!v || v.hidden) return;
+  if (e.key === 'Escape') { e.stopImmediatePropagation(); cerrarVisor(); }
+  if (e.key === 'ArrowRight') irVisor(1);
+  if (e.key === 'ArrowLeft') irVisor(-1);
+}, true);
+
+cargar();
+</script>
+</body>
+</html>
