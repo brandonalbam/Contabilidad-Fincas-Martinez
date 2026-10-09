@@ -377,6 +377,20 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .cfin-body{border-top:1px solid var(--line);background:var(--surface2)}
 .cfin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px}
 .cfin-n{font-size:12px;color:var(--muted)}
+.ctit-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ctit-head{display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;transition:.12s}
+.ctit-head:hover{background:var(--surface3)}
+.ctit-ic{width:30px;height:30px;border-radius:8px;background:var(--green-soft);color:var(--green2);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ctit-ic svg{width:16px;height:16px}
+.ctit-nm{flex:1;min-width:0;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+@media(max-width:640px){.ctit-amt{font-size:15px}.cfin-amt{font-size:15px}.ctit-head,.cfin-head{gap:9px;padding:11px 12px}}
+.ctit-amt{font-family:var(--display);font-size:17px;font-weight:600;color:var(--amber);white-space:nowrap}
+.ctit-head .chev{transition:.2s;color:var(--faint);flex:0 0 auto;display:inline-flex}
+.ctit-head .chev svg{width:18px;height:18px}
+.ctit-head .chev.open{transform:rotate(90deg)}
+.ctit-body{border-top:1px solid var(--line);background:var(--surface2);padding-top:10px}
+.ctit-body .cfin-actions{padding:0 12px 10px}
+.ctit-note{font-size:12.5px;color:var(--muted);padding:0 14px 10px}
 
 /* ===== Nómina ===== */
 .nom-card,.emp-card{margin-bottom:10px;overflow:hidden}
@@ -3679,7 +3693,7 @@ function pagadasSection(pagadas,key,verbo){
       </div>`;
 }
 function saCtxPend(ctx){
-  return MOVS.filter(m=>m.t===ctx.t&&(ctx.t==='I'?m.cl===ctx.who:m.co===ctx.who)&&(ctx.fi==null||(m.fi||'')===ctx.fi)&&m.e==='X'&&saldo(m)>0)
+  return MOVS.filter(m=>m.t===ctx.t&&(ctx.t==='I'?m.cl===ctx.who:m.co===ctx.who)&&(ctx.fi==null||(m.fi||'')===ctx.fi)&&(!ctx.fis||ctx.fis.includes(m.fi||''))&&m.e==='X'&&saldo(m)>0)
     .sort((a,b)=>(a.f||'').localeCompare(b.f||'')||((a.id||0)-(b.id||0)));
 }
 function smartAbonoPlan(clName,amount,ctx){
@@ -3700,8 +3714,8 @@ function smartAbono(clName,ctx){
   const {pend,deudaTotal}=smartAbonoPlan(clName,0,ctx);
   if(!pend.length){toast(ctx.t==='I'?'Este cliente no tiene cuentas por cobrar':'No hay facturas pendientes por pagar');return;}
   const isCom=ctx.t==='E';
-  const quien=isCom?(`La finca <b>${esc(ctx.fi||'Sin finca')}</b> le debe a <b>${esc(ctx.who)}</b>`):(`<b>${esc(clName)}</b> debe`);
-  showModal(isCom?('Abono inteligente · '+esc(ctx.fi||'Sin finca')):'Abono inteligente',`
+  const quien=isCom?(ctx.fis?(`<b>${esc(ctx.ti)}</b> (${ctx.fis.length} finca${ctx.fis.length===1?'':'s'}: ${esc(ctx.fis.map(f=>f||'Sin finca').join(', '))}) le debe a <b>${esc(ctx.who)}</b>`):(`La finca <b>${esc(ctx.fi||'Sin finca')}</b> le debe a <b>${esc(ctx.who)}</b>`)):(`<b>${esc(clName)}</b> debe`);
+  showModal(isCom?('Abono inteligente · '+esc(ctx.fis?ctx.ti:(ctx.fi||'Sin finca'))):'Abono inteligente',`
    <p style="color:var(--muted);margin-bottom:12px">${quien} <b style="color:var(--amber)">${fmt(deudaTotal)}</b> en ${pend.length} factura(s) pendiente(s).</p>
    <div class="form-grid">
      <div class="field"><label>Fecha del abono</label><input class="input tnum" type="date" id="sa_f" value="${todayISO()}"></div>
@@ -3719,7 +3733,7 @@ function smartAbonoPreview(){
   const amount=Math.round(num(document.getElementById('sa_v').value));
   const{plan,rem}=smartAbonoPlan(ctx&&ctx.who,amount,ctx);
   if(!amount){el.innerHTML='<div style="color:var(--muted);font-size:12.5px">Escribe el monto para ver cómo se distribuirá.</div>';return;}
-  const isCom=ctx&&ctx.t==='E';
+  const isCom=ctx&&ctx.t==='E'&&!ctx.fis;
   const rows=plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td>${isCom?(p.m.fa?('Fact. '+esc(p.m.fa)):esc(p.m.d||p.m.c||'—')):(`<span class="fdot"><i style="background:${fincaColor(p.m.fi)}"></i>${esc(p.m.fi)}</span>${p.m.fa?' · '+esc(p.m.fa):''}`)}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${fmt(p.sAfter)}</td><td>${p.full?'<span class="chip i">Pagada</span>':'<span class="chip pend">Parcial</span>'}</td></tr>`).join('');
   const aplicado=plan.reduce((a,p)=>a+p.ap,0);
   const quedan=(ctx?saCtxPend(ctx).length:0)-plan.filter(p=>p.full).length;
@@ -3802,6 +3816,44 @@ async function addCliente(){const inp=document.getElementById('newCli');const v=
 async function delCliente(name){CFG.clientes=CFG.clientes.filter(c=>c!==name);await persistCfg();renderClientes();toast('Cliente quitado de la lista');}
 
 /* ===== COMERCIOS (cuentas por pagar) ===== */
+const TITULARES_DEF=[
+  ['Inversiones JELM',['placer','el placer','miranda','ganaderia','mandarinos','los mandarinos']],
+  ['Betty Martínez Quiroga',['estrella','la estrella','potrillos','los potrillos','fortuna','la fortuna']],
+  ['Jefree Martínez Alba',['futuro','el futuro']],
+  ['Jonathan Barbosa',['cubillos','lote yuli','yuli','gallineta','la gallineta','chocolatera','la chocolatera']],
+  ['Frutexcol',['frutexcol']]
+];
+const SIN_TITULAR='Sin titular asignado';
+function titNorm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^\s*(finca|hacienda)\s+/,'').replace(/\s+/g,' ').trim();}
+function titularesList(){
+  const base=Array.isArray(CFG.titulares)?CFG.titulares.slice():TITULARES_DEF.map(x=>x[0]);
+  Object.values(CFG.fincaTitular||{}).forEach(t=>{if(t&&!base.includes(t))base.push(t);});
+  return base;
+}
+function fincaTitularDef(fi){
+  const n=titNorm(fi);if(!n)return '';
+  for(const [t,al] of TITULARES_DEF){if(al.includes(n))return t;}
+  const n2=n.replace(/^(la|el|los|las)\s+/,'');
+  for(const [t,al] of TITULARES_DEF){if(al.some(a=>a.replace(/^(la|el|los|las)\s+/,'')===n2))return t;}
+  return '';
+}
+function fincaTitular(fi){
+  const m=CFG.fincaTitular||{};
+  if(Object.prototype.hasOwnProperty.call(m,fi||''))return m[fi||'']||'';
+  return fincaTitularDef(fi);
+}
+async function setFincaTitular(fi,t){CFG.fincaTitular=CFG.fincaTitular||{};CFG.fincaTitular[fi]=t||'';await persistCfg();toast(t?(fi+' → facturada a nombre de '+t):(fi+' quedó sin titular'));}
+async function addTitular(){const inp=document.getElementById('add_titular');const v=(inp&&inp.value||'').trim();if(!v){toast('Escribe el nombre del titular');return;}const l=titularesList();if(!l.includes(v))l.push(v);CFG.titulares=l;await persistCfg();renderConfig();toast('Titular agregado');}
+async function delTitular(t){const l=titularesList().filter(x=>x!==t);CFG.titulares=l;CFG.fincaTitular=CFG.fincaTitular||{};(CFG.fincas||[]).forEach(f=>{if(fincaTitular(f)===t)CFG.fincaTitular[f]='';});await persistCfg();renderConfig();toast('Titular quitado');}
+function titularesPanel(){
+  const tl=titularesList();
+  return `<div class="card panel" style="margin-bottom:16px">
+    <div class="ph"><div><h2>Titulares de facturación</h2><p>A nombre de quién se facturan las compras de cada finca. En <b>Comercios</b>, las deudas se agrupan primero por titular y luego por finca.</p></div></div>
+    <div class="taglist">${tl.map(t=>`<div class="tag"><span>${esc(t)}</span><button title="Quitar titular" onclick="delTitular('${esc(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`).join('')}</div>
+    <div class="addrow" style="margin-bottom:12px"><input class="input" placeholder="Nuevo titular…" id="add_titular" onkeydown="if(event.key==='Enter')addTitular()"><button class="btn sm primary" onclick="addTitular()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+    <div class="secgrid2">${(CFG.fincas||[]).map(f=>{const cur=fincaTitular(f);return `<div class="field" style="margin:0"><label>${esc(f)}</label><select class="input" onchange="setFincaTitular('${esc(f).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',this.value)"><option value="" ${cur?'':'selected'}>— Sin titular —</option>${tl.map(t=>`<option value="${esc(t)}" ${cur===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`;}).join('')}</div>
+  </div>`;
+}
 function comerciosData(){
   const set=new Set(CFG.comercios);
   MOVS.forEach(m=>{if(m.t==='E'&&m.co)set.add(m.co);});
@@ -3813,7 +3865,11 @@ function comerciosData(){
     pend.forEach(m=>{const k=m.fi||'';(fg[k]=fg[k]||{fi:k,pend:[],deuda:0});fg[k].pend.push(m);fg[k].deuda+=saldo(m);});
     const fincas=Object.values(fg).map(g=>{g.pend.sort((x,y)=>(x.f||'').localeCompare(y.f||'')||((x.id||0)-(y.id||0)));g.movs=movs.filter(m=>(m.fi||'')===g.fi);return g;})
       .sort((a,b)=>b.deuda-a.deuda||a.fi.localeCompare(b.fi));
-    return{co,movs,pend,pagadas,fincas,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
+    const order=titularesList();const tg={};
+    fincas.forEach(g=>{const t=fincaTitular(g.fi)||SIN_TITULAR;g.ti=t;(tg[t]=tg[t]||{ti:t,fincas:[],deuda:0,n:0});tg[t].fincas.push(g);tg[t].deuda+=g.deuda;tg[t].n+=g.pend.length;});
+    const rk=t=>t===SIN_TITULAR?9999:(order.indexOf(t)<0?5000:order.indexOf(t));
+    const titulares=Object.values(tg).sort((a,b)=>rk(a.ti)-rk(b.ti)||a.ti.localeCompare(b.ti));
+    return{co,movs,pend,pagadas,fincas,titulares,deuda:pend.reduce((a,m)=>a+saldo(m),0),comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)};
   }).sort((a,b)=>b.deuda-a.deuda||a.co.localeCompare(b.co));
   const sinCom=MOVS.filter(m=>m.t==='E'&&!m.co&&m.e==='X'&&saldo(m)>0).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
   return{data,sinCom,sinDeuda:sinCom.reduce((a,m)=>a+saldo(m),0)};
@@ -3824,7 +3880,7 @@ function comercioStatementHTML(d){
      <td class="r tnum">${fmt(m.tot)}</td><td class="r tnum">${fmt(m.ab||0)}</td><td class="r tnum"><b>${fmt(saldo(m))}</b></td></tr>`).join('');
   return `
    <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Estado de cuenta</div>
-     <h2>${esc(d.co)}</h2><div class="rh-sub">${d.fiLabel!=null?('Cuentas por pagar de la finca '+esc(d.fiLabel||'Sin finca')+' a la fecha'):'Cuentas por pagar a la fecha'}</div></div>
+     <h2>${esc(d.co)}</h2><div class="rh-sub">${d.tiLabel?('Cuentas por pagar a nombre de '+esc(d.tiLabel)+' a la fecha'):d.fiLabel!=null?('Cuentas por pagar de la finca '+esc(d.fiLabel||'Sin finca')+' a la fecha'):'Cuentas por pagar a la fecha'}</div></div>
      <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b><br>${d.pend.length} cuenta(s) pendiente(s)</div></div>
    <div class="report-sec">
      <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
@@ -3832,15 +3888,15 @@ function comercioStatementHTML(d){
        <div class="card kpi"><div class="lab">Cuentas pendientes</div><div class="val tnum" style="font-size:22px">${d.pend.length}</div></div>
        <div class="card kpi"><div class="lab">Comprado histórico</div><div class="val tnum" style="font-size:22px">${fmt(d.comprado)}</div></div>
      </div>
-     ${(d.fiLabel==null&&d.fincas&&d.fincas.length>1)?`<div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/></svg>Deuda por finca<span class="ln"></span></div>
-      <div class="card" style="margin-bottom:16px"><div class="tablewrap" style="border:none"><table><thead><tr><th>Finca</th><th class="r">Facturas</th><th class="r">Saldo a pagar</th></tr></thead>
-      <tbody>${d.fincas.map(g=>`<tr><td>${esc(g.fi||'Sin finca')}</td><td class="r tnum">${g.pend.length}</td><td class="r tnum"><b>${fmt(g.deuda)}</b></td></tr>`).join('')}</tbody></table></div></div>`:''}
+     ${(d.fiLabel==null&&d.titulares&&d.fincas&&d.fincas.length>1)?`<div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/></svg>Deuda por titular y finca<span class="ln"></span></div>
+      <div class="card" style="margin-bottom:16px"><div class="tablewrap" style="border:none"><table><thead><tr><th>Titular / finca</th><th class="r">Facturas</th><th class="r">Saldo a pagar</th></tr></thead>
+      <tbody>${d.titulares.map(t=>`<tr style="background:var(--surface2)"><td><b>${esc(t.ti)}</b></td><td class="r tnum"><b>${t.n}</b></td><td class="r tnum"><b>${fmt(t.deuda)}</b></td></tr>${t.fincas.map(g=>`<tr><td style="padding-left:26px">${esc(g.fi||'Sin finca')}</td><td class="r tnum">${g.pend.length}</td><td class="r tnum">${fmt(g.deuda)}</td></tr>`).join('')}`).join('')}</tbody></table></div></div>`:''}
      <div class="sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg>Detalle de cuentas por pagar<span class="ln"></span></div>
      ${d.pend.length?`<div class="card"><div class="tablewrap" style="border:none"><table>
         <thead><tr><th>Fecha</th><th>Finca</th><th>Concepto</th><th>Factura</th><th class="r">Total</th><th class="r">Abonado</th><th class="r">Saldo</th></tr></thead>
         <tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="6"><b>TOTAL A PAGAR</b></td><td class="r tnum"><b>${fmt(d.deuda)}</b></td></tr></tbody></table></div></div>`
       :`<div class="card"><div style="padding:24px;text-align:center;color:var(--green2);font-weight:600">Sin cuentas pendientes con este comercio.</div></div>`}
-     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). Cuentas por pagar de Frutas La Estrella${d.fiLabel!=null?(' (finca '+esc(d.fiLabel||'Sin finca')+')'):''} con ${esc(d.co)}.</div>
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). Cuentas por pagar de Frutas La Estrella${d.tiLabel?(' (a nombre de '+esc(d.tiLabel)+')'):d.fiLabel!=null?(' (finca '+esc(d.fiLabel||'Sin finca')+')'):''} con ${esc(d.co)}.</div>
    </div>`;
 }
 function printComercio(name){
@@ -3850,6 +3906,13 @@ function printComercio(name){
   else d=data.find(x=>x.co===name);
   if(!d){toast('Comercio no encontrado');return;}
   printIsolated(comercioStatementHTML(d),'Estado de cuenta · '+d.co);
+}
+function printComercioTitular(co,ti){
+  const d=comerciosData().data.find(x=>x.co===co);if(!d){toast('Comercio no encontrado');return;}
+  const t=(d.titulares||[]).find(x=>x.ti===ti);if(!t){toast('Sin deudas a nombre de '+ti);return;}
+  const pend=[].concat(...t.fincas.map(g=>g.pend)).sort((x,y)=>(y.f||'').localeCompare(x.f||''));
+  const movs=[].concat(...t.fincas.map(g=>g.movs));
+  printIsolated(comercioStatementHTML({co,tiLabel:ti,pend,deuda:t.deuda,comprado:movs.reduce((a,m)=>a+(+m.tot||0),0)}),'Estado de cuenta · '+co+' · '+ti);
 }
 function printComercioFinca(co,fi){
   const d=comerciosData().data.find(x=>x.co===co);if(!d){toast('Comercio no encontrado');return;}
@@ -3906,6 +3969,25 @@ function comFinCard(d,g){
     </div>
   </div>`;
 }
+function comTitCard(d,t){
+  const k='t:'+d.co+'|'+t.ti;const open=!!(ui.comOpen&&ui.comOpen[k]);
+  const q=x=>esc(x).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const fisJ=JSON.stringify(t.fincas.map(g=>g.fi)).replace(/"/g,'&quot;');
+  const sinT=t.ti===SIN_TITULAR;
+  return `<div class="ctit-card">
+    <div class="ctit-head" data-k="${esc(k)}" onclick="comTog(this)">
+      <span class="ctit-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+      <div class="ctit-nm">${esc(t.ti)}</div>
+      <b class="ctit-amt tnum">${fmt(t.deuda)}</b>
+      <span class="chev ${open?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div class="ctit-body" style="${open?'':'display:none'}">
+      ${sinT?`<div class="ctit-note">Estas fincas no tienen titular de facturación. Asígnalo en <b>Configuración → Titulares de facturación</b>.</div>`:''}
+      ${t.fincas.length>1&&!sinT?`<div class="cfin-actions"><button class="btn sm" onclick="smartAbono('${q(d.co)}',{t:'E',who:'${q(d.co)}',ti:'${q(t.ti)}',fis:${fisJ}})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abonar a todo ${esc(t.ti)}</button><button class="btn sm" onclick="printComercioTitular('${q(d.co)}','${q(t.ti)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Estado de cuenta</button></div>`:''}
+      <div class="cfin-list">${t.fincas.map(g=>comFinCard(d,g)).join('')}</div>
+    </div>
+  </div>`;
+}
 function hashStr(t){let h=0;for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}return h;}
 function comTog(el){
   const k=el.dataset.k;ui.comOpen=ui.comOpen||{};const open=!ui.comOpen[k];ui.comOpen[k]=open;
@@ -3929,7 +4011,7 @@ function comCard(d,i){
     </div>
     <div class="cli-detail" id="com_${i}" style="${open?'':'display:none'}">
       <div style="padding:12px 16px 0"><button class="btn sm" onclick="printComercio('${coj}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Abrir estado de cuenta</button></div>
-      ${nf?`<div class="cfin-title">Deuda por finca · toca una finca para ver sus facturas y abonar</div><div class="cfin-list">${d.fincas.map(g=>comFinCard(d,g)).join('')}</div>`:`<div style="padding:18px;color:var(--muted);font-size:13px">Sin cuentas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
+      ${nf?`<div class="cfin-title">Deuda por titular · toca un titular para ver sus fincas, y una finca para ver sus facturas y abonar</div><div class="cfin-list">${d.titulares.map(t=>comTitCard(d,t)).join('')}</div>`:`<div style="padding:18px;color:var(--muted);font-size:13px">Sin cuentas pendientes. Total comprado histórico: <b>${fmt(d.comprado)}</b> en ${d.movs.length} movimiento(s).</div>`}
       ${pagadasSection(d.pagadas,'c'+i,'pagados')}
     </div></div>`;
 }
@@ -6342,6 +6424,7 @@ function renderConfig(){
    </div>
    <div class="cfg-grid">
      ${listBlock('Fincas y centros','fincas','Aparecen en los menús de cada movimiento')}
+     ${titularesPanel()}
      <div class="card panel" style="margin-bottom:16px">
        <div class="ph"><div><h2>Sinónimos de calidades de fruta para el dictado</h2><p>Si en tu finca llaman distinto a una calidad, escríbelo así, uno por línea: <b>sinónimo = Calidad</b> (por ejemplo: <i>la de jugo = Pipos</i>). Ya se reconocen muchos sinónimos automáticamente.</p></div></div>
        <textarea class="input" rows="3" style="resize:vertical;margin-bottom:6px" placeholder="la de jugo = Pipos&#10;la bonita = Extra" onchange="setFrutaSynText(this.value)">${esc(CFG.frutaSynText||'')}</textarea>
