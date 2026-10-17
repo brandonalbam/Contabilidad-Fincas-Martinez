@@ -486,6 +486,13 @@ table.mini tr.sunrow td{color:var(--faint);background:var(--surface2)}
 /* Dictado por voz */
 .vz-mic{flex:0 0 auto;width:62px;height:62px;border-radius:50%;border:none;background:var(--green2);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(30,107,63,.35)}
 .vz-mic svg{width:28px;height:28px}
+.vz-mic.kb{background:var(--green)}
+.vz-seg{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
+.vz-seg-l{font-size:12px;color:var(--muted);font-weight:600;margin-right:2px}
+.vz-seg button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--ink,inherit);font-size:12.5px;font-weight:600;cursor:pointer}
+.vz-seg button svg{width:15px;height:15px}
+.vz-seg button.on{background:var(--green2);border-color:var(--green2);color:#fff}
+.vz-mode-note{font-size:12px;color:var(--muted);margin:0 0 10px}
 .vz-mic.on{background:#c8443a;box-shadow:0 0 0 0 rgba(200,68,58,.55);animation:vzpulse 1.4s infinite}
 @keyframes vzpulse{0%{box-shadow:0 0 0 0 rgba(200,68,58,.55)}70%{box-shadow:0 0 0 16px rgba(200,68,58,0)}100%{box-shadow:0 0 0 0 rgba(200,68,58,0)}}
 .vz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -2230,9 +2237,10 @@ function nomVoiceModal(){
      <div class="field" style="margin:0"><label>Finca si no la dices</label><select class="input" id="nv_f" onchange="nvRefresh()">${CFG.fincas.map(f=>`<option ${f===fDef?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
    </div>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
-     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
+     <button type="button" id="vz_mic" class="vz-mic${vzKbMode()?' kb':''}" onclick="vzMicTap()">${vzMicIcon(vzKbMode())}</button>
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
+   ${vzModeHTML()}
    <textarea class="input" id="vz_txt" rows="4" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="nvRefresh()" style="resize:vertical;min-height:84px"></textarea>
    <div id="nv_now" class="nv-now"></div>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Así quedará</div>
@@ -2368,9 +2376,10 @@ function frutaVoiceModal(){
   showModal('Dictar venta de fruta',`
    <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Di la venta con naturalidad. Por ejemplo:<br><i>«Venta de naranja de Frutexcol a Nelly Martínez, extra 120 canastillas a 32 mil, mediana 80, mancha 40 a 15 mil, pendiente, ayer»</i></p>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
-     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
+     <button type="button" id="vz_mic" class="vz-mic${vzKbMode()?' kb':''}" onclick="vzMicTap()">${vzMicIcon(vzKbMode())}</button>
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
+   ${vzModeHTML()}
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="frvRefresh()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Venta detectada</div>
    <div id="frv_prev"></div>
@@ -2478,9 +2487,10 @@ function pedVoiceModal(){
   showModal('Dictar pedido',`
    <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Di el pedido con naturalidad. Por ejemplo:<br><i>«Pedido para Frutexcol, 12 hectáreas, Romectin 300 cc, Finale 5 litros cantidad fija, Azobyn Duo, Mancozeb 2 kilos cantidad fija, sin bodega»</i></p>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
-     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular.'}</div>
+     <button type="button" id="vz_mic" class="vz-mic${vzKbMode()?' kb':''}" onclick="vzMicTap()">${vzMicIcon(vzKbMode())}</button>
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
+   ${vzModeHTML()}
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="pvRefresh()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Pedido detectado</div>
    <div id="pv_prev"></div>
@@ -2706,9 +2716,10 @@ function voiceMovModal(){
   showModal('Dictar movimiento',`
    <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:10px">Toca el micrófono y di el movimiento de forma natural. Por ejemplo:<br><i>«Egreso en la finca Placer, compra de diez bultos de abono en Agroinsumos Cacayal a ochenta y cinco mil cada uno, pagado, factura 1234, ayer»</i></p>
    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-     ${SR?`<button type="button" id="vz_mic" class="vz-mic" onclick="vzToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg></button>`:''}
-     <div id="vz_st" style="font-size:13px;color:var(--muted)">${SR?'Toca el micrófono para empezar a hablar.':'Este navegador no permite el dictado directo. Toca el cuadro de abajo y usa el <b>micrófono del teclado</b> de tu celular para dictar.'}</div>
+     <button type="button" id="vz_mic" class="vz-mic${vzKbMode()?' kb':''}" onclick="vzMicTap()">${vzMicIcon(vzKbMode())}</button>
+     <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
+   ${vzModeHTML()}
    <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
    <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
@@ -2723,6 +2734,37 @@ function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;cons
   ui._vzLast=r;const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
 function vzRemoveProd(i){const nm=(ui._vzProds||[])[i];if(!nm)return;ui._vzProds.splice(i,1);const r=ui._vzLast||{};ui._vzBlock=ui._vzBlock||{};ui._vzBlock[nm]=(r._prodCount&&r._prodCount[nm])||1;vzRefresh();}
 function vzSchedule(){const run=()=>(ui._vzOnUpdate||vzRefresh)();if(ui._vzT){ui._vzPend=true;return;}run();ui._vzT=setTimeout(function tick(){ui._vzT=null;if(ui._vzPend){ui._vzPend=false;run();ui._vzT=setTimeout(tick,330);}},330);}
+const VZ_ICON_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>';
+const VZ_ICON_KB='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="9" x2="6" y2="9"/><line x1="10" y1="9" x2="10" y2="9"/><line x1="14" y1="9" x2="14" y2="9"/><line x1="18" y1="9" x2="18" y2="9"/><line x1="6" y1="13" x2="6" y2="13"/><line x1="18" y1="13" x2="18" y2="13"/><line x1="10" y1="13" x2="14" y2="13"/><line x1="7" y1="16" x2="17" y2="16"/></svg>';
+function vzHasSR(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
+function vzKbMode(){if(!vzHasSR())return true;if(ui._vzModePref)return ui._vzModePref==='kb';try{return localStorage.getItem('vzMode')==='kb';}catch(e){return false;}}
+function vzMicIcon(kb){return kb?VZ_ICON_KB:VZ_ICON_MIC;}
+function vzIdleMsg(){return vzKbMode()?'Toca el botón verde: se abre el teclado en el cuadro de abajo. Luego toca el <b>micrófono del teclado</b> 🎤 y habla.':'Toca el micrófono para empezar a hablar.';}
+function vzModeHTML(){
+  if(!vzHasSR())return '<div class="vz-mode-note">Este navegador no tiene dictado propio: se usa el <b>micrófono del teclado</b> del celular.</div>';
+  const kb=vzKbMode();
+  return `<div class="vz-seg" id="vz_seg"><span class="vz-seg-l">Dictar con:</span><button type="button" class="${kb?'':'on'}" onclick="vzSetMode('web')">${VZ_ICON_MIC}Micrófono de la app</button><button type="button" class="${kb?'on':''}" onclick="vzSetMode('kb')">${VZ_ICON_KB}Micrófono del teclado</button></div>`;
+}
+function vzApplyMode(){
+  const kb=vzKbMode();const b=document.getElementById('vz_mic');if(b){b.classList.toggle('kb',kb);b.innerHTML=vzMicIcon(kb);}
+  const sg=document.getElementById('vz_seg');if(sg){const bs=sg.querySelectorAll('button');if(bs[0])bs[0].classList.toggle('on',!kb);if(bs[1])bs[1].classList.toggle('on',kb);}
+}
+function vzSetMode(m){
+  ui._vzModePref=m;try{localStorage.setItem('vzMode',m);}catch(e){}
+  vzStop();vzMicOn(false);vzApplyMode();
+  if(m==='kb')vzKeyboard();else vzSt(vzIdleMsg());
+}
+function vzMicTap(){if(vzKbMode())vzKeyboard();else vzToggle();}
+function vzKeyboard(){
+  vzStop();vzMicOn(false);
+  const t=document.getElementById('vz_txt');if(!t)return;
+  if(t.value&&!/\s$/.test(t.value))t.value+=' ';
+  try{t.focus({preventScroll:true});}catch(e){t.focus();}
+  try{const L=t.value.length;t.setSelectionRange(L,L);}catch(e){}
+  setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}},250);
+  vzSt('<b style="color:var(--green2)">Teclado abierto.</b> Toca el <b>micrófono 🎤 del teclado</b> (arriba, junto a las sugerencias) y habla. Lo que digas se interpreta solo; puedes dictar por partes. Si el teclado no aparece, toca el cuadro de texto.');
+}
+const VZ_KB_BTN='<button type="button" class="btn sm" style="margin-top:6px" onclick="vzSetMode(\'kb\')">Usar el micrófono del teclado</button>';
 const VZ_RETRY_MS=[500,1200,2500,4000,6000,8000,10000,12000];
 function vzSt(html){const st=document.getElementById('vz_st');if(st)st.innerHTML=html;}
 function vzMicOn(on){const b=document.getElementById('vz_mic');if(b)b.classList.toggle('on',!!on);}
@@ -2738,7 +2780,7 @@ async function vzTryLocal(SR){
 }
 function vzToggle(){
   if(ui._vzRec||ui._vzRetryT||ui._vzNetWait){vzStop();vzSt('Dictado en pausa. Toca de nuevo para seguir hablando.');vzMicOn(false);return;}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){vzKeyboard();return;}
   const android=/Android/i.test(navigator.userAgent||'');
   const ta=document.getElementById('vz_txt');ui._vzBase=(ta&&ta.value.trim())?ta.value.trim():'';ui._vzSess='';
   ui._vzFails=0;ui._vzNetWait=false;
@@ -2769,16 +2811,16 @@ function vzToggle(){
         if(n===2&&!ui._vzUseLocal){vzTryLocal(SR).then(l=>{if(l)ui._vzUseLocal=l;});}
         if(!navigator.onLine){
           ui._vzNetWait=true;vzMicOn(true);
-          vzSt('<span style="color:var(--amber)"><b>Sin internet.</b> Lo que ya dictaste quedó guardado.</span> El dictado sigue solo apenas vuelva la señal. Mientras tanto puedes escribir en el cuadro o usar el micrófono del teclado.');
+          vzSt('<span style="color:var(--amber)"><b>Sin internet.</b> Lo que ya dictaste quedó guardado.</span> El dictado sigue solo apenas vuelva la señal. Mientras tanto puedes escribir en el cuadro o usar el micrófono del teclado.<br>'+VZ_KB_BTN);
           return;
         }
         if(n>VZ_RETRY_MS.length){
           ui._vzOn=false;vzMicOn(false);
-          vzSt('<span style="color:var(--red)"><b>El servicio de voz no responde</b> (la señal está muy débil).</span> Lo dictado quedó guardado. Toca el micrófono para intentar otra vez, o usa el micrófono del teclado del celular.');
+          vzSt('<span style="color:var(--red)"><b>El servicio de voz no responde</b> (la señal está muy débil).</span> Lo dictado quedó guardado. Toca el micrófono para intentar otra vez, o usa el micrófono del teclado del celular.<br>'+VZ_KB_BTN);
           return;
         }
         const ms=VZ_RETRY_MS[n-1];vzMicOn(true);
-        vzSt(`<span style="color:var(--amber)"><b>Se cortó la conexión con el servicio de voz.</b></span> Reconectando solo (intento ${n} de ${VZ_RETRY_MS.length})… Lo que ya dictaste quedó guardado.`);
+        vzSt(`<span style="color:var(--amber)"><b>Se cortó la conexión con el servicio de voz.</b></span> Reconectando solo (intento ${n} de ${VZ_RETRY_MS.length})… Lo que ya dictaste quedó guardado.${n>=2?'<br>'+VZ_KB_BTN:''}`);
         vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;try{start();}catch(e){}},ms);
         return;
       }
