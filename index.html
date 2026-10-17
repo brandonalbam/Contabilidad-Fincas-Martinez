@@ -2220,7 +2220,7 @@ function nvRefresh(){
   if(!t.value.trim()){box.innerHTML='<div class="empty" style="padding:14px">Aquí verás lo que va a quedar en cada empleado.</div>';return;}
   const cw=res.curWeek!=null?res.curWeek:nvOpts().week;const ind=document.getElementById('nv_now');if(ind)ind.innerHTML=res.curEmp?`Dictando ahora: <b>${esc(res.curEmp)}</b> · <b>Semana ${cw+1}</b> (${fmtFecha(days[cw*7].iso).slice(0,5)} – ${fmtFecha(days[cw*7+6].iso).slice(0,5)})`:'';
   box.innerHTML=(res.warn.length?`<div class="note" style="margin:0 0 10px;border-left-color:var(--amber)">${res.warn.map(esc).join('<br>')}</div>`:'')+
-    res.order.map(name=>{const e=res.emps[name];const isNew=!nom.entries.some(x=>x.emp===name);
+    res.order.slice().reverse().map(name=>{const e=res.emps[name];const isNew=!nom.entries.some(x=>x.emp===name);
       return `<div class="nv-emp"><div class="nv-h"><b>${esc(name)}</b>${isNew?'<span class="chip">se agregará a la quincena</span>':''}</div>${nvWeekTables(days,e.days)||'<div class="nv-row"><span>—</span><b>Sin días</b></div>'}${e.prestamo?`<div class="nv-row"><span>Préstamo</span><b>${e.prestamo.add?'+ ':''}${fmt(e.prestamo.v)}</b></div>`:''}</div>`;}).join('');
 }
 function nomVoiceModal(){
@@ -2737,7 +2737,8 @@ function vzSchedule(){const run=()=>(ui._vzOnUpdate||vzRefresh)();if(ui._vzT){ui
 const VZ_ICON_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>';
 const VZ_ICON_KB='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="9" x2="6" y2="9"/><line x1="10" y1="9" x2="10" y2="9"/><line x1="14" y1="9" x2="14" y2="9"/><line x1="18" y1="9" x2="18" y2="9"/><line x1="6" y1="13" x2="6" y2="13"/><line x1="18" y1="13" x2="18" y2="13"/><line x1="10" y1="13" x2="14" y2="13"/><line x1="7" y1="16" x2="17" y2="16"/></svg>';
 function vzHasSR(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
-function vzKbMode(){if(!vzHasSR())return true;if(ui._vzModePref)return ui._vzModePref==='kb';try{return localStorage.getItem('vzMode')==='kb';}catch(e){return false;}}
+function vzIsSamsung(){return /SamsungBrowser/i.test(navigator.userAgent||'');}
+function vzKbMode(){if(!vzHasSR())return true;if(ui._vzModePref)return ui._vzModePref==='kb';let v=null;try{v=localStorage.getItem('vzMode');}catch(e){}if(v)return v==='kb';return vzIsSamsung();}
 function vzMicIcon(kb){return kb?VZ_ICON_KB:VZ_ICON_MIC;}
 function vzIdleMsg(){return vzKbMode()?'Toca el botón verde: se abre el teclado en el cuadro de abajo. Luego toca el <b>micrófono del teclado</b> 🎤 y habla.':'Toca el micrófono para empezar a hablar.';}
 function vzModeHTML(){
@@ -2765,7 +2766,10 @@ function vzKeyboard(){
   vzSt('<b style="color:var(--green2)">Teclado abierto.</b> Toca el <b>micrófono 🎤 del teclado</b> (arriba, junto a las sugerencias) y habla. Lo que digas se interpreta solo; puedes dictar por partes. Si el teclado no aparece, toca el cuadro de texto.');
 }
 const VZ_KB_BTN='<button type="button" class="btn sm" style="margin-top:6px" onclick="vzSetMode(\'kb\')">Usar el micrófono del teclado</button>';
-const VZ_RETRY_MS=[500,1200,2500,4000,6000,8000,10000,12000];
+const VZ_RETRY_MS=[350,700,1200,2000,3000,4500,6000,8000];
+const VZ_SILENT_FAILS=3;   /* cortes cortos que se reintentan sin mostrar aviso */
+const VZ_AUTO_KB_FAILS=5;  /* tras estos cortes seguidos se pasa al micrófono del teclado */
+const VZ_RESTART_MS=/Android/i.test(navigator.userAgent||'')?260:120; /* pausa entre frases: evita que el servicio de voz rechace reinicios demasiado seguidos */
 function vzSt(html){const st=document.getElementById('vz_st');if(st)st.innerHTML=html;}
 function vzMicOn(on){const b=document.getElementById('vz_mic');if(b)b.classList.toggle('on',!!on);}
 function vzListeningMsg(){vzSt('<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.');}
@@ -2787,17 +2791,19 @@ function vzToggle(){
   const start=()=>{
     if(!ui._vzOn)return;
     if(!document.getElementById('vz_mic')){vzStop();return;}
+    /* nunca dos reconocedores a la vez: el servicio de voz responde «network» si se abre uno nuevo antes de cerrar el anterior */
+    if(ui._vzRec){const old=ui._vzRec;ui._vzRec=null;try{old.onend=null;old.onerror=null;old.onresult=null;old.abort();}catch(e){}}
     const rec=new SR();rec.lang='es-CO';rec.continuous=!android;rec.interimResults=true;rec.maxAlternatives=1;
     if(ui._vzUseLocal){try{rec.processLocally=true;if(ui._vzUseLocal==='es-ES')rec.lang='es-ES';}catch(e){}}
-    let gotSomething=false,lastErr='';
-    const ok=()=>{if(ui._vzFails||ui._vzNetWait){ui._vzFails=0;ui._vzNetWait=false;vzListeningMsg();}};
-    rec.onaudiostart=()=>{if(ui._vzRec===rec&&ui._vzFails>0)vzSt('<b style="color:var(--green2)">Reconectado.</b> Sigue hablando…');};
+    let gotSomething=false,lastErr='';const t0=Date.now();
+    const ok=()=>{if(ui._vzFails||ui._vzNetWait){const shown=ui._vzFails>VZ_SILENT_FAILS||ui._vzNetWait;ui._vzFails=0;ui._vzNetWait=false;if(shown)vzListeningMsg();}};
+    rec.onaudiostart=()=>{if(ui._vzRec===rec&&ui._vzFails>VZ_SILENT_FAILS)vzSt('<b style="color:var(--green2)">Reconectado.</b> Sigue hablando…');};
     rec.onresult=ev=>{gotSomething=true;ok();const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
       ui._vzSess=vzLexFix(vzDedupe(vzMergeFinals(fin)));const t=document.getElementById('vz_txt');
       if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();vzSchedule();}};
     rec.onerror=ev=>{lastErr=ev.error||'';
       if(lastErr==='no-speech'||lastErr==='aborted')return;
-      if(lastErr==='not-allowed'||lastErr==='service-not-allowed'){ui._vzOn=false;vzSt('<span style="color:var(--red)">No hay permiso para usar el micrófono. Actívalo en la configuración del navegador (candado junto a la dirección → Permisos → Micrófono).</span>');return;}
+      if(lastErr==='not-allowed'||lastErr==='service-not-allowed'){ui._vzOn=false;vzSt('<span style="color:var(--red)">No hay permiso para usar el micrófono. Actívalo en la configuración del navegador (candado junto a la dirección → Permisos → Micrófono), o dicta con el teclado.</span><br>'+VZ_KB_BTN);return;}
       if(lastErr==='audio-capture'){ui._vzOn=false;vzSt('<span style="color:var(--red)">No se encontró el micrófono o lo está usando otra app (por ejemplo una llamada o WhatsApp). Ciérrala y toca el micrófono de nuevo.</span>');return;}
       if(lastErr==='language-not-supported'&&ui._vzUseLocal){ui._vzUseLocal=false;return;}
     };
@@ -2805,7 +2811,10 @@ function vzToggle(){
       if(ui._vzRec!==rec)return;
       vzKeepText();ui._vzRec=null;
       if(!ui._vzOn){vzMicOn(false);return;}
-      if(lastErr==='network'||(!gotSomething&&lastErr&&lastErr!=='no-speech'&&lastErr!=='aborted')){
+      const failed=lastErr==='network'||(!gotSomething&&lastErr&&lastErr!=='no-speech'&&lastErr!=='aborted');
+      if(failed){
+        /* un corte después de haber entendido algo, en una sesión larga, es normal (el servicio cierra la sesión): se reanuda sin contar como falla */
+        if(lastErr==='network'&&gotSomething&&(Date.now()-t0)>4000&&!ui._vzFails){vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;try{start();}catch(e){}},VZ_RESTART_MS);return;}
         ui._vzFails=(ui._vzFails||0)+1;
         const n=ui._vzFails;
         if(n===2&&!ui._vzUseLocal){vzTryLocal(SR).then(l=>{if(l)ui._vzUseLocal=l;});}
@@ -2814,22 +2823,23 @@ function vzToggle(){
           vzSt('<span style="color:var(--amber)"><b>Sin internet.</b> Lo que ya dictaste quedó guardado.</span> El dictado sigue solo apenas vuelva la señal. Mientras tanto puedes escribir en el cuadro o usar el micrófono del teclado.<br>'+VZ_KB_BTN);
           return;
         }
-        if(n>VZ_RETRY_MS.length){
-          ui._vzOn=false;vzMicOn(false);
-          vzSt('<span style="color:var(--red)"><b>El servicio de voz no responde</b> (la señal está muy débil).</span> Lo dictado quedó guardado. Toca el micrófono para intentar otra vez, o usa el micrófono del teclado del celular.<br>'+VZ_KB_BTN);
+        if(n>=VZ_AUTO_KB_FAILS){
+          /* el servicio de voz del navegador no está respondiendo: se cambia al micrófono del teclado, que no depende de ese servicio */
+          ui._vzOn=false;vzMicOn(false);ui._vzModePref='kb';vzApplyMode();
+          vzSt(`<span style="color:var(--amber)"><b>El servicio de voz de este navegador no está respondiendo</b>${vzIsSamsung()?' (pasa seguido en <b>Samsung Internet</b>; en <b>Google Chrome</b> funciona mejor)':''}.</span> Lo dictado quedó guardado. Cambié a <b>micrófono del teclado</b>: toca el botón verde y luego el 🎤 del teclado para seguir.`);
           return;
         }
-        const ms=VZ_RETRY_MS[n-1];vzMicOn(true);
-        vzSt(`<span style="color:var(--amber)"><b>Se cortó la conexión con el servicio de voz.</b></span> Reconectando solo (intento ${n} de ${VZ_RETRY_MS.length})… Lo que ya dictaste quedó guardado.${n>=2?'<br>'+VZ_KB_BTN:''}`);
+        const ms=VZ_RETRY_MS[n-1]||3000;vzMicOn(true);
+        if(n>VZ_SILENT_FAILS)vzSt(`<span style="color:var(--amber)"><b>Reconectando el dictado…</b></span> Lo que ya dictaste quedó guardado.<br>${VZ_KB_BTN}`);
         vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;try{start();}catch(e){}},ms);
         return;
       }
-      try{start();}catch(e){ui._vzOn=false;vzMicOn(false);}
+      vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;try{start();}catch(e){ui._vzOn=false;vzMicOn(false);}},VZ_RESTART_MS);
     };
     try{rec.start();ui._vzRec=rec;}catch(e){
       ui._vzRec=null;ui._vzFails=(ui._vzFails||0)+1;
-      if(ui._vzFails>VZ_RETRY_MS.length){ui._vzOn=false;vzMicOn(false);vzSt('<span style="color:var(--red)">No se pudo iniciar el micrófono.</span> Toca de nuevo para intentarlo.');return;}
-      vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;start();},VZ_RETRY_MS[ui._vzFails-1]);
+      if(ui._vzFails>=VZ_AUTO_KB_FAILS){ui._vzOn=false;vzMicOn(false);vzSt('<span style="color:var(--red)">No se pudo iniciar el micrófono de la app.</span> Usa el micrófono del teclado.<br>'+VZ_KB_BTN);return;}
+      vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;start();},VZ_RETRY_MS[ui._vzFails-1]||1000);
     }
   };
   if(!ui._vzOnlineHook){ui._vzOnlineHook=true;window.addEventListener('online',()=>{if(ui._vzOn&&ui._vzNetWait&&!ui._vzRec){ui._vzNetWait=false;ui._vzFails=1;vzSt('<b style="color:var(--green2)">Volvió la señal.</b> Reanudando el dictado…');try{ui._vzStartFn&&ui._vzStartFn();}catch(e){}}});}
