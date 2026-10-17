@@ -2700,7 +2700,7 @@ function vzPreviewHTML(r){
     row('Cantidad',r.q?(r.q+(r.u?' '+r.u:'')):'')+row('Precio unitario',r.pu?fmt(r.pu):'')+row('Total',tot?fmt(tot):'')+row(r.t==='I'?'Cliente':'Proveedor',r.t==='I'?(r.cl||r.co):r.co)+
     row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa)+(r._prod&&r._prod.length?`<div class="vz-it ok vz-prods"><span>Químicos guardados (${r._prod.length})</span><div>${r._prod.map((nm,i)=>`<em>${esc(nm)}<button type="button" title="Quitar" onclick="vzRemoveProd(${i})">×</button></em>`).join('')}</div></div>`:'');
 }
-function vzStop(){if(ui._vzRec){ui._vzOn=false;try{ui._vzRec.stop();}catch(e){}ui._vzRec=null;}}
+
 function voiceMovModal(){
   ui._vzOnUpdate=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   showModal('Dictar movimiento',`
@@ -2723,22 +2723,79 @@ function vzRefresh(){const t=document.getElementById('vz_txt');if(!t)return;cons
   ui._vzLast=r;const p=document.getElementById('vz_prev');if(p)p.innerHTML=vzPreviewHTML(r);}
 function vzRemoveProd(i){const nm=(ui._vzProds||[])[i];if(!nm)return;ui._vzProds.splice(i,1);const r=ui._vzLast||{};ui._vzBlock=ui._vzBlock||{};ui._vzBlock[nm]=(r._prodCount&&r._prodCount[nm])||1;vzRefresh();}
 function vzSchedule(){const run=()=>(ui._vzOnUpdate||vzRefresh)();if(ui._vzT){ui._vzPend=true;return;}run();ui._vzT=setTimeout(function tick(){ui._vzT=null;if(ui._vzPend){ui._vzPend=false;run();ui._vzT=setTimeout(tick,330);}},330);}
+const VZ_RETRY_MS=[500,1200,2500,4000,6000,8000,10000,12000];
+function vzSt(html){const st=document.getElementById('vz_st');if(st)st.innerHTML=html;}
+function vzMicOn(on){const b=document.getElementById('vz_mic');if(b)b.classList.toggle('on',!!on);}
+function vzListeningMsg(){vzSt('<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.');}
+function vzClearRetry(){if(ui._vzRetryT){clearTimeout(ui._vzRetryT);ui._vzRetryT=null;}}
+function vzStop(){vzClearRetry();ui._vzOn=false;ui._vzNetWait=false;if(ui._vzRec){const r=ui._vzRec;ui._vzRec=null;try{r.stop();}catch(e){}}}
+function vzKeepText(){ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;(ui._vzOnUpdate||vzRefresh)();}}
+async function vzTryLocal(SR){
+  /* Algunos navegadores nuevos pueden reconocer la voz sin internet (en el propio celular). Si está disponible, se usa como respaldo. */
+  if(ui._vzLocal!==undefined)return ui._vzLocal;ui._vzLocal=false;
+  try{if(SR&&typeof SR.available==='function'){const st=await SR.available({langs:['es-CO'],processLocally:true});if(st==='available')ui._vzLocal=true;else{const st2=await SR.available({langs:['es-ES'],processLocally:true});if(st2==='available')ui._vzLocal='es-ES';}}}catch(e){}
+  return ui._vzLocal;
+}
 function vzToggle(){
-  if(ui._vzRec){vzStop();const st=document.getElementById('vz_st');if(st)st.textContent='Dictado en pausa. Toca de nuevo para seguir hablando.';const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');return;}
+  if(ui._vzRec||ui._vzRetryT||ui._vzNetWait){vzStop();vzSt('Dictado en pausa. Toca de nuevo para seguir hablando.');vzMicOn(false);return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
   const android=/Android/i.test(navigator.userAgent||'');
   const ta=document.getElementById('vz_txt');ui._vzBase=(ta&&ta.value.trim())?ta.value.trim():'';ui._vzSess='';
+  ui._vzFails=0;ui._vzNetWait=false;
   const start=()=>{
+    if(!ui._vzOn)return;
+    if(!document.getElementById('vz_mic')){vzStop();return;}
     const rec=new SR();rec.lang='es-CO';rec.continuous=!android;rec.interimResults=true;rec.maxAlternatives=1;
-    rec.onresult=ev=>{const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
+    if(ui._vzUseLocal){try{rec.processLocally=true;if(ui._vzUseLocal==='es-ES')rec.lang='es-ES';}catch(e){}}
+    let gotSomething=false,lastErr='';
+    const ok=()=>{if(ui._vzFails||ui._vzNetWait){ui._vzFails=0;ui._vzNetWait=false;vzListeningMsg();}};
+    rec.onaudiostart=()=>{if(ui._vzRec===rec&&ui._vzFails>0)vzSt('<b style="color:var(--green2)">Reconectado.</b> Sigue hablando…');};
+    rec.onresult=ev=>{gotSomething=true;ok();const fin=[];let inter='';for(let i=0;i<ev.results.length;i++){const tx=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin.push(tx);else inter+=' '+tx;}
       ui._vzSess=vzLexFix(vzDedupe(vzMergeFinals(fin)));const t=document.getElementById('vz_txt');
       if(t){const base=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));t.value=(base+(inter.trim()?' '+inter.trim():'')).trim();vzSchedule();}};
-    rec.onerror=ev=>{if(ev.error==='no-speech'&&ui._vzOn)return;const st=document.getElementById('vz_st');if(st)st.innerHTML='<span style="color:var(--red)">'+(ev.error==='not-allowed'?'No hay permiso para usar el micrófono. Actívalo en la configuración del navegador.':(ev.error==='no-speech'?'No se escuchó nada. Intenta de nuevo más cerca del micrófono.':'El dictado se detuvo ('+esc(ev.error)+').'))+'</span>';if(ev.error==='not-allowed'){ui._vzOn=false;}};
-    rec.onend=()=>{if(ui._vzRec!==rec)return;ui._vzBase=vzDedupe(vzMergeFinals([ui._vzBase,ui._vzSess].filter(Boolean)));ui._vzSess='';const t=document.getElementById('vz_txt');if(t){t.value=ui._vzBase;(ui._vzOnUpdate||vzRefresh)();}
-      if(ui._vzOn){try{start();return;}catch(e){}}ui._vzRec=null;const b=document.getElementById('vz_mic');if(b)b.classList.remove('on');};
-    rec.start();ui._vzRec=rec;
+    rec.onerror=ev=>{lastErr=ev.error||'';
+      if(lastErr==='no-speech'||lastErr==='aborted')return;
+      if(lastErr==='not-allowed'||lastErr==='service-not-allowed'){ui._vzOn=false;vzSt('<span style="color:var(--red)">No hay permiso para usar el micrófono. Actívalo en la configuración del navegador (candado junto a la dirección → Permisos → Micrófono).</span>');return;}
+      if(lastErr==='audio-capture'){ui._vzOn=false;vzSt('<span style="color:var(--red)">No se encontró el micrófono o lo está usando otra app (por ejemplo una llamada o WhatsApp). Ciérrala y toca el micrófono de nuevo.</span>');return;}
+      if(lastErr==='language-not-supported'&&ui._vzUseLocal){ui._vzUseLocal=false;return;}
+    };
+    rec.onend=()=>{
+      if(ui._vzRec!==rec)return;
+      vzKeepText();ui._vzRec=null;
+      if(!ui._vzOn){vzMicOn(false);return;}
+      if(lastErr==='network'||(!gotSomething&&lastErr&&lastErr!=='no-speech'&&lastErr!=='aborted')){
+        ui._vzFails=(ui._vzFails||0)+1;
+        const n=ui._vzFails;
+        if(n===2&&!ui._vzUseLocal){vzTryLocal(SR).then(l=>{if(l)ui._vzUseLocal=l;});}
+        if(!navigator.onLine){
+          ui._vzNetWait=true;vzMicOn(true);
+          vzSt('<span style="color:var(--amber)"><b>Sin internet.</b> Lo que ya dictaste quedó guardado.</span> El dictado sigue solo apenas vuelva la señal. Mientras tanto puedes escribir en el cuadro o usar el micrófono del teclado.');
+          return;
+        }
+        if(n>VZ_RETRY_MS.length){
+          ui._vzOn=false;vzMicOn(false);
+          vzSt('<span style="color:var(--red)"><b>El servicio de voz no responde</b> (la señal está muy débil).</span> Lo dictado quedó guardado. Toca el micrófono para intentar otra vez, o usa el micrófono del teclado del celular.');
+          return;
+        }
+        const ms=VZ_RETRY_MS[n-1];vzMicOn(true);
+        vzSt(`<span style="color:var(--amber)"><b>Se cortó la conexión con el servicio de voz.</b></span> Reconectando solo (intento ${n} de ${VZ_RETRY_MS.length})… Lo que ya dictaste quedó guardado.`);
+        vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;try{start();}catch(e){}},ms);
+        return;
+      }
+      try{start();}catch(e){ui._vzOn=false;vzMicOn(false);}
+    };
+    try{rec.start();ui._vzRec=rec;}catch(e){
+      ui._vzRec=null;ui._vzFails=(ui._vzFails||0)+1;
+      if(ui._vzFails>VZ_RETRY_MS.length){ui._vzOn=false;vzMicOn(false);vzSt('<span style="color:var(--red)">No se pudo iniciar el micrófono.</span> Toca de nuevo para intentarlo.');return;}
+      vzClearRetry();ui._vzRetryT=setTimeout(()=>{ui._vzRetryT=null;start();},VZ_RETRY_MS[ui._vzFails-1]);
+    }
   };
-  try{ui._vzOn=true;start();const b=document.getElementById('vz_mic');if(b)b.classList.add('on');const st=document.getElementById('vz_st');if(st)st.innerHTML='<b style="color:var(--green2)">Escuchando…</b> habla con naturalidad. Toca el micrófono para pausar.';}catch(e){ui._vzOn=false;toast('No se pudo iniciar el micrófono');}
+  if(!ui._vzOnlineHook){ui._vzOnlineHook=true;window.addEventListener('online',()=>{if(ui._vzOn&&ui._vzNetWait&&!ui._vzRec){ui._vzNetWait=false;ui._vzFails=1;vzSt('<b style="color:var(--green2)">Volvió la señal.</b> Reanudando el dictado…');try{ui._vzStartFn&&ui._vzStartFn();}catch(e){}}});}
+  ui._vzStartFn=start;
+  try{ui._vzOn=true;start();vzMicOn(true);
+    if(!navigator.onLine)vzSt('<span style="color:var(--amber)"><b>Parece que no hay internet.</b></span> El dictado del navegador necesita señal; si no arranca, escribe en el cuadro o usa el micrófono del teclado.');
+    else vzListeningMsg();
+  }catch(e){ui._vzOn=false;toast('No se pudo iniciar el micrófono');}
 }
 function vzFill(){
   const t=document.getElementById('vz_txt');const text=t?t.value.trim():'';
@@ -6604,7 +6661,7 @@ function confirmModal(title,msg,onYes){showModal(title,`<p style="color:var(--mu
 async function setFincaHa(f,c,v){if(!CFG.fincaHa[f])CFG.fincaHa[f]={};const n=+v||0;if(n<=0)delete CFG.fincaHa[f][c];else CFG.fincaHa[f][c]=n;await persistCfg();renderConfig();}
 async function delFincaHa(f,c){if(CFG.fincaHa[f])delete CFG.fincaHa[f][c];await persistCfg();renderConfig();}
 async function addFincaHa(f,fi){const cs=document.getElementById('fha_c_'+fi),vs=document.getElementById('fha_v_'+fi);if(!cs)return;const c=cs.value;const v=+(vs?vs.value:0)||0;if(!c)return;if(!CFG.fincaHa[f])CFG.fincaHa[f]={};CFG.fincaHa[f][c]=v;await persistCfg();renderConfig();toast('Hectáreas guardadas');}
-function closeModal(){if(typeof vzStop==='function'&&ui&&ui._vzRec)vzStop();if(ui)ui._vzOnUpdate=null;document.getElementById('overlay').classList.remove('show');}
+function closeModal(){if(typeof vzStop==='function'&&ui&&(ui._vzRec||ui._vzRetryT||ui._vzNetWait||ui._vzOn))vzStop();if(ui)ui._vzOnUpdate=null;document.getElementById('overlay').classList.remove('show');}
 let toastT;function toast(msg){const t=document.getElementById('toast');const warn=/^(Indica|Elige|Escribe|Agrega|Marca|Completa|No |Sin |El valor|El abono|El total|Tu perfil|PIN|Este |Esta |Primero|Debes|Selecciona)/i.test(String(msg||''));t.classList.toggle('warn',warn);t.innerHTML=(warn?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:0 0 auto"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>':ic('check'))+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),warn?3600:2600);}
 function emptyRow(msg){return `<div class="empty" style="padding:30px 10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>${msg}</span></div>`;}
 
