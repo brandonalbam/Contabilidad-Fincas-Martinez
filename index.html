@@ -4322,7 +4322,7 @@ function dronExtPanel(){
         <td class="r"><button class="iconbtn del" title="Quitar finca" onclick="dronDelExt(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):`<tr><td colspan="4" style="padding:18px;color:var(--muted)">Aún no hay fincas externas. Agrégalas abajo con sus hectáreas.</td></tr>`}
       </tbody></table></div>
     <div class="addrow"><input class="input" id="dfe_n" placeholder="Nombre de la finca externa" style="flex:2" onkeydown="if(event.key==='Enter')dronAddExt()"><input class="input tnum" type="number" step="any" id="dfe_ha" placeholder="Hectáreas" style="flex:1" onkeydown="if(event.key==='Enter')dronAddExt()"><button class="btn sm primary" onclick="dronAddExt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
-    <div class="note">Al elegir una finca externa en <b>Registrar fumigación</b>, sus hectáreas se ponen solas y puedes marcar si ya pagaron, si quedó pendiente o si dieron un abono.</div>
+    <div class="note">Al elegir una finca externa en <b>Registrar fumigación</b>, sus hectáreas se ponen solas y puedes marcar si ya pagaron, si quedó pendiente o si dieron un abono. También aparecen en <b>Preparación de químicos</b> y en los <b>Cronogramas</b>, pero nunca en Movimientos ni en la contabilidad.</div>
   </div>`;
 }
 function dronNameTaken(n,skipIdx){const k=vzNorm?vzNorm(n):n.toLowerCase();const eq=a=>(vzNorm?vzNorm(a):String(a).toLowerCase())===k;return (CFG.fincas||[]).some(eq)||dronExt().some((x,i)=>i!==skipIdx&&eq(x.n));}
@@ -4339,7 +4339,9 @@ async function dronSetExt(i,field,val){
   const n=String(val||'').trim().toUpperCase();if(!n||n===x.n){renderDron();return;}
   if(dronNameTaken(n,i)){toast('Ya existe una finca con ese nombre');renderDron();return;}
   const old=x.n;x.n=n;DRON.forEach(r=>{if(r.k==='job'&&r.ext&&r.fi===old)r.fi=n;});if(ui.dronFi===old)ui.dronFi=n;
-  await persistCfg();await persistDron();renderDron();toast('Finca renombrada');
+  let crCh={fum:false,ab:false};['fum','ab'].forEach(k=>cronoArr(k).forEach(r=>{if(r.finca===old){r.finca=n;crCh[k]=true;}}));
+  if(ui.mixFinca===old){ui.mixFinca=n;await persistMix();}
+  await persistCfg();await persistDron();if(crCh.fum)await persistCrono('fum');if(crCh.ab)await persistCrono('ab');renderDron();toast('Finca renombrada');
 }
 function dronDelExt(i){
   const x=dronExt()[i];if(!x)return;const n=DRON.filter(r=>r.k==='job'&&r.ext&&r.fi===x.n).length;const deb=DRON.filter(r=>dronJobPend(r)&&r.fi===x.n).reduce((a,r)=>a+dronJobSaldo(r),0);
@@ -4746,7 +4748,7 @@ function renderQuimicos(){
        <div class="ph"><div><h2>Datos de la preparación</h2><p>${ab?'Abono por árbol (sin tanque)':'Fumigación por tanque'}</p></div></div>
        <div class="seg" style="margin-bottom:12px"><button class="seg-btn ${ab?'':'on'}" onclick="quimSetMode('fum')">Fumigación (por tanque)</button><button class="seg-btn ${ab?'on':''}" onclick="quimSetMode('ab')">Abono (por árbol)</button></div>
        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-         <div class="field full"><label>Finca de esta preparación</label><select class="input" onchange="ui.mixFinca=this.value;const h=fincaHaDefault(this.value);if(h)ui.mixHa=h;renderQuimicos();persistMix()"><option value="">— Sin finca —</option>${CFG.fincas.map(f=>`<option ${ui.mixFinca===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+         <div class="field full"><label>Finca de esta preparación</label><select class="input" onchange="ui.mixFinca=this.value;const h=dronHaFor(this.value);if(h)ui.mixHa=h;renderQuimicos();persistMix()"><option value="">— Sin finca —</option>${dronFincaOptions(ui.mixFinca)}</select></div>
          ${ab?`
          <div class="field full"><label>Número de árboles</label><input class="input tnum" type="number" step="any" value="${esc(ui.mixTrees)}" placeholder="0" oninput="ui.mixTrees=this.value;quimCalc();persistMix()"></div>`
          :`
@@ -4905,7 +4907,8 @@ function sendMixToCrono(){
   const kSel=m.mode==='ab'?'ab':(ui.cronoKind==='ab'?'ab':'fum');
   const isAb=m.mode==='ab';
   const detalle=isAb?`${m.trees.toLocaleString('es-CO')} árboles · ${m.lines.length} producto(s)`:`${m.lxha.toLocaleString('es-CO')} L/ha · ${m.lines.length} producto(s)`;
-  const fincasChk=(CFG.fincas||[]).map(f=>{const chk=(f===m.finca)?'checked':'';const ha=fincaHaDefault(f);return `<label class="seccheck fincachk"><input type="checkbox" class="cx_fi" value="${esc(f)}" ${chk}> <span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span>${(!isAb&&ha)?`<em>${ha} ha</em>`:''}</label>`;}).join('');
+  const chkF=(f,ext)=>{const chk=(f===m.finca)?'checked':'';const ha=dronHaFor(f);return `<label class="seccheck fincachk"><input type="checkbox" class="cx_fi" value="${esc(f)}" ${chk}> <span class="fdot"><i style="background:${fincaColor(f)}"></i>${esc(f)}</span>${(!isAb&&ha)?`<em>${ha} ha</em>`:''}${ext?'<em style="color:var(--muted)">externa</em>':''}</label>`;};
+  const fincasChk=(CFG.fincas||[]).map(f=>chkF(f,false)).join('')+(dronExt().length?`<div style="grid-column:1/-1;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:6px">Fincas externas (dron)</div>`+dronExt().map(x=>chkF(x.n,true)).join(''):'');
   showModal('Enviar al cronograma',`
    <div class="form-grid">
      <div class="field full"><label>Cronograma destino</label><select class="input" id="cx_k"><option value="fum" ${kSel==='fum'?'selected':''}>Cronograma Fumigadas</option><option value="ab" ${kSel==='ab'?'selected':''}>Cronograma Abonadas</option></select></div>
@@ -4927,7 +4930,7 @@ function sendMixToCrono(){
      let marcadas=0,nuevas=0;
      fincas.forEach(finca=>{
        const copy=JSON.parse(JSON.stringify(m.lines));
-       const haF=isAb?0:(fincaHaDefault(finca)||m.ha);
+       const haF=isAb?0:(dronHaFor(finca)||m.ha);
        const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy}:{f,lxha:m.lxha,ha:haF,lines:copy};
        const target=(applyTarget&&applyTarget.finca===finca)?applyTarget:null;
        if(target){
