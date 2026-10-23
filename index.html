@@ -4354,7 +4354,7 @@ function dronCarteraPanel(){
   const q=x=>esc(x).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const open=ui.dronCartOpen||{};
   return `<div class="card panel dr-cart" style="margin-top:16px">
-    <div class="ph"><div><h2>Fumigaciones por cobrar</h2><p>Fincas externas que aún no han pagado</p></div></div>
+    <div class="ph"><div><h2>Fumigaciones por cobrar</h2><p>Fincas externas que aún no han pagado</p></div><button class="btn sm primary" onclick="printDronCartera()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Informe de deudas</button></div>
     <div class="dr-cart-sum"><b>${c.pend.length}</b> fumigada${c.pend.length===1?'':'s'} aún no ${c.pend.length===1?'ha':'han'} sido cancelada${c.pend.length===1?'':'s'} y ${c.pend.length===1?'suma':'suman'} <b class="tnum">${fmt(c.deuda)}</b></div>
     <div class="cfin-list" style="padding:0">${c.fincas.map(g=>{const k=g.fi;const o=!!open[k];return `<div class="cfin-card">
       <div class="cfin-head" onclick="dronCartTog('${q(k)}',this)">
@@ -4364,7 +4364,7 @@ function dronCarteraPanel(){
         <span class="chev ${o?'open':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
       <div class="cfin-body" style="${o?'':'display:none'}">
-        <div class="cfin-actions"><button class="btn sm primary" onclick="dronAbonoFinca('${q(g.fi)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abonar a la deuda</button><span class="cfin-n">El abono paga primero las fumigadas más antiguas</span></div>
+        <div class="cfin-actions"><button class="btn sm primary" onclick="dronAbonoFinca('${q(g.fi)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Abonar a la deuda</button><button class="btn sm" onclick="printDronCartera('${q(g.fi)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Informe de esta finca</button><span class="cfin-n">El abono paga primero las fumigadas más antiguas</span></div>
         <div class="tablewrap" style="border:none;border-radius:0"><table><thead><tr><th>Fecha</th><th class="r">Hectáreas</th><th class="r">Total</th><th class="r">Abonado</th><th class="r">Debe</th><th></th></tr></thead>
         <tbody>${g.jobs.map(r=>`<tr><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.tot)}</td><td class="r tnum" style="color:var(--green2)">${fmt(r.ab||0)}</td><td class="r tnum"><b style="color:var(--amber)">${fmt(dronJobSaldo(r))}</b></td>
           <td class="r"><div style="display:flex;gap:6px;justify-content:flex-end">${(r.abs||[]).length?`<button class="iconbtn" title="Ver abonos" onclick="dronVerAbonos(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>`:''}<button class="btn sm" onclick="dronAbonoJob(${r.id})">Abonar</button><button class="btn sm primary" onclick="dronPagarJob(${r.id})">Pagó todo</button></div></td></tr>`).join('')}
@@ -4701,6 +4701,40 @@ function dronStatementHTML(){
    </div>`;
 }
 function printDron(){printIsolated(dronStatementHTML(),'Informe del dron');}
+function dronCarteraStatementHTML(onlyFi){
+  const c=dronCartera();const fincas=onlyFi?c.fincas.filter(g=>g.fi===onlyFi):c.fincas;
+  const nFum=fincas.reduce((a,g)=>a+g.jobs.length,0),total=fincas.reduce((a,g)=>a+g.deuda,0);
+  const resumen=fincas.map(g=>`<tr><td><span class="fdot"><i style="background:${fincaColor(g.fi)}"></i>${esc(g.fi)}</span></td><td class="r tnum">${g.jobs.length}</td><td class="r tnum"><b>${fmt(g.deuda)}</b></td></tr>`).join('');
+  const detalle=fincas.map(g=>`
+     <div class="sec-title" style="margin-top:18px"><span class="fdot"><i style="background:${fincaColor(g.fi)}"></i></span>${esc(g.fi)} · ${g.jobs.length} fumigada${g.jobs.length===1?'':'s'}<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>#</th><th>Fecha</th><th class="r">Hectáreas</th><th class="r">Valor/ha</th><th class="r">Total</th><th class="r">Abonado</th><th class="r">Debe</th></tr></thead>
+       <tbody>${g.jobs.map((r,i)=>`<tr><td class="tnum">${i+1}</td><td class="tnum">${fmtFecha(r.f)}</td><td class="r tnum">${(+r.ha).toLocaleString('es-CO')}</td><td class="r tnum">${fmt(r.pu)}</td><td class="r tnum">${fmt(r.tot)}</td><td class="r tnum">${fmt(r.ab||0)}</td><td class="r tnum"><b>${fmt(dronJobSaldo(r))}</b></td></tr>`).join('')}
+       <tr style="border-top:2px solid var(--line)"><td colspan="6"><b>TOTAL QUE DEBE ${esc(g.fi)}</b></td><td class="r tnum"><b>${fmt(g.deuda)}</b></td></tr></tbody></table></div></div>`).join('');
+  return `
+   <div class="rep-head"><div><div class="rh-brand">${REP_MARK}Frutas La Estrella · Dron de fumigación</div>
+     <h2>${onlyFi?('Cuenta de cobro · '+esc(onlyFi)):'Fumigaciones pendientes de pago'}</h2><div class="rh-sub">${onlyFi?'Fumigaciones con dron pendientes de pago':'Fincas externas con fumigaciones sin pagar'}</div></div>
+     <div class="rh-meta">Emitido<br><b>${fmtFecha(todayISO())}</b><br>${nFum} fumigada${nFum===1?'':'s'}</div></div>
+   <div class="report-sec">
+     <div class="grid kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+       <div class="card kpi lead"><div class="lab">Total por cobrar</div><div class="val tnum">${fmt(total)}</div></div>
+       <div class="card kpi"><div class="lab">Fumigadas sin pagar</div><div class="val tnum" style="font-size:22px">${nFum}</div></div>
+       <div class="card kpi"><div class="lab">${onlyFi?'Hectáreas fumigadas':'Fincas que deben'}</div><div class="val tnum" style="font-size:22px">${onlyFi?fincas.reduce((a,g)=>a+g.jobs.reduce((b,r)=>b+(+r.ha||0),0),0).toLocaleString('es-CO'):fincas.length}</div></div>
+     </div>
+     ${nFum?`${onlyFi?'':`<div class="sec-title">Resumen por finca<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table>
+       <thead><tr><th>Finca</th><th class="r">Fumigadas sin pagar</th><th class="r">Total que debe</th></tr></thead>
+       <tbody>${resumen}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${nFum}</b></td><td class="r tnum"><b>${fmt(total)}</b></td></tr></tbody></table></div></div>`}
+     ${detalle}
+     <div class="card" style="margin-top:18px"><div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;font-size:15px"><b>${onlyFi?'TOTAL A PAGAR':'TOTAL DE TODAS LAS FUMIGADAS POR COBRAR'}</b><b class="tnum" style="font-size:18px">${fmt(total)}</b></div></div>`
+     :`<div class="card"><div style="padding:24px;text-align:center;color:var(--green2);font-weight:600">No hay fumigadas pendientes de pago.</div></div>`}
+     <div class="note">Documento generado el ${fmtFecha(todayISO())}. Valores en ${esc(CFG.moneda)} (pesos). «Debe» es el total de cada fumigada menos los abonos recibidos.</div>
+   </div>`;
+}
+function printDronCartera(fi){
+  if(!fi&&!dronCartera().pend.length){toast('No hay fumigadas pendientes de pago');return;}
+  printIsolated(dronCarteraStatementHTML(fi||''),fi?('Cuenta de cobro dron · '+fi):'Fumigadas pendientes de pago');
+}
 
 /* ===== PREPARACIÓN DE QUÍMICOS ===== */
 function quimSortCat(){
