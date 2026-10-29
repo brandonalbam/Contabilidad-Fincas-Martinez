@@ -5000,21 +5000,33 @@ function cronoLastPrep(k){
 }
 function cronoApply(k,id){
   const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
-  const last=cronoLastPrep(k)||{lines:r.lines,lxha:r.lxha,finca:r.finca,f:r.f};
+  const ab=(k==='ab'||r.mode==='ab');const mode=ab?'ab':'fum';
+  /* Se MANTIENEN los químicos que ya están en «Preparación de químicos» (la última preparación hecha, de la finca que sea).
+     Solo cambian la finca y sus hectáreas. Si no hay una preparación abierta de este tipo, se usa la última guardada en el cronograma. */
+  const draft=(ui.mixLines||[]).filter(l=>l&&l.n);
+  const keep=draft.length&&ui.mixMode===mode;
+  const prevFi=ui.mixFinca||'';
   ui.cronoKind=k;ui.cronoApplyK=k;ui.cronoApplyId=id;
-  const ab=(k==='ab'||r.mode==='ab');
-  ui.mixMode=ab?'ab':'fum';
-  ui.mixFinca=r.finca;
-  if(ab){
-    ui.mixTrees=(r.arboles!=null?r.arboles:'');
-    ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)).map(l=>({n:l.n,d:l.d,u:'g'})):[{n:'',d:'',u:'g'}];
+  ui.mixMode=mode;ui.mixFinca=r.finca;
+  let src='';
+  if(keep){
+    if(ab){ui.mixTrees=(r.arboles!=null?r.arboles:ui.mixTrees);}
+    else{ui.mixHa=dronHaFor(r.finca)||r.ha||ui.mixHa;}
+    src=prevFi&&prevFi!==r.finca?('Se mantuvieron los químicos de la última preparación ('+prevFi+')'):'Se mantuvieron los químicos de la última preparación';
   }else{
-    ui.mixHa=r.ha||dronHaFor(r.finca)||'';ui.mixLxHa=last.lxha||r.lxha||200;
-    ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)):[{n:'',d:'',u:'ml'}];
+    const last=cronoLastPrep(k)||{lines:r.lines,lxha:r.lxha,finca:r.finca,f:r.f};
+    if(ab){
+      ui.mixTrees=(r.arboles!=null?r.arboles:'');
+      ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)).map(l=>({n:l.n,d:l.d,u:'g'})):[{n:'',d:'',u:'g'}];
+    }else{
+      ui.mixHa=dronHaFor(r.finca)||r.ha||'';ui.mixLxHa=last.lxha||r.lxha||200;
+      ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)):[{n:'',d:'',u:'ml'}];
+    }
+    src='Se cargó la última preparación guardada'+(last.finca&&last.finca!==r.finca?' ('+last.finca+')':'');
   }
   persistMix();closeModal();
   ui.view='quimicos';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='quimicos'));render();
-  toast(last.finca&&last.finca!==r.finca?('Se cargó la última preparación guardada ('+last.finca+(last.f?' · '+fmtFecha(last.f):'')+') para '+r.finca+'. Revísala y envíala al cronograma'):'Se cargó la última preparación guardada. Revísala y envíala al cronograma');
+  toast(src+' para '+r.finca+'. Revisa y envía al cronograma');
 }
 function renderCronoFum(){renderCrono('fum');}
 function renderCronoAb(){renderCrono('ab');}
