@@ -4965,15 +4965,16 @@ function sendMixToCrono(){
      fincas.forEach(finca=>{
        const copy=JSON.parse(JSON.stringify(m.lines));
        const haF=isAb?0:(dronHaFor(finca)||m.ha);
-       const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy}:{f,lxha:m.lxha,ha:haF,lines:copy};
+       const ts=Date.now();
+       const app=isAb?{f,mode:'ab',arboles:m.trees,lines:copy,ts}:{f,lxha:m.lxha,ha:haF,lines:copy,ts};
        const target=(applyTarget&&applyTarget.finca===finca)?applyTarget:null;
        if(target){
          target.hist=target.hist||[];target.hist.push(app);target.hist.sort((a,b)=>(a.f||'').localeCompare(b.f||''));
-         target.f=f;target.lines=copy;target.dias=dias;delete target.prox;
+         target.f=f;target.lines=copy;target.dias=dias;target.ts=ts;delete target.prox;
          if(isAb){target.mode='ab';target.arboles=m.trees;delete target.lxha;delete target.ha;}else{target.lxha=m.lxha;target.ha=haF;delete target.mode;delete target.arboles;}
          marcadas++;
        }else{
-         const rec=isAb?{id:cronoNewId(kind),finca,f,mode:'ab',arboles:m.trees,lines:copy,dias,hist:[app]}:{id:cronoNewId(kind),finca,f,lxha:m.lxha,ha:haF,lines:copy,dias,hist:[app]};
+         const rec=isAb?{id:cronoNewId(kind),finca,f,mode:'ab',arboles:m.trees,lines:copy,dias,hist:[app],ts}:{id:cronoNewId(kind),finca,f,lxha:m.lxha,ha:haF,lines:copy,dias,hist:[app],ts};
          arr.push(rec);nuevas++;
        }
      });
@@ -4985,22 +4986,35 @@ function sendMixToCrono(){
      document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view===cfg.view));render();
    }}]);
 }
+/* La preparación guardada más reciente del cronograma (de cualquier finca): primero por hora de guardado,
+   y para registros antiguos sin hora, por fecha de aplicación y orden de registro. */
+function cronoLastPrep(k){
+  let best=null;const key=x=>[(+x.ts||0),(x.f||''),(+x.id||0),(+x.hi||0)];
+  const better=(a,b)=>{const A=key(a),B=key(b);for(let i=0;i<A.length;i++){if(A[i]>B[i])return true;if(A[i]<B[i])return false;}return false;};
+  cronoArr(k).forEach(r=>{
+    const cands=[{ts:r.ts,f:r.f,id:r.id,hi:9999,lines:r.lines,lxha:r.lxha,finca:r.finca}];
+    (r.hist||[]).forEach((h,hi)=>cands.push({ts:h.ts,f:h.f,id:r.id,hi,lines:h.lines,lxha:h.lxha,finca:r.finca}));
+    cands.forEach(c=>{if(c.lines&&c.lines.some(l=>l&&l.n)&&(!best||better(c,best)))best=c;});
+  });
+  return best;
+}
 function cronoApply(k,id){
   const r=cronoArr(k).find(x=>x.id===id);if(!r)return;
+  const last=cronoLastPrep(k)||{lines:r.lines,lxha:r.lxha,finca:r.finca,f:r.f};
   ui.cronoKind=k;ui.cronoApplyK=k;ui.cronoApplyId=id;
   const ab=(k==='ab'||r.mode==='ab');
   ui.mixMode=ab?'ab':'fum';
   ui.mixFinca=r.finca;
   if(ab){
     ui.mixTrees=(r.arboles!=null?r.arboles:'');
-    ui.mixLines=(r.lines&&r.lines.length)?JSON.parse(JSON.stringify(r.lines)).map(l=>({n:l.n,d:l.d,u:'g'})):[{n:'',d:'',u:'g'}];
+    ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)).map(l=>({n:l.n,d:l.d,u:'g'})):[{n:'',d:'',u:'g'}];
   }else{
-    ui.mixHa=r.ha;ui.mixLxHa=r.lxha;
-    ui.mixLines=(r.lines&&r.lines.length)?JSON.parse(JSON.stringify(r.lines)):[{n:'',d:'',u:'ml'}];
+    ui.mixHa=r.ha||dronHaFor(r.finca)||'';ui.mixLxHa=last.lxha||r.lxha||200;
+    ui.mixLines=(last.lines&&last.lines.length)?JSON.parse(JSON.stringify(last.lines)):[{n:'',d:'',u:'ml'}];
   }
   persistMix();closeModal();
   ui.view='quimicos';document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.view==='quimicos'));render();
-  toast('Revisa la preparación y envíala al cronograma');
+  toast(last.finca&&last.finca!==r.finca?('Se cargó la última preparación guardada ('+last.finca+(last.f?' · '+fmtFecha(last.f):'')+') para '+r.finca+'. Revísala y envíala al cronograma'):'Se cargó la última preparación guardada. Revísala y envíala al cronograma');
 }
 function renderCronoFum(){renderCrono('fum');}
 function renderCronoAb(){renderCrono('ab');}
