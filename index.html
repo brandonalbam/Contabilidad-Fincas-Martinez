@@ -2387,7 +2387,7 @@ function frutaVoiceModal(){
      <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
    ${vzModeHTML()}
-   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="frvRefresh()" style="resize:vertical;min-height:72px"></textarea>
+   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzSchedule()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Venta detectada</div>
    <div id="frv_prev"></div>
    <div class="note"><b>Calidades:</b> ${esc(cals)}. También entiende sinónimos («manchada», «pipitos», «menuda», «gruesa», «revuelta», «exportación»…). Di cada calidad con su cantidad y, si quieres, su precio: «extra 120 a 32 mil», «80 canastillas de mediana», «mancha 40». Los números de <b>decenas o centenas</b> (10, 40, 120, 150) son <b>cantidad</b>; los de <b>miles</b> (10.000, 32.000, 80.000) son <b>precio</b>. Si no dices el precio, se usa el <b>precio del día</b>. «Todo a 30 mil» pone ese precio a las calidades sin precio. Para el pago: «pagado», «de contado», «pendiente», «fiado», «me debe». Para la unidad di «unidad» y luego cuál: «unidad kilos», «unidad canastillas».</div>`,
@@ -2498,7 +2498,7 @@ function pedVoiceModal(){
      <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
    ${vzModeHTML()}
-   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="pvRefresh()" style="resize:vertical;min-height:72px"></textarea>
+   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzSchedule()" style="resize:vertical;min-height:72px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Pedido detectado</div>
    <div id="pv_prev"></div>
    <div class="note"><b>Productos:</b> reconoce los ${n} productos del catálogo de <b>Preparación de químicos</b> aunque se pronuncien o escriban distinto. <b>Por defecto todo se calcula por hectáreas:</b> el número que digas con el producto es su dosis por hectárea («Romectin 300 cc», «Finale 1 litro», «Mancozeb 500 gramos»). Si solo dices el nombre, se usa la dosis del catálogo. <b>Cantidad fija:</b> di «cantidad fija» junto al producto: «Finale 5 litros cantidad fija», «Mancozeb cantidad fija 2 kilos» (1 galón = 3,79 L). También: «12 hectáreas», «finca Placer», «para mañana», «sin bodega», «quitar Finale».</div>`,
@@ -2727,7 +2727,7 @@ function voiceMovModal(){
      <div id="vz_st" style="font-size:13px;color:var(--muted)">${vzIdleMsg()}</div>
    </div>
    ${vzModeHTML()}
-   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzRefresh()" style="resize:vertical;min-height:70px"></textarea>
+   <textarea class="input" id="vz_txt" rows="3" placeholder="Aquí aparece lo que dictas (también puedes escribir o corregir)" oninput="vzSchedule()" style="resize:vertical;min-height:70px"></textarea>
    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--muted);margin:12px 0 6px">Datos detectados</div>
    <div class="vz-grid" id="vz_prev">${vzPreviewHTML({})}</div>
    <div class="note"><b>Consejos:</b> puedes decir el nombre del campo antes del dato y solo se escribe lo que sigue: «finca Placer», «comercio Syca», «descripción compra de abono foliar», «cantidad diez bultos», «precio ochenta mil», «total trescientos mil», «estado pendiente», «factura 1234», «fecha 20 de septiembre». Si te equivocas, repite el campo con el dato correcto: se queda con lo último que digas. Los químicos del catálogo de <b>Preparación de químicos</b> se reconocen, se corrigen solos (por ejemplo, «romectín» → ROMECTIN) y se van guardando en una lista: en Descripción quedan solo sus nombres. Si alguno se coló por error, quítalo con la ×. Puedes hablar varias veces; al terminar pulsa «Llenar formulario» y revisa antes de guardar.</div>`,
@@ -2745,11 +2745,12 @@ const VZ_ICON_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const VZ_ICON_KB='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="9" x2="6" y2="9"/><line x1="10" y1="9" x2="10" y2="9"/><line x1="14" y1="9" x2="14" y2="9"/><line x1="18" y1="9" x2="18" y2="9"/><line x1="6" y1="13" x2="6" y2="13"/><line x1="18" y1="13" x2="18" y2="13"/><line x1="10" y1="13" x2="14" y2="13"/><line x1="7" y1="16" x2="17" y2="16"/></svg>';
 function vzHasSR(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
 function vzIsSamsung(){return /SamsungBrowser/i.test(navigator.userAgent||'');}
-function vzKbMode(){if(!vzHasSR())return true;if(ui._vzModePref)return ui._vzModePref==='kb';let v=null;try{v=localStorage.getItem('vzMode');}catch(e){}if(v)return v==='kb';return vzIsSamsung();}
+function vzKbMode(){if(!vzHasSR()||vzIsSamsung())return true;if(ui._vzModePref)return ui._vzModePref==='kb';let v=null;try{v=localStorage.getItem('vzMode');}catch(e){}if(v)return v==='kb';return vzIsSamsung();}
 function vzMicIcon(kb){return kb?VZ_ICON_KB:VZ_ICON_MIC;}
 function vzIdleMsg(){return vzKbMode()?'Toca el botón verde: se abre el teclado en el cuadro de abajo. Luego toca el <b>micrófono del teclado</b> 🎤 y habla.':'Toca el micrófono para empezar a hablar.';}
 function vzModeHTML(){
   if(!vzHasSR())return '<div class="vz-mode-note">Este navegador no tiene dictado propio: se usa el <b>micrófono del teclado</b> del celular.</div>';
+  if(vzIsSamsung())return '<div class="vz-mode-note">En <b>Samsung Internet</b> se dicta con el <b>micrófono del teclado</b>: el dictado propio de este navegador bloquea la pestaña y se pausa solo. Toca el botón verde y luego el 🎤 del teclado.</div>';
   const kb=vzKbMode();
   return `<div class="vz-seg" id="vz_seg"><span class="vz-seg-l">Dictar con:</span><button type="button" class="${kb?'':'on'}" onclick="vzSetMode('web')">${VZ_ICON_MIC}Micrófono de la app</button><button type="button" class="${kb?'on':''}" onclick="vzSetMode('kb')">${VZ_ICON_KB}Micrófono del teclado</button></div>`;
 }
@@ -2758,6 +2759,7 @@ function vzApplyMode(){
   const sg=document.getElementById('vz_seg');if(sg){const bs=sg.querySelectorAll('button');if(bs[0])bs[0].classList.toggle('on',!kb);if(bs[1])bs[1].classList.toggle('on',kb);}
 }
 function vzSetMode(m){
+  if(m==='web'&&vzIsSamsung()){toast('En Samsung Internet el micrófono de la app bloquea la pestaña. Usa el micrófono del teclado.');m='kb';}
   ui._vzModePref=m;try{localStorage.setItem('vzMode',m);}catch(e){}
   vzStop();vzMicOn(false);vzApplyMode();
   if(m==='kb')vzKeyboard();else vzSt(vzIdleMsg());
@@ -2791,7 +2793,7 @@ async function vzTryLocal(SR){
 }
 function vzToggle(){
   if(ui._vzRec||ui._vzRetryT||ui._vzNetWait){vzStop();vzSt('Dictado en pausa. Toca de nuevo para seguir hablando.');vzMicOn(false);return;}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){vzKeyboard();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR||vzIsSamsung()){vzKeyboard();return;}
   const android=/Android/i.test(navigator.userAgent||'');
   const ta=document.getElementById('vz_txt');ui._vzBase=(ta&&ta.value.trim())?ta.value.trim():'';ui._vzSess='';
   ui._vzFails=0;ui._vzNetWait=false;
