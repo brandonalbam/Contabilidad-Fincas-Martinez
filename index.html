@@ -378,6 +378,13 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .cfin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px}
 .cfin-n{font-size:12px;color:var(--muted)}
 .dr-pay{display:flex;flex-wrap:wrap;gap:6px}
+.fac-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)}
+.fac-k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fac-v{font-weight:600;font-size:13.5px;line-height:1.3;margin-top:2px;overflow-wrap:anywhere}
+.fac-s{font-size:12px;color:var(--muted);margin-top:2px}
+.fac-warn{margin-top:10px;padding:9px 12px;border-radius:10px;border-left:4px solid var(--amber);background:var(--surface2);font-size:13px}
+.fac-warn.bad{border-left-color:var(--red)}
+@media(max-width:640px){.fac-head{grid-template-columns:1fr}}
 .dr-pay button{flex:1 1 auto;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .dr-pay button.on{background:var(--green2);border-color:var(--green2);color:#fff}
 .dr-pay button[data-v="X"].on{background:var(--amber);border-color:var(--amber)}
@@ -1651,7 +1658,7 @@ function filteredMovs(){
   });
 }
 function renderMovs(){
-  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
+  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn" onclick="facPick()" title="Crear el movimiento leyendo el PDF de una factura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Subir PDF</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
   const list=filteredMovs();
   const per=40,pages=Math.max(1,Math.ceil(list.length/per));
   if(ui.mPage>pages)ui.mPage=1;
@@ -2718,6 +2725,242 @@ function vzPreviewHTML(r){
     row('Estado',r.e==='X'?'Pendiente':(r.e==='P'?'Pagado / Recibido':''))+row('Abono',r.ab?fmt(r.ab):'')+row('Factura',r.fa)+(r._prod&&r._prod.length?`<div class="vz-it ok vz-prods"><span>Químicos guardados (${r._prod.length})</span><div>${r._prod.map((nm,i)=>`<em>${esc(nm)}<button type="button" title="Quitar" onclick="vzRemoveProd(${i})">×</button></em>`).join('')}</div></div>`:'');
 }
 
+/* =====================  FACTURAS EN PDF → MOVIMIENTO  =====================
+   Lee el texto del PDF de una factura electrónica (sin internet aparte del lector de PDF, sin servicios externos),
+   reconoce comercio, número, fecha, finca, forma de pago, productos y total, y muestra una vista previa editable. */
+function facPick(){
+  let inp=document.getElementById('fac_in');
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='fac_in';inp.accept='application/pdf,.pdf';inp.style.display='none';
+    inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value='';if(f)facLoadFile(f);};document.body.appendChild(inp);}
+  inp.click();
+}
+async function facLoadFile(file){
+  if(!/pdf$/i.test(file.type||'')&&!/\.pdf$/i.test(file.name||'')){toast('El archivo debe ser un PDF');return;}
+  showModal('Leyendo factura…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Leyendo <b>${esc(file.name)}</b>…</span></div>`,[{label:'Cancelar',cls:'btn',fn:closeModal}]);
+  try{
+    const buf=new Uint8Array(await file.arrayBuffer());
+    const lines=await facPdfLines(buf);
+    const txt=lines.map(l=>l.t).join(' ');
+    if(txt.replace(/\s/g,'').length<40){
+      showModal('No se pudo leer la factura',`<p>Este PDF no trae texto: parece una <b>foto o un escaneo</b> de la factura.</p><div class="note">Usa el PDF original de la factura electrónica, el que llega al correo o se descarga del portal del comercio. Si solo tienes la foto, registra el movimiento con <b>Nuevo movimiento</b> o con <b>Dictar</b>.</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;
+    }
+    const r=facParse(lines,file.name||'');
+    facPreview(r);
+  }catch(e){console.warn(e);
+    showModal('No se pudo leer la factura',`<p>${esc(e&&e.message||'Error al abrir el PDF')}</p><div class="note">Revisa que sea un PDF y vuelve a intentarlo. Si el PDF tiene contraseña, ábrelo y guárdalo sin contraseña primero.</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
+}
+async function facPdfLines(buf){
+  const pdfjs=await omrLoadPdfJs();
+  const doc=await pdfjs.getDocument({data:buf}).promise;const lines=[];
+  for(let p=1;p<=Math.min(doc.numPages,8);p++){
+    const page=await doc.getPage(p);const tc=await page.getTextContent();
+    const its=tc.items.filter(it=>it.str&&it.str.trim()).map(it=>({s:it.str,x:it.transform[4],y:it.transform[5],w:it.width||0,h:Math.abs(it.transform[3])||it.height||8}));
+    its.sort((a,b)=>b.y-a.y||a.x-b.x);
+    const rows=[];
+    for(const it of its){let r=null;for(let i=rows.length-1;i>=0&&i>=rows.length-6;i--){if(Math.abs(rows[i].y-it.y)<=Math.max(2,it.h*0.45)){r=rows[i];break;}}if(!r){r={y:it.y,its:[]};rows.push(r);}r.its.push(it);}
+    rows.sort((a,b)=>b.y-a.y);
+    for(const r of rows){r.its.sort((a,b)=>a.x-b.x);let t='',end=null;const h=Math.max(...r.its.map(i=>i.h));
+      for(const it of r.its){if(end!==null){const g=it.x-end;t+=g>h*0.9?'   ':(g>h*0.12&&!/\s$/.test(t)?' ':'');}t+=it.s;end=it.x+it.w;}
+      t=t.replace(/[ \t]+$/,'');if(t.trim())lines.push({t,p});}
+  }
+  return lines;
+}
+function facMoney(s){
+  s=String(s||'').replace(/[$\s]/g,'');if(!/^\-?[\d.,]*\d[\d.,]*$/.test(s))return NaN;
+  const lc=s.lastIndexOf(','),ld=s.lastIndexOf('.');let dec=-1;
+  if(lc>-1&&ld>-1)dec=Math.max(lc,ld);
+  else{const k=Math.max(lc,ld);if(k>-1){const after=s.length-k-1;const groups=(s.match(/[.,]/g)||[]).length;if(after!==3||groups===1&&after!==3)dec=k;if(after===3)dec=-1;}}
+  const ip=(dec>-1?s.slice(0,dec):s).replace(/[.,]/g,''),fp=dec>-1?s.slice(dec+1):'';
+  return parseFloat(ip+(fp?'.'+fp:''));
+}
+const FAC_EXCL=/res(\.|oluci[oó]n)?\s*(dian|n[°º.]|no\.)|resoluci|venc|vigen|autoriza|rango|desde\s+el|cufe|cude/i;
+function facDates(t){const out=[];let m;const re=/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b|\b(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\b/g;
+  while((m=re.exec(t))){let d,mo,y;if(m[1]){d=+m[1];mo=+m[2];y=+m[3];}else{y=+m[4];mo=+m[5];d=+m[6];}
+    if(mo>12&&d<=12){const k=d;d=mo;mo=k;}
+    if(y>2000&&y<2100&&mo>=1&&mo<=12&&d>=1&&d<=31)out.push(`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`);}
+  return out;}
+function facNormName(t){return vzNorm(t).replace(/[^a-z0-9ñ ]+/g,' ').replace(/\b(s\s*a\s*s|sas|s\s*a|ltda|limitada|e\s*u|eu|s\s*en\s*c|y\s*cia|cia)\b/g,' ').replace(/\s+/g,' ').trim();}
+function facStripArt(t){return vzNorm(t).replace(/[^a-z0-9ñ ]+/g,' ').replace(/\b(finca|hacienda|vereda|vda|la|el|los|las|lote)\b/g,' ').replace(/\s+/g,' ').trim();}
+function facComercios(){const set=new Set((CFG.comercios||[]).filter(Boolean));MOVS.forEach(m=>{if(m.t==='E'&&m.co)set.add(m.co);});return [...set];}
+function facMatchFinca(text){
+  const nt=' '+facStripArt(text)+' ';if(nt.trim().length<3)return '';
+  let best='',bl=0;
+  for(const f of (CFG.fincas||[])){const nf=facStripArt(f);if(nf.length<3)continue;
+    if(nt.includes(' '+nf+' ')&&nf.length>bl){best=f;bl=nf.length;continue;}
+    if(!best){for(const w of nt.trim().split(' ')){if(w.length>=4&&nf.length>=4&&!nf.includes(' ')&&vzSim(vzPhon(w),vzPhon(nf))>=0.84){best=f;bl=nf.length;break;}}}}
+  return best;
+}
+function facMatchTitular(cliente){
+  const ct=facNormName(cliente).split(' ').filter(w=>w.length>=3);if(!ct.length)return '';
+  let best='',bs=0;
+  for(const t of titularesList()){const tt=facNormName(t).split(' ').filter(w=>w.length>=3);let sc=0;
+    for(const a of tt){if(ct.some(b=>b===a||(a.length>=4&&b.length>=4&&vzSim(vzPhon(a),vzPhon(b))>=0.8)))sc++;}
+    if(sc>bs){bs=sc;best=t;}}
+  return bs>=2||(bs===1&&ct.length===1)?best:'';
+}
+function facParse(lines,fname){
+  const L=lines.map(l=>l.t);const r={items:[],warn:[],fname};
+  const cells=t=>t.split(/\s{3,}/).map(c=>c.trim()).filter(Boolean);
+  // --- emisor y NIT (parte superior de la primera página)
+  const top=lines.filter(l=>l.p===1).slice(0,14).map(l=>l.t);
+  const stopIdx=top.findIndex(t=>/cliente|se[ñn]or|adquir|comprador|facturar a/i.test(t));
+  const head=stopIdx>0?top.slice(0,stopIdx):top.slice(0,8);
+  for(const t of head){const c=cells(t)[0]||'';if((c.match(/[a-záéíóúñ]/gi)||[]).length>=5&&!/factura|cufe|nit|res\.|resoluci|tel|cel|direcc|cra|calle|carrera|www|@|iva|contribuyente/i.test(c)){r.emisor=c.replace(/\s+/g,' ').trim();break;}}
+  for(const t of head){const m=t.match(/\b(\d{6,10})\s*-\s*(\d)\b/);if(m){r.nit=m[1]+'-'+m[2];break;}}
+  if(!r.nit){for(const t of head){const m=t.match(/nit\.?\s*:?\s*([\d.]{6,13})(?:\s*-\s*(\d))?/i);if(m){r.nit=m[1].replace(/\./g,'')+(m[2]?'-'+m[2]:'');break;}}}
+  const fm=(fname||'').match(/(\d{8,10})_\d+_([A-Z]{2,6})_(\d{2,})/i);
+  if(!r.nit&&fm)r.nit=fm[1];
+  // --- número de factura
+  const prefRes=(L.find(t=>/res(\.|oluci)/i.test(t)&&/\b[A-Z]{2,6}\s*-?\s*\d{2,}\s*(?:-|al|a|hasta)\s*\d{2,}/i.test(t))||'').match(/\b([A-Z]{2,6})\s*-?\s*\d{2,}\s*(?:-|al|a|hasta)\s*\d{2,}/i);
+  const normFa=x=>{x=String(x).toUpperCase().replace(/\s+/g,'');const m=x.match(/^([A-Z]{1,6})-?(\d+)$/);return m?m[1]+'-'+m[2]:x;};
+  for(let i=0;i<L.length&&!r.fa;i++){const t=L[i];if(FAC_EXCL.test(t))continue;
+    const m=t.match(/(?:\bN[°ºo]\.?|\bNo\.|\bNro\.?|\bN[úu]mero|#)\s*:?\s*([A-Z]{1,6}\s?-?\s?\d{3,}|\d{3,})\b/i);
+    if(m&&!/orden|pedido|remisi|cuenta|celular|tel/i.test(t.slice(Math.max(0,m.index-12),m.index)))r.fa=normFa(m[1]);}
+  if(!r.fa&&prefRes){const re=new RegExp('\\b'+prefRes[1]+'\\s*-?\\s*(\\d{2,})\\b','i');for(const t of L){if(FAC_EXCL.test(t))continue;const m=t.match(re);if(m){r.fa=prefRes[1].toUpperCase()+'-'+m[1];break;}}}
+  if(!r.fa&&fm)r.fa=fm[2].toUpperCase()+'-'+fm[3];
+  // --- fecha de la factura
+  for(let i=0;i<L.length&&!r.f;i++){const t=L[i];
+    if(/fecha/i.test(t)&&!/venc|l[ií]mite|pago\s*oportuno|entrega|recep|valid/i.test(t.match(/fecha[^\d]{0,30}/i)?.[0]||'')){
+      for(let j=i;j<Math.min(L.length,i+4)&&!r.f;j++){if(j>i&&/venc|l[ií]mite/i.test(L[j])&&!facDates(L[j]).length)break;const ds=facDates(L[j]);if(ds.length&&!(FAC_EXCL.test(L[j])&&!/fecha/i.test(L[j])))r.f=ds[0];}}}
+  if(!r.f){for(const t of L){if(FAC_EXCL.test(t))continue;const ds=facDates(t);if(ds.length){r.f=ds[0];break;}}}
+  // --- fecha de vencimiento
+  for(let i=0;i<L.length&&!r.fv;i++){if(/venc/i.test(L[i])&&!/res(\.|oluci)/i.test(L[i])){for(let j=i;j<Math.min(L.length,i+3);j++){const ds=facDates(L[j]).filter(d=>d!==r.f);if(ds.length){r.fv=ds[0];break;}}}}
+  // --- forma de pago
+  const all=L.join('\n');
+  const fp=all.match(/forma\s*(?:de)?\s*pago\s*:?\s*(cr[eé]dito|contado)/i)||all.match(/\b(cr[eé]dito|contado)\b/i);
+  r.pago=fp?(/contado/i.test(fp[1])?'contado':'credito'):'';
+  const pl=all.match(/plazo\s*:?\s*(\d{1,3})\s*d[ií]as/i);if(pl)r.plazo=+pl[1];
+  // --- cliente
+  for(let i=0;i<L.length&&!r.cliente;i++){
+    const m=L[i].match(/(?:cliente|se[ñn]or(?:es)?|adquir(?:i|e)ente|raz[oó]n\s*social|comprador)\s*:?\s*(.*)$/i);
+    if(m){let v=cells(m[1])[0]||'';if((v.match(/[a-záéíóúñ]/gi)||[]).length<4){for(let j=i+1;j<Math.min(L.length,i+3);j++){const c=cells(L[j])[0]||'';if((c.match(/[a-záéíóúñ]/gi)||[]).length>=4&&!/ciudad|direcc|tel|nit|fecha|venta/i.test(c)){v=c;break;}}}
+      if((v.match(/[a-záéíóúñ]/gi)||[]).length>=4)r.cliente=v.replace(/\s+/g,' ').trim();}}
+  // --- observaciones
+  for(const t of L){const m=t.match(/observaci[oó]n(?:es)?\s*:?\s*(.*)$/i);if(m){r.obs=(cells(m[1])[0]||'').trim();break;}}
+  // --- totales
+  const totC=[];
+  L.forEach((t,i)=>{const re=/(total\s+a\s+pagar|neto\s+a\s+pagar|valor\s+a\s+pagar|total\s+factura|total\s+neto|valor\s+total|(?<![a-z])total)\s*:?\s*\$?\s*(-?[\d][\d.,]*)/gi;let m;
+    while((m=re.exec(t))){const lab=m[1].toLowerCase();const pre=t.slice(Math.max(0,m.index-4),m.index).toLowerCase();if(/sub$/.test(pre)||/sub/.test(pre))continue;
+      const v=facMoney(m[2]);if(!(v>0))continue;const pri=/a\s+pagar/.test(lab)?3:(/factura|neto/.test(lab)?2:(/valor total/.test(lab)?1:1.5));totC.push({v,pri,i});}});
+  totC.sort((a,b)=>b.pri-a.pri||b.i-a.i);if(totC.length)r.total=Math.round(totC[0].v);
+  for(const t of L){const m=t.match(/sub\s*-?\s*total\s*:?\s*\$?\s*([\d][\d.,]*)/i);if(m){r.subtotal=facMoney(m[1]);}const mi=t.match(/(?:^|\s)iva\s*:?\s*\$?\s*([\d][\d.,]*)\s*$/i);if(mi&&!/%/.test(mi[0]))r.iva=facMoney(mi[1]);}
+  // --- productos
+  const hIdx=L.findIndex(t=>/descrip|detalle|producto|art[ií]culo|concepto/i.test(t)&&/(cant|valor|precio|unid|total)/i.test(t));
+  let endIdx=L.findIndex((t,i)=>i>hIdx&&/sub\s*-?\s*total|observaci|total\s+(items|art)|son\s*:|valor\s+en\s+letras|forma\s+de\s+pago:/i.test(t));if(endIdx<0)endIdx=L.length;
+  const unitRe=/^(und|unid|unidad|un|uds|kg|kgs|kilo|kilos|lt|lts|litro|litros|gl|gal|galon|bto|bulto|bultos|caja|cj|par|m|mt|ml|gr|g|cc|paq|sobre|frasco|tarro)\.?$/i;
+  const isNum=c=>/^\$?\s*-?[\d][\d.,]*%?$/.test(c);
+  if(hIdx>=0){
+    for(let i=hIdx+1;i<endIdx;i++){const t=L[i];let cs=cells(t);
+      /* número de fila al inicio (1, 2, 3…): no es cantidad */
+      if(cs.length>2&&/^\d{1,3}$/.test(cs[0])&&+cs[0]===r.items.length+1)cs=cs.slice(1);
+      else{const m0=(cs[0]||'').match(/^(\d{1,3})\s+(.*)$/);if(m0&&+m0[1]===r.items.length+1&&/[a-z]/i.test(m0[2]))cs=[m0[2],...cs.slice(1)];}
+      const nums=cs.filter(c=>isNum(c)&&!/%$/.test(c)).map(facMoney).filter(v=>!isNaN(v));
+      const texts=cs.filter(c=>!isNum(c)&&(c.match(/[a-záéíóúñ]/gi)||[]).length>=3&&!unitRe.test(c)&&!/^[A-Z]{0,3}\d{2,}[A-Z]?$/.test(c));
+      if(nums.length>=2&&texts.length){
+        const d=texts.sort((a,b)=>b.length-a.length)[0].replace(/^[A-Z]{0,4}\d{2,}[A-Z]?\s+(?=[A-ZÁÉÍÓÚÑ]{2})/,'');const tot=nums[nums.length-1];
+        let q=null,pu=null;
+        for(let a=0;a<nums.length-1&&q==null;a++)for(let b=a+1;b<nums.length-1;b++){if(nums[a]>0&&nums[a]<=100000&&Math.abs(nums[a]*nums[b]-tot)<=Math.max(2,tot*0.012)){q=nums[a];pu=nums[b];break;}}
+        if(q==null){const cand=nums.slice(0,-1).filter(v=>v>0&&v<=10000&&Number.isFinite(v));q=cand.length?cand[0]:1;pu=q?tot/q:tot;}
+        const u=(cs.find(c=>unitRe.test(c))||'').toUpperCase();
+        r.items.push({d:d.replace(/\s+/g,' ').trim(),q:+q,pu:Math.round(pu),tot:Math.round(tot),u});
+      }else if(r.items.length&&!nums.length&&texts.length&&cs.length<=2&&t.trim().length<70&&!/p[aá]g|page/i.test(t)){
+        r.items[r.items.length-1].d+=' '+texts[0];}
+    }
+  }
+  const sumIt=r.items.reduce((a,x)=>a+x.tot,0);
+  if(!r.total&&sumIt)r.total=sumIt;
+  if(r.items.length&&r.total&&Math.abs(sumIt-r.total)>Math.max(2,r.total*0.01))r.warn.push(`La suma de los productos (${fmt(sumIt)}) no coincide con el total de la factura (${fmt(r.total)}). Puede ser por IVA, descuentos o retenciones: revisa el total.`);
+  // --- comercio
+  const nits=CFG.facNits||{};const nitKey=(r.nit||'').split('-')[0];
+  if(nitKey&&nits[nitKey])r.co=nits[nitKey];
+  if(!r.co&&r.emisor){const en=' '+facNormName(r.emisor)+' ';let best='',bs=0;
+    for(const c of facComercios()){const cn=facNormName(c);if(cn.length<3)continue;
+      if(en.includes(' '+cn+' ')){if(cn.length>bs){bs=cn.length;best=c;}continue;}
+      for(const w of en.trim().split(' ')){if(w.length>=4&&cn.length>=4&&!cn.includes(' ')&&vzSim(vzPhon(w),vzPhon(cn))>=0.86&&cn.length>bs*0.9){best=c;bs=cn.length;}}}
+    if(best)r.co=best;}
+  if(!r.co&&r.emisor){const parts=r.emisor.split(/\s+-\s+/);const shortP=parts.slice(1).map(x=>x.replace(/\b(S\.?\s?A\.?\s?S\.?|LTDA\.?|S\.?A\.?)\s*$/i,'').trim()).find(x=>x.length>=2&&x.length<=22);
+    r.coNuevo=1;r.co=(shortP||r.emisor.replace(/\b(S\.?\s?A\.?\s?S\.?|LTDA\.?|S\.?A\.?)\s*$/i,'').trim()).toUpperCase();}
+  // --- finca
+  if(r.obs)r.fi=facMatchFinca(r.obs);
+  if(!r.fi){for(const t of L){const c=cells(t).find(x=>/direcc|entreg|predio|finca|vereda|vda/i.test(x)&&!FAC_EXCL.test(x));if(!c)continue;
+      const f=facMatchFinca(c.replace(/^.*?(direcc[a-zíó]*|entregar?\s+en|entrega|predio|finca|vereda|vda)\.?\s*:?/i,' '));if(f){r.fi=f;r.fiBy='dir';break;}}}
+  if(r.fi&&!r.fiBy)r.fiBy='obs';
+  if(r.cliente){r.titular=facMatchTitular(r.cliente);}
+  if(!r.fi&&r.titular){const fs=(CFG.fincas||[]).filter(f=>fincaTitular(f)===r.titular);r.fiOpts=fs;if(fs.length===1){r.fi=fs[0];r.fiBy='titular';}}
+  if(!r.fi){const prev=MOVS.filter(m=>m.co&&r.co&&vzNorm(m.co)===vzNorm(r.co)).sort((a,b)=>(b.f||'').localeCompare(a.f||''))[0];if(prev){r.fi=prev.fi;r.fiBy='prev';}}
+  // --- categoría
+  const quimN=(CFG.quimicos||[]).map(q=>facNormName(q.n)).filter(n=>n.length>=4);
+  const agro=/glifos|glufos|paraquat|fungic|insectic|herbic|acaric|fertiliz|abono|urea|cal\s+dolom|foliar|coadyuv|adherente|\b(sl|sc|ec|wp|wg|ew|od|cs)\b|\bx\s*\d+\s*(lt|lts|kg|cc|ml|gr)\b/i;
+  const isChem=r.items.some(it=>{const n=facNormName(it.d);return agro.test(it.d)||quimN.some(q=>n.includes(q));});
+  const iq=(CFG.catEgresos||[]).find(c=>vzNorm(c)==='insumos/quimicos')||(CFG.catEgresos||[]).find(c=>/qu[ií]mic|insumo/i.test(c));
+  if(isChem&&iq)r.c=iq;
+  else{const cnt={};MOVS.forEach(m=>{if(m.t==='E'&&m.co&&r.co&&vzNorm(m.co)===vzNorm(r.co)&&m.c)cnt[m.c]=(cnt[m.c]||0)+1;});const top1=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];r.c=top1?top1[0]:(iq&&r.items.length?iq:'');}
+  r.d=r.items.map(it=>it.d+(it.q&&it.q!==1?' ('+(+it.q).toLocaleString('es-CO')+')':'')).join(' - ');
+  if(!r.fa)r.warn.push('No encontré el número de la factura. Escríbelo abajo.');
+  if(!r.f)r.warn.push('No encontré la fecha de la factura. Revisa la fecha.');
+  if(!r.total)r.warn.push('No encontré el total de la factura. Escríbelo abajo.');
+  if(!r.items.length)r.warn.push('No pude separar los productos. El movimiento se crea con el total de la factura; revisa la descripción.');
+  return r;
+}
+function facNormFa(x){return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function facPreview(r){
+  ui._fac=r;const today=todayISO();
+  const dup=MOVS.filter(m=>m.fa&&r.fa&&facNormFa(m.fa)===facNormFa(r.fa)&&(!r.co||!m.co||vzNorm(m.co)===vzNorm(r.co)));
+  const fiNote=r.fiBy==='obs'?'Tomada de «Observaciones» de la factura':r.fiBy==='dir'?'Tomada de la dirección de la factura':r.fiBy==='titular'?('Única finca de '+esc(r.titular)):r.fiBy==='prev'?'La misma de la última compra en este comercio':'';
+  const fincaSel=r.fi||'';const opts=(CFG.fincas||[]).map(f=>`<option ${f===fincaSel?'selected':''}>${esc(f)}</option>`).join('');
+  const multiOk=r.items.length>1;
+  const rows=r.items.map(it=>`<tr><td class="wrap">${esc(it.d)}</td><td class="r tnum">${(+it.q).toLocaleString('es-CO')}${it.u?' '+esc(it.u):''}</td><td class="r tnum">${fmt(it.pu)}</td><td class="r tnum"><b>${fmt(it.tot)}</b></td></tr>`).join('');
+  showModal('Factura leída · revisa antes de enviar',`
+    <div class="fac-head">
+      <div><div class="fac-k">Comercio</div><div class="fac-v">${esc(r.emisor||'—')}</div>${r.nit?`<div class="fac-s">NIT ${esc(r.nit)}</div>`:''}</div>
+      <div><div class="fac-k">Cliente</div><div class="fac-v">${esc(r.cliente||'—')}</div>${r.titular?`<div class="fac-s">Titular: ${esc(r.titular)}</div>`:''}</div>
+      <div><div class="fac-k">Pago</div><div class="fac-v">${r.pago==='contado'?'Contado':r.pago==='credito'?'Crédito':'—'}${r.plazo?' · '+r.plazo+' días':''}</div>${r.fv?`<div class="fac-s">Vence ${fmtFecha(r.fv)}</div>`:''}</div>
+    </div>
+    ${dup.length?`<div class="fac-warn bad"><b>Esta factura ya está registrada</b> (${dup.map(m=>esc(m.fi)+' · '+fmtFecha(m.f)+' · '+fmt(m.tot)).join('; ')}). Si la envías otra vez quedará repetida.</div>`:''}
+    ${r.warn.map(w=>`<div class="fac-warn">${esc(w)}</div>`).join('')}
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field"><label>Fecha de la factura</label><input class="input tnum" type="date" id="fac_f" value="${r.f||today}"></div>
+      <div class="field"><label>Finca</label><select class="input" id="fac_fi">${fincaSel?'':'<option value="" selected>— Elige la finca —</option>'}${opts}</select>${fiNote?`<div class="fac-s" style="margin-top:4px">${fiNote}</div>`:(r.titular&&r.fiOpts&&r.fiOpts.length?`<div class="fac-s" style="margin-top:4px">Fincas de ${esc(r.titular)}: ${r.fiOpts.map(esc).join(', ')}</div>`:'')}</div>
+      <div class="field"><label>Comercio / proveedor</label><input class="input" id="fac_co" list="fac_co_list" value="${esc(r.co||'')}" autocomplete="off"><datalist id="fac_co_list">${facComercios().map(c=>`<option value="${esc(c)}">`).join('')}</datalist>${r.coNuevo?'<div class="fac-s" style="margin-top:4px">Comercio nuevo: revisa el nombre</div>':''}</div>
+      <div class="field"><label># Factura</label><input class="input" id="fac_fa" value="${esc(r.fa||'')}"></div>
+      <div class="field"><label>Categoría</label><select class="input" id="fac_c">${r.c?'':'<option value="" selected>— Elige —</option>'}${catOpts('E',r.c)}</select></div>
+      <div class="field"><label>Estado</label><select class="input" id="fac_e"><option value="X" ${r.pago!=='contado'?'selected':''}>Pendiente (a crédito)</option><option value="P" ${r.pago==='contado'?'selected':''}>Pagado (de contado)</option></select></div>
+      ${multiOk?`<div class="field full"><label>¿Cómo registrarla?</label><div class="dr-pay" id="fac_mode"><button type="button" class="on" data-v="1" onclick="facMode('1')">Un movimiento con el total</button><button type="button" data-v="n" onclick="facMode('n')">Un movimiento por producto (${r.items.length})</button></div></div>`:''}
+      <div class="field full" id="fac_dwrap"><label>Descripción</label><textarea class="input" id="fac_d" rows="2" style="resize:vertical">${esc(r.d||'')}</textarea></div>
+      <div class="field" id="fac_twrap"><label>Total de la factura</label><input class="input tnum money" inputmode="numeric" id="fac_tot" value="${fmn(r.total||0)}"></div>
+    </div>
+    ${r.items.length?`<div class="fac-k" style="margin:12px 0 6px">Productos de la factura (${r.items.length})</div><div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Cant.</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>Total de la factura</b></td><td class="r tnum"><b>${fmt(r.total||0)}</b></td></tr></tbody></table></div>`:''}
+    <div class="note">Revisa los datos. Puedes corregir cualquier campo antes de enviar. ${r.pago==='credito'?'Como es a <b>crédito</b>, queda <b>pendiente</b> y aparece en la cuenta del comercio para abonarle.':''}</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar a movimientos',cls:'btn primary',fn:()=>facSend(dup.length)}]);
+  ui._facMode='1';
+}
+function facMode(v){ui._facMode=v;const b=document.getElementById('fac_mode');if(b)b.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  const n=v==='n';const dw=document.getElementById('fac_dwrap'),tw=document.getElementById('fac_twrap');if(dw)dw.style.display=n?'none':'';if(tw)tw.style.display=n?'none':'';}
+async function facSend(isDup,confirmed){
+  const r=ui._fac;if(!r)return;const g=id=>(document.getElementById(id)||{}).value||'';
+  const f=g('fac_f'),fi=g('fac_fi'),co=g('fac_co').trim(),fa=g('fac_fa').trim(),c=g('fac_c'),e=g('fac_e')||'X';
+  if(!f){toast('Indica la fecha de la factura');return;}
+  if(!fi){toast('Elige la finca');return;}
+  if(!c){toast('Elige la categoría');return;}
+  const per=ui._facMode==='n'&&r.items.length>1;
+  const tot=per?r.items.reduce((a,x)=>a+x.tot,0):Math.round(num(g('fac_tot')));
+  if(!(tot>0)){toast('Escribe el total de la factura');return;}
+  if(isDup&&!confirmed){
+    const vals={f,fi,co,fa,c,e,d:g('fac_d'),tot:g('fac_tot'),mode:ui._facMode};
+    confirmModal('Factura repetida','Esta factura ya está registrada en Movimientos. ¿Registrarla otra vez?',()=>{facPreview(r);setTimeout(()=>{const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};s('fac_f',vals.f);s('fac_fi',vals.fi);s('fac_co',vals.co);s('fac_fa',vals.fa);s('fac_c',vals.c);s('fac_e',vals.e);s('fac_d',vals.d);s('fac_tot',vals.tot);if(vals.mode==='n')facMode('n');facSend(true,true);},30);});
+    return;
+  }
+  const base={f,fi,t:'E',c,co,cl:'',e,ab:0,fa};
+  const add=[];
+  if(per){r.items.forEach(it=>{const u=(CFG.unidades||[]).find(x=>vzNorm(x).startsWith(vzNorm(it.u||'').slice(0,2))&&it.u)||'';add.push({...base,d:it.d,u,q:+it.q||1,pu:Math.round(it.tot/(+it.q||1)),tot:Math.round(it.tot)});});}
+  else add.push({...base,d:g('fac_d').trim(),u:'',q:1,pu:tot,tot});
+  add.forEach(m=>{m.id=seq++;MOVS.push(m);});
+  if(co){const nk=(r.nit||'').split('-')[0];if(nk){CFG.facNits=CFG.facNits||{};CFG.facNits[nk]=co;}
+    if(!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(co);}
+    await persistCfg();}
+  await persistMovs();closeModal();ui._fac=null;render();
+  toast(add.length>1?`${add.length} movimientos registrados de la factura ${fa||''}`:`Factura ${fa||''} registrada: ${fmt(tot)} en ${fi}`);
+}
 function voiceMovModal(){
   ui._vzOnUpdate=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   showModal('Dictar movimiento',`
