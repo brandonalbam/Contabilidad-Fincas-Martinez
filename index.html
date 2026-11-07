@@ -384,6 +384,12 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .fac-s{font-size:12px;color:var(--muted);margin-top:2px}
 .fac-warn{margin-top:10px;padding:9px 12px;border-radius:10px;border-left:4px solid var(--amber);background:var(--surface2);font-size:13px}
 .fac-warn.bad{border-left-color:var(--red)}
+.chip.fa-dup{background:rgba(220,60,60,.14);color:var(--red);border:1px solid rgba(220,60,60,.35);font-size:10.5px;padding:1px 7px;margin-top:3px;white-space:nowrap}
+.fa-dup-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;margin:0 0 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);border-left:4px solid var(--red);font-size:13px}
+.fa-dup-banner span{display:flex;align-items:center;gap:8px}.fa-dup-banner svg{width:18px;height:18px;color:var(--red);flex:0 0 auto}
+.fa-dup-warn{margin-top:6px;padding:8px 10px;border-radius:9px;background:rgba(220,60,60,.1);border:1px solid rgba(220,60,60,.35);color:var(--ink,inherit);font-size:12.5px;line-height:1.45}
+#m_fadup.pulse .fa-dup-warn{animation:faPulse .9s ease 2}
+@keyframes faPulse{50%{box-shadow:0 0 0 4px rgba(220,60,60,.25)}}
 @media(max-width:640px){.fac-head{grid-template-columns:1fr}}
 .dr-pay button{flex:1 1 auto;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .dr-pay button.on{background:var(--green2);border-color:var(--green2);color:#fff}
@@ -1638,8 +1644,14 @@ function barChart(series){
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${labels}</svg>`;
 }
 
+/* ===== Números de factura: se comparan solo los números (FVES-30077 = 30077 = 030077) ===== */
+function faKey(fa){const d=String(fa||'').replace(/\D+/g,'').replace(/^0+(?=\d)/,'');return d;}
+function faDupCounts(){const c={};MOVS.forEach(m=>{const k=faKey(m.fa);if(k)c[k]=(c[k]||0)+1;});return c;}
+function faMatches(fa,exceptId){const k=faKey(fa);if(!k)return [];return MOVS.filter(m=>m.id!==exceptId&&faKey(m.fa)===k);}
+function faDupListHTML(arr){return arr.slice(0,4).map(m=>`<b>${esc(m.fa)}</b> · ${esc(m.fi)} · ${fmtFecha(m.f)}${m.co?' · '+esc(m.co):(m.cl?' · '+esc(m.cl):'')} · ${fmt(m.tot)}`).join('<br>')+(arr.length>4?`<br>y ${arr.length-4} más`:'');}
 /* ===== MOVIMIENTOS ===== */
 function filteredMovs(){
+  const dupC=ui.mFaDup?faDupCounts():null;
   const res=MOVS.filter(m=>{
     if(ui.mFinca&&m.fi!==ui.mFinca)return false;
     if(ui.mTipo&&m.t!==ui.mTipo)return false;
@@ -1647,9 +1659,11 @@ function filteredMovs(){
     if(ui.mPeriodo&&!(m.f||'').startsWith(ui.mPeriodo))return false;
     if(ui.mQuien&&m.cl!==ui.mQuien&&m.co!==ui.mQuien)return false;
     if(ui.mQ){const q=ui.mQ.toLowerCase();if(!((m.d||'')+(m.c||'')+(m.co||'')+(m.cl||'')+(m.fa||'')).toLowerCase().includes(q))return false;}
+    if(dupC){const k=faKey(m.fa);if(!k||dupC[k]<2)return false;}
     return true;
   });
   const hoy=todayISO();
+  if(dupC)return res.sort((a,b)=>faKey(a.fa).localeCompare(faKey(b.fa),undefined,{numeric:true})||(b.f||'').localeCompare(a.f||''));
   return res.sort((a,b)=>{
     const af=a.f||'',bf=b.f||'',aFut=af>hoy,bFut=bf>hoy;
     if(aFut!==bFut)return aFut?1:-1;                 // fechas futuras al final
@@ -1683,12 +1697,15 @@ function renderMovs(){
       <optgroup label="Comercios">${[...new Set([...CFG.comercios,...MOVS.filter(m=>m.co).map(m=>m.co)])].sort((a,b)=>a.localeCompare(b)).map(c=>`<option ${ui.mQuien===c?'selected':''}>${esc(c)}</option>`).join('')}</optgroup></select></div>
     <div class="field"><label>Periodo</label><select class="input" onchange="ui.mPeriodo=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option>${periodos.map(p=>`<option ${ui.mPeriodo===p?'selected':''} value="${p}">${MES_ABV[+p.slice(5)-1]} ${p.slice(0,4)}</option>`).join('')}</select></div>
   </div>
+  ${(()=>{const dc=faDupCounts();const n=MOVS.filter(m=>{const k=faKey(m.fa);return k&&dc[k]>1;}).length;const g=Object.values(dc).filter(v=>v>1).length;
+     if(!n&&!ui.mFaDup)return '';
+     return `<div class="fa-dup-banner"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${n?`<b>${n}</b> movimientos tienen el número de factura repetido (${g} número${g===1?'':'s'})`:'No hay facturas repetidas'}</span><button class="btn sm" onclick="ui.mFaDup=!ui.mFaDup;ui.mPage=1;renderMovs()">${ui.mFaDup?'Ver todos':'Ver solo las repetidas'}</button></div>`;})()}
   <div id="movtable"></div>`;
   drawMovTable(slice,list.length,pages,per);
 }
 function refreshMovTable(){const list=filteredMovs();const per=40,pages=Math.max(1,Math.ceil(list.length/per));if(ui.mPage>pages)ui.mPage=1;drawMovTable(list.slice((ui.mPage-1)*per,ui.mPage*per),list.length,pages,per);}
 function drawMovTable(slice,total,pages,per){
-  const el=document.getElementById('movtable');if(!el)return;
+  const el=document.getElementById('movtable');if(!el)return;ui._faDupC=faDupCounts();
   if(!total){el.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><b>No hay movimientos</b>Ajusta los filtros o registra uno nuevo.</div></div>`;return;}
   el.innerHTML=`<div class="tablewrap"><table><thead><tr>
     <th>Fecha</th><th>Finca</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Cliente / Comercio</th><th>Factura</th>
@@ -1711,7 +1728,7 @@ function rowHTML(m){
     <td>${esc(m.c)}</td>
     <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis" title="${esc(m.d)}">${esc(m.d)||'—'}</td>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${m.t==='I'?(m.cl?`<span style="color:var(--blue)">${esc(m.cl)}</span>`:'—'):(m.co?esc(m.co):'—')}</td>
-    <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}</td>
+    <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}${(()=>{const k=faKey(m.fa);const c=k&&(ui._faDupC||{})[k];return c>1?`<br><span class="chip fa-dup" title="Hay ${c} movimientos con la factura ${esc(k)}">Repetida ×${c}</span>`:'';})()}</td>
     <td class="r tnum">${m.q?(+m.q).toLocaleString('es-CO'):'—'}${m.u?' <span style="color:var(--faint);font-size:11px">'+esc(m.u)+'</span>':''}</td>
     <td class="r tnum">${m.pu?fmt(m.pu):'—'}</td>
     <td class="r tnum"><b>${fmt(m.tot)}</b></td>
@@ -1732,6 +1749,7 @@ function openMov(id,preset,opts){
   const def={f:todayISO(),fi:ui.mFinca||CFG.fincas[0],t:'E',c:'',d:'',u:'',q:1,pu:'',tot:0,e:'P',ab:0,fa:'',co:''};
   const m=id?MOVS.find(x=>x.id===id):(preset?{...def,...preset}:def);
   const isNew=!id;const isVoice=!!(opts&&opts.voice);const isDup=isNew&&!!preset&&!isVoice;const tmp={...m};
+  ui._faDupAck='';setTimeout(()=>{const el=document.getElementById('m_fa');if(el&&el.value&&(!id||faMatches(el.value,id).length&&isNew))faCheckInput(id||0);},80);
   const body=()=>`${isVoice?`<div class="note" style="margin:0 0 12px"><b>Datos dictados:</b> «${esc(opts.text||'')}». Revisa y completa lo que falte antes de guardar.</div>`:''}
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="m_f" value="${tmp.f}"></div>
@@ -1746,7 +1764,7 @@ function openMov(id,preset,opts){
       <div class="field"><label>Precio unitario</label><input class="input tnum money" inputmode="numeric" id="m_pu" value="${fmn(tmp.pu)}" oninput="window.__calc()"></div>
       <div class="calc-total"><span>TOTAL</span><b id="m_total" class="tnum">${fmt((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)}</b></div>
       <div class="field"><label>Estado</label><select class="input" id="m_e" onchange="window.__estado(this.value)"><option value="P" ${tmp.e==='P'?'selected':''}>Pagado / Recibido</option><option value="X" ${tmp.e==='X'?'selected':''}>Pendiente</option></select></div>
-      <div class="field"><label># Factura</label><input class="input" id="m_fa" value="${esc(tmp.fa)}"></div>
+      <div class="field"><label># Factura</label><input class="input" id="m_fa" value="${esc(tmp.fa)}" oninput="faCheckInput(${id?id:0})"><div id="m_fadup"></div></div>
       <div class="field" id="m_abwrap" style="${tmp.e==='X'?'':'display:none'}"><label>Abono / pago recibido</label><input class="input tnum money" inputmode="numeric" id="m_ab" value="${fmn(tmp.ab||0)}" oninput="window.__saldo()"></div>
       <div class="field" id="m_salwrap" style="${tmp.e==='X'?'':'display:none'}"><label id="m_sallab">Saldo pendiente</label><input class="input tnum" id="m_sal" value="${fmt(Math.max(((+tmp.q||0)*(+tmp.pu||0)||tmp.tot)-(+tmp.ab||0),0))}" disabled></div>
     </div>`;
@@ -2818,6 +2836,7 @@ function facParse(lines,fname){
     if(m&&!/orden|pedido|remisi|cuenta|celular|tel/i.test(t.slice(Math.max(0,m.index-12),m.index)))r.fa=normFa(m[1]);}
   if(!r.fa&&prefRes){const re=new RegExp('\\b'+prefRes[1]+'\\s*-?\\s*(\\d{2,})\\b','i');for(const t of L){if(FAC_EXCL.test(t))continue;const m=t.match(re);if(m){r.fa=prefRes[1].toUpperCase()+'-'+m[1];break;}}}
   if(!r.fa&&fm)r.fa=fm[2].toUpperCase()+'-'+fm[3];
+  if(r.fa){r.faFull=r.fa;r.fa=String(r.fa).replace(/\D+/g,'');}
   // --- fecha de la factura
   for(let i=0;i<L.length&&!r.f;i++){const t=L[i];
     if(/fecha/i.test(t)&&!/venc|l[ií]mite|pago\s*oportuno|entrega|recep|valid/i.test(t.match(/fecha[^\d]{0,30}/i)?.[0]||'')){
@@ -2905,7 +2924,7 @@ function facParse(lines,fname){
 function facNormFa(x){return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
 function facPreview(r){
   ui._fac=r;const today=todayISO();
-  const dup=MOVS.filter(m=>m.fa&&r.fa&&facNormFa(m.fa)===facNormFa(r.fa)&&(!r.co||!m.co||vzNorm(m.co)===vzNorm(r.co)));
+  const dup=faMatches(r.fa,null);
   const fiNote=r.fiBy==='obs'?'Tomada de «Observaciones» de la factura':r.fiBy==='dir'?'Tomada de la dirección de la factura':r.fiBy==='titular'?('Única finca de '+esc(r.titular)):r.fiBy==='prev'?'La misma de la última compra en este comercio':'';
   const fincaSel=r.fi||'';const opts=(CFG.fincas||[]).map(f=>`<option ${f===fincaSel?'selected':''}>${esc(f)}</option>`).join('');
   const multiOk=r.items.length>1;
@@ -2916,13 +2935,13 @@ function facPreview(r){
       <div><div class="fac-k">Cliente</div><div class="fac-v">${esc(r.cliente||'—')}</div>${r.titular?`<div class="fac-s">Titular: ${esc(r.titular)}</div>`:''}</div>
       <div><div class="fac-k">Pago</div><div class="fac-v">${r.pago==='contado'?'Contado':r.pago==='credito'?'Crédito':'—'}${r.plazo?' · '+r.plazo+' días':''}</div>${r.fv?`<div class="fac-s">Vence ${fmtFecha(r.fv)}</div>`:''}</div>
     </div>
-    ${dup.length?`<div class="fac-warn bad"><b>Esta factura ya está registrada</b> (${dup.map(m=>esc(m.fi)+' · '+fmtFecha(m.f)+' · '+fmt(m.tot)).join('; ')}). Si la envías otra vez quedará repetida.</div>`:''}
+    <div id="fac_dupbox">${dup.length?`<div class="fac-warn bad"><b>Este número de factura ya está registrado:</b><br>${faDupListHTML(dup)}<br>Si la envías, quedará repetida.</div>`:''}</div>
     ${r.warn.map(w=>`<div class="fac-warn">${esc(w)}</div>`).join('')}
     <div class="form-grid" style="margin-top:12px">
       <div class="field"><label>Fecha de la factura</label><input class="input tnum" type="date" id="fac_f" value="${r.f||today}"></div>
       <div class="field"><label>Finca</label><select class="input" id="fac_fi">${fincaSel?'':'<option value="" selected>— Elige la finca —</option>'}${opts}</select>${fiNote?`<div class="fac-s" style="margin-top:4px">${fiNote}</div>`:(r.titular&&r.fiOpts&&r.fiOpts.length?`<div class="fac-s" style="margin-top:4px">Fincas de ${esc(r.titular)}: ${r.fiOpts.map(esc).join(', ')}</div>`:'')}</div>
       <div class="field"><label>Comercio / proveedor</label><input class="input" id="fac_co" list="fac_co_list" value="${esc(r.co||'')}" autocomplete="off"><datalist id="fac_co_list">${facComercios().map(c=>`<option value="${esc(c)}">`).join('')}</datalist>${r.coNuevo?'<div class="fac-s" style="margin-top:4px">Comercio nuevo: revisa el nombre</div>':''}</div>
-      <div class="field"><label># Factura</label><input class="input" id="fac_fa" value="${esc(r.fa||'')}"></div>
+      <div class="field"><label># Factura</label><input class="input tnum" id="fac_fa" value="${esc(r.fa||'')}" oninput="facDupLive()">${r.faFull&&r.faFull.replace(/\D+/g,'')!==r.faFull?`<div class="fac-s" style="margin-top:4px">En la factura: ${esc(r.faFull)}</div>`:''}</div>
       <div class="field"><label>Categoría</label><select class="input" id="fac_c">${r.c?'':'<option value="" selected>— Elige —</option>'}${catOpts('E',r.c)}</select></div>
       <div class="field"><label>Estado</label><select class="input" id="fac_e"><option value="X" ${r.pago!=='contado'?'selected':''}>Pendiente (a crédito)</option><option value="P" ${r.pago==='contado'?'selected':''}>Pagado (de contado)</option></select></div>
       ${multiOk?`<div class="field full"><label>¿Cómo registrarla?</label><div class="dr-pay" id="fac_mode"><button type="button" class="on" data-v="1" onclick="facMode('1')">Un movimiento con el total</button><button type="button" data-v="n" onclick="facMode('n')">Un movimiento por producto (${r.items.length})</button></div></div>`:''}
@@ -2931,9 +2950,10 @@ function facPreview(r){
     </div>
     ${r.items.length?`<div class="fac-k" style="margin:12px 0 6px">Productos de la factura (${r.items.length})</div><div class="tablewrap"><table><thead><tr><th>Producto</th><th class="r">Cant.</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--line)"><td colspan="3"><b>Total de la factura</b></td><td class="r tnum"><b>${fmt(r.total||0)}</b></td></tr></tbody></table></div>`:''}
     <div class="note">Revisa los datos. Puedes corregir cualquier campo antes de enviar. ${r.pago==='credito'?'Como es a <b>crédito</b>, queda <b>pendiente</b> y aparece en la cuenta del comercio para abonarle.':''}</div>`,
-    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar a movimientos',cls:'btn primary',fn:()=>facSend(dup.length)}]);
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Enviar a movimientos',cls:'btn primary',fn:()=>facSend(faMatches((document.getElementById('fac_fa')||{}).value,null).length)}]);
   ui._facMode='1';
 }
+function facDupLive(){const v=(document.getElementById('fac_fa')||{}).value;const arr=faMatches(v,null);const b=document.getElementById('fac_dupbox');if(b)b.innerHTML=arr.length?`<div class="fac-warn bad"><b>Este número de factura ya está registrado:</b><br>${faDupListHTML(arr)}<br>Si la envías, quedará repetida.</div>`:'';}
 function facMode(v){ui._facMode=v;const b=document.getElementById('fac_mode');if(b)b.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const n=v==='n';const dw=document.getElementById('fac_dwrap'),tw=document.getElementById('fac_twrap');if(dw)dw.style.display=n?'none':'';if(tw)tw.style.display=n?'none':'';}
 async function facSend(isDup,confirmed){
@@ -2947,7 +2967,7 @@ async function facSend(isDup,confirmed){
   if(!(tot>0)){toast('Escribe el total de la factura');return;}
   if(isDup&&!confirmed){
     const vals={f,fi,co,fa,c,e,d:g('fac_d'),tot:g('fac_tot'),mode:ui._facMode};
-    confirmModal('Factura repetida','Esta factura ya está registrada en Movimientos. ¿Registrarla otra vez?',()=>{facPreview(r);setTimeout(()=>{const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};s('fac_f',vals.f);s('fac_fi',vals.fi);s('fac_co',vals.co);s('fac_fa',vals.fa);s('fac_c',vals.c);s('fac_e',vals.e);s('fac_d',vals.d);s('fac_tot',vals.tot);if(vals.mode==='n')facMode('n');facSend(true,true);},30);});
+    confirmModal('Factura repetida',`El número de factura <b>${esc(faKey(fa))}</b> ya está registrado en Movimientos:<br>${faDupListHTML(faMatches(fa,null))}<br><br>¿Registrarla otra vez?`,()=>{facPreview(r);setTimeout(()=>{const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};s('fac_f',vals.f);s('fac_fi',vals.fi);s('fac_co',vals.co);s('fac_fa',vals.fa);s('fac_c',vals.c);s('fac_e',vals.e);s('fac_d',vals.d);s('fac_tot',vals.tot);if(vals.mode==='n')facMode('n');facSend(true,true);},30);});
     return;
   }
   const base={f,fi,t:'E',c,co,cl:'',e,ab:0,fa};
@@ -3119,12 +3139,23 @@ function vzFill(){
   closeModal();setTimeout(()=>openMov(null,preset,{voice:true,text:clean}),60);
 }
 function catOpts(t,sel){const arr=t==='I'?CFG.catIngresos:CFG.catEgresos;return arr.map(c=>`<option ${sel===c?'selected':''}>${esc(c)}</option>`).join('');}
+function faCheckInput(id){
+  const el=document.getElementById('m_fa'),box=document.getElementById('m_fadup');if(!el||!box)return [];
+  const arr=faMatches(el.value,id||null);ui._faDupAck='';
+  box.innerHTML=arr.length?`<div class="fa-dup-warn"><b>Este número de factura ya está registrado:</b><br>${faDupListHTML(arr)}</div>`:'';
+  return arr;
+}
 async function saveMov(id){
   const g=x=>document.getElementById(x).value;
   const q=+g('m_q')||0,pu=num(g('m_pu'));
   const obj={f:g('m_f'),fi:g('m_fi'),t:g('m_t'),c:g('m_c'),d:g('m_d').trim(),u:g('m_u'),co:g('m_co'),
     cl:g('m_t')==='I'?g('m_cl'):'',q,pu,tot:Math.round(q*pu),e:g('m_e'),ab:g('m_e')==='X'?num(g('m_ab')):0,fa:g('m_fa').trim()};
   if(!obj.f){toast('Indica la fecha');return;}
+  {const orig=id?MOVS.find(x=>x.id===id):null;const changed=!orig||faKey(orig.fa)!==faKey(obj.fa);
+   const arr=changed?faMatches(obj.fa,id||null):[];const k=faKey(obj.fa);
+   if(arr.length&&ui._faDupAck!==k){faCheckInput(id);ui._faDupAck=k;const b=document.getElementById('m_fadup');if(b){b.scrollIntoView({block:'center',behavior:'smooth'});b.classList.add('pulse');}
+     toast('La factura '+k+' ya está registrada. Toca Guardar otra vez si de verdad quieres registrarla repetida.');return;}}
+  ui._faDupAck='';
   if(id){const m=MOVS.find(x=>x.id===id);Object.assign(m,obj);}
   else{obj.id=seq++;if(obj.ab>0)obj.abs=[{f:obj.f,v:Math.round(obj.ab)}];MOVS.push(obj);}
   await persistMovs();closeModal();render();toast(id?'Movimiento actualizado':'Movimiento registrado');
