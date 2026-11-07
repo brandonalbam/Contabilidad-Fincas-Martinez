@@ -385,6 +385,8 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .fac-warn{margin-top:10px;padding:9px 12px;border-radius:10px;border-left:4px solid var(--amber);background:var(--surface2);font-size:13px}
 .fac-warn.bad{border-left-color:var(--red)}
 .chip.fa-dup{background:rgba(220,60,60,.14);color:var(--red);border:1px solid rgba(220,60,60,.35);font-size:10.5px;padding:1px 7px;margin-top:3px;white-space:nowrap}
+button.chip.fa-dup,button.chip.fa-ok{cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.03em}
+.chip.fa-ok{background:var(--green-soft);color:var(--green2);border:1px solid rgba(60,160,100,.35);font-size:10.5px;padding:1px 7px;margin-top:3px;white-space:nowrap}
 .fa-dup-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;margin:0 0 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);border-left:4px solid var(--red);font-size:13px}
 .fa-dup-banner span{display:flex;align-items:center;gap:8px}.fa-dup-banner svg{width:18px;height:18px;color:var(--red);flex:0 0 auto}
 .fa-dup-warn{margin-top:6px;padding:8px 10px;border-radius:9px;background:rgba(220,60,60,.1);border:1px solid rgba(220,60,60,.35);color:var(--ink,inherit);font-size:12.5px;line-height:1.45}
@@ -1648,10 +1650,26 @@ function barChart(series){
 function faKey(fa){const d=String(fa||'').replace(/\D+/g,'').replace(/^0+(?=\d)/,'');return d;}
 function faDupCounts(){const c={};MOVS.forEach(m=>{const k=faKey(m.fa);if(k)c[k]=(c[k]||0)+1;});return c;}
 function faMatches(fa,exceptId){const k=faKey(fa);if(!k)return [];return MOVS.filter(m=>m.id!==exceptId&&faKey(m.fa)===k);}
+/* OK a facturas repetidas a propósito: se guarda qué movimientos quedaron aprobados.
+   Si luego aparece OTRO movimiento con ese número, el grupo vuelve a marcarse. */
+function faOkSet(k){return new Set(((CFG.faOk||{})[k]||[]).map(Number));}
+function faDupState(){const groups={};MOVS.forEach(m=>{const k=faKey(m.fa);if(k)(groups[k]=groups[k]||[]).push(m);});
+  const st={};for(const k in groups){const g=groups[k];if(g.length<2)continue;const ok=faOkSet(k);st[k]={n:g.length,ok:g.every(m=>ok.has(m.id))};}return st;}
+function faGroupModal(k){
+  const g=MOVS.filter(m=>faKey(m.fa)===k).sort((a,b)=>(a.f||'').localeCompare(b.f||''));if(g.length<2){toast('Ya no hay movimientos repetidos con la factura '+k);return;}
+  const ok=faOkSet(k);const isOk=g.every(m=>ok.has(m.id));
+  const rows=g.map(m=>`<tr><td class="tnum">${fmtFecha(m.f)}</td><td><span class="fdot"><i style="background:${fincaColor(m.fi)}"></i>${esc(m.fi)}</span></td><td>${esc(m.co||m.cl||'—')}</td><td class="wrap">${esc(m.d||m.c||'')}</td><td class="r tnum">${fmt(m.tot)}</td><td>${ok.has(m.id)?'<span class="chip i">OK</span>':'<span class="chip fa-dup">Nuevo</span>'}</td></tr>`).join('');
+  showModal('Factura '+esc(k)+' repetida',`
+    <p style="color:var(--muted);margin-bottom:10px">Hay <b>${g.length}</b> movimientos con el número de factura <b>${esc(k)}</b>${isOk?' y ya tienen el OK':''}.</p>
+    <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th>Comercio / cliente</th><th>Descripción</th><th class="r">Total</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="note">${isOk?'Si quitas el OK, estos movimientos vuelven a marcarse como repetidos.':'Dale <b>OK</b> si los registraste así a propósito (por ejemplo, una factura repartida entre varias fincas). Dejarán de marcarse como repetidos. Si más adelante se registra otro movimiento con este número, la marca vuelve a aparecer.'}</div>`,
+    isOk?[{label:'Cerrar',cls:'btn',fn:closeModal},{label:'Quitar el OK',cls:'btn',fn:async()=>{CFG.faOk=CFG.faOk||{};delete CFG.faOk[k];await persistCfg();closeModal();render();toast('Se quitó el OK de la factura '+k);}}]
+         :[{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Sí, es a propósito · OK',cls:'btn primary',fn:async()=>{CFG.faOk=CFG.faOk||{};CFG.faOk[k]=g.map(m=>m.id);await persistCfg();closeModal();render();toast('Factura '+k+' marcada como repetida a propósito');}}]);
+}
 function faDupListHTML(arr){return arr.slice(0,4).map(m=>`<b>${esc(m.fa)}</b> · ${esc(m.fi)} · ${fmtFecha(m.f)}${m.co?' · '+esc(m.co):(m.cl?' · '+esc(m.cl):'')} · ${fmt(m.tot)}`).join('<br>')+(arr.length>4?`<br>y ${arr.length-4} más`:'');}
 /* ===== MOVIMIENTOS ===== */
 function filteredMovs(){
-  const dupC=ui.mFaDup?faDupCounts():null;
+  const dupC=ui.mFaDup?faDupState():null;
   const res=MOVS.filter(m=>{
     if(ui.mFinca&&m.fi!==ui.mFinca)return false;
     if(ui.mTipo&&m.t!==ui.mTipo)return false;
@@ -1659,7 +1677,7 @@ function filteredMovs(){
     if(ui.mPeriodo&&!(m.f||'').startsWith(ui.mPeriodo))return false;
     if(ui.mQuien&&m.cl!==ui.mQuien&&m.co!==ui.mQuien)return false;
     if(ui.mQ){const q=ui.mQ.toLowerCase();if(!((m.d||'')+(m.c||'')+(m.co||'')+(m.cl||'')+(m.fa||'')).toLowerCase().includes(q))return false;}
-    if(dupC){const k=faKey(m.fa);if(!k||dupC[k]<2)return false;}
+    if(dupC){const k=faKey(m.fa);if(!k||!dupC[k]||dupC[k].ok)return false;}
     return true;
   });
   const hoy=todayISO();
@@ -1697,15 +1715,15 @@ function renderMovs(){
       <optgroup label="Comercios">${[...new Set([...CFG.comercios,...MOVS.filter(m=>m.co).map(m=>m.co)])].sort((a,b)=>a.localeCompare(b)).map(c=>`<option ${ui.mQuien===c?'selected':''}>${esc(c)}</option>`).join('')}</optgroup></select></div>
     <div class="field"><label>Periodo</label><select class="input" onchange="ui.mPeriodo=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option>${periodos.map(p=>`<option ${ui.mPeriodo===p?'selected':''} value="${p}">${MES_ABV[+p.slice(5)-1]} ${p.slice(0,4)}</option>`).join('')}</select></div>
   </div>
-  ${(()=>{const dc=faDupCounts();const n=MOVS.filter(m=>{const k=faKey(m.fa);return k&&dc[k]>1;}).length;const g=Object.values(dc).filter(v=>v>1).length;
+  ${(()=>{const st=faDupState();const pend=Object.values(st).filter(x=>!x.ok);const n=pend.reduce((a,x)=>a+x.n,0);const g=pend.length;const okG=Object.values(st).filter(x=>x.ok).length;
      if(!n&&!ui.mFaDup)return '';
-     return `<div class="fa-dup-banner"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${n?`<b>${n}</b> movimientos tienen el número de factura repetido (${g} número${g===1?'':'s'})`:'No hay facturas repetidas'}</span><button class="btn sm" onclick="ui.mFaDup=!ui.mFaDup;ui.mPage=1;renderMovs()">${ui.mFaDup?'Ver todos':'Ver solo las repetidas'}</button></div>`;})()}
+     return `<div class="fa-dup-banner"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${n?`<b>${n}</b> movimientos tienen el número de factura repetido (${g} número${g===1?'':'s'}). Toca la marca roja para revisar y darles OK.`:'No hay facturas repetidas pendientes de revisar'}${okG?` <span style="color:var(--muted)">· ${okG} con OK</span>`:''}</span><button class="btn sm" onclick="ui.mFaDup=!ui.mFaDup;ui.mPage=1;renderMovs()">${ui.mFaDup?'Ver todos':'Ver solo las repetidas'}</button></div>`;})()}
   <div id="movtable"></div>`;
   drawMovTable(slice,list.length,pages,per);
 }
 function refreshMovTable(){const list=filteredMovs();const per=40,pages=Math.max(1,Math.ceil(list.length/per));if(ui.mPage>pages)ui.mPage=1;drawMovTable(list.slice((ui.mPage-1)*per,ui.mPage*per),list.length,pages,per);}
 function drawMovTable(slice,total,pages,per){
-  const el=document.getElementById('movtable');if(!el)return;ui._faDupC=faDupCounts();
+  const el=document.getElementById('movtable');if(!el)return;ui._faSt=faDupState();
   if(!total){el.innerHTML=`<div class="card"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg><b>No hay movimientos</b>Ajusta los filtros o registra uno nuevo.</div></div>`;return;}
   el.innerHTML=`<div class="tablewrap"><table><thead><tr>
     <th>Fecha</th><th>Finca</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Cliente / Comercio</th><th>Factura</th>
@@ -1728,7 +1746,7 @@ function rowHTML(m){
     <td>${esc(m.c)}</td>
     <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis" title="${esc(m.d)}">${esc(m.d)||'—'}</td>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${m.t==='I'?(m.cl?`<span style="color:var(--blue)">${esc(m.cl)}</span>`:'—'):(m.co?esc(m.co):'—')}</td>
-    <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}${(()=>{const k=faKey(m.fa);const c=k&&(ui._faDupC||{})[k];return c>1?`<br><span class="chip fa-dup" title="Hay ${c} movimientos con la factura ${esc(k)}">Repetida ×${c}</span>`:'';})()}</td>
+    <td class="tnum" style="color:var(--muted)">${esc(m.fa)||'—'}${(()=>{const k=faKey(m.fa);const st=k&&(ui._faSt||{})[k];if(!st)return '';return st.ok?`<br><button type="button" class="chip fa-ok" title="Repetida a propósito (OK). Toca para revisar o quitar el OK" onclick="faGroupModal('${esc(k)}')">✓ OK ×${st.n}</button>`:`<br><button type="button" class="chip fa-dup" title="Hay ${st.n} movimientos con la factura ${esc(k)}. Toca para revisar y dar OK" onclick="faGroupModal('${esc(k)}')">Repetida ×${st.n}</button>`;})()}</td>
     <td class="r tnum">${m.q?(+m.q).toLocaleString('es-CO'):'—'}${m.u?' <span style="color:var(--faint);font-size:11px">'+esc(m.u)+'</span>':''}</td>
     <td class="r tnum">${m.pu?fmt(m.pu):'—'}</td>
     <td class="r tnum"><b>${fmt(m.tot)}</b></td>
