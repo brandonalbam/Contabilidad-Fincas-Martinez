@@ -383,6 +383,10 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .wa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
 .wa-card{padding:0;overflow:hidden}.wa-card.wa-miss{border-color:var(--amber)}
 .wf-line{margin-bottom:8px}
+.wa-x{background:rgba(217,119,6,.28);border-radius:4px;padding:1px 4px;font-weight:600;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.wa-o{opacity:.45}
+.wa-leg{display:block;margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--muted);white-space:normal}
+.wa-leg .wa-x{font-weight:600;color:var(--text,inherit)}
 .wa-msg{background:var(--surface2);padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}
 .wa-thumb{background:#0b0f0d;display:flex;justify-content:center;cursor:zoom-in;max-height:190px;overflow:hidden;border-bottom:1px solid var(--line)}
 .wa-thumb img{max-width:100%;max-height:190px;object-fit:contain;display:block;min-height:60px}
@@ -3217,11 +3221,13 @@ async function waRun(){
     const ctx={fi:'',t:''};
     if(moneyLines.length>=2){const hd=vzNorm(lines.filter(l=>!hasMoney(l)).join(' '));if(/\b(gasto|gastos|compras|compra|pagos|egresos|facturas)\b/.test(hd))ctx.t='E';else if(/\b(ventas|venta|ingresos|entradas)\b/.test(hd))ctx.t='I';}
     if(moneyLines.length>=2){for(const l of lines){if(!hasMoney(l)){const h=vzFincaLast(vzNorm(l).split(/\s+/));if(h){ctx.fi=h.name;break;}}}}
-    units.forEach((u,ui2)=>{if(!hasMoney(u)){if(moneyLines.length>=2){const h=vzFincaLast(vzNorm(u).split(/\s+/));if(h&&u.split(/\s+/).length<=4)ctx.fi=h.name;}return;}
-      if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3)return; // la línea de total de una lista no es otro movimiento
-      const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}
+    const LST=units.map(()=>'x'),made=[];
+    units.forEach((u,ui2)=>{if(!hasMoney(u)){const un=vzNorm(u);let hd=/\b(gasto|gastos|compras|compra|pagos|egresos|facturas|ventas|venta|ingresos|entradas)\b/.test(un)||/^\W*(hola|buenos dias|buen dia|buenas|buenas tardes|buenas noches|gracias|listo|ok|vale)\W*$/.test(un);if(moneyLines.length>=2){const h=vzFincaLast(vzNorm(u).split(/\s+/));if(h&&u.split(/\s+/).length<=4){ctx.fi=h.name;hd=true;}}LST[ui2]=hd?'n':'x';return;}
+      if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3){LST[ui2]='n';return;} // la línea de total de una lista no es otro movimiento
+      const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;LST[ui2]='o';return;}if(inQ.has(key)){nQ++;LST[ui2]='o';return;}
       if(m.att)return; // el texto que acompaña a una foto se interpreta junto con la foto
-      const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;d.mi=msgs.indexOf(m);out.push(d);});}
+      const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;d.mi=msgs.indexOf(m);out.push(d);LST[ui2]='o';made.push([d,ui2]);});
+    made.forEach(([d,k])=>{if(units.length>1){d.src.full=units.join('\n').slice(0,6000);d.src.st=LST.map((c,j)=>j===k||c==='n'?'u':c).join('');}else d.src.full=String(m.txt).slice(0,6000);});}
   // ---- fotos ----
   const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
   if(wantImg){const todo=[];
@@ -3350,31 +3356,33 @@ function wfCalName(key,prod,fallback){const c=(CFG.frutaCalidades||[]).find(x=>{
 function waFrutaList(m,ext){
   const raw=String(m.txt||'').split(/\n/);if(raw.length<3)return null;
   const prices={c:{},a:{}};const priceName={c:{},a:{}};const blocks=[];let cur=null,fi='',mode='',pp='c',blank=0,lastProd='';const skipped=[];
+  const LS=raw.map(()=>null);
   const dateRe=/(\d{1,2})\s*[.\/\-]\s*(\d{1,2})(?:\s*[.\/\-]\s*(\d{2,4}))?/;
   const mkDate=mt=>{let d=+mt[1],mo=+mt[2];if(!(d>=1&&d<=31&&mo>=1&&mo<=12))return '';let y=mt[3]?(+mt[3]<100?2000+ +mt[3]:+mt[3]):+m.f.slice(0,4);let f=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!mt[3]&&f>addDaysISO(m.f,3))f=`${y-1}${f.slice(4)}`;return f;};
   const nextReal=i=>{for(let k=i+1;k<raw.length;k++){if(raw[k].trim())return raw[k].trim();}return '';};
   const isItem=l=>{const mt=l.match(/^(\d+(?:[.,]\d+)?)\s+(\D.*)$/);if(!mt)return null;let rest=mt[2].trim();let lf='';const tk=rest.split(/\s+/);
     for(let n2=Math.min(2,tk.length-1);n2>=1;n2--){const f=wfFinca(tk.slice(-n2).join(' '));if(f){lf=f;rest=tk.slice(0,-n2).join(' ');break;}}
     const k=wfKey(rest);if(!k.ok)return null;return{q:parseFloat(mt[1].replace(',','.')),k,lf,rest};};
-  for(let i=0;i<raw.length;i++){const line=raw[i].trim();if(!line){blank++;continue;}const n=vzNorm(line);const bl=blank;blank=0;
-    if(/^\s*(lista\s+de\s+)?precios?\b/.test(n)){mode='price';pp=/aguacate/.test(n)?'a':'c';continue;}
+  for(let i=0;i<raw.length;i++){const line=raw[i].trim();if(!line){blank++;LS[i]={k:'n'};continue;}const n=vzNorm(line);const bl=blank;blank=0;
+    if(/^\s*(lista\s+de\s+)?precios?\b/.test(n)){mode='price';pp=/aguacate/.test(n)?'a':'c';LS[i]={k:'n'};continue;}
     if(mode==='price'){const a=line.match(/^\$?\s*(\d[\d.,]*)\s*(?:mil\s+)?(\D+)$/),b=line.match(/^(\D+?)\s*[:=\-]?\s*\$?\s*(\d[\d.,]*)\s*(mil)?\s*$/i);const nm=a?a[2]:(b?b[1]:''),nv=a?a[1]:(b?b[2]:'');
       if(nm&&nv){const k=wfKey(nm);let v=Math.round(num(nv));if(/[.,]\d{1,2}$/.test(nv)&&v<1000)v=Math.round(parseFloat(nv.replace(',','.')));if(v>0&&v<1000)v*=1000;
-        if(k.ok&&v>0){const g=k.prod==='aguacate'?'a':pp;prices[g][k.key]=v;priceName[g][k.key]=nm.replace(/aguacates?/i,'').trim();continue;}}
-      if(!dateRe.test(line))continue;mode='';}
+        if(k.ok&&v>0){const g=k.prod==='aguacate'?'a':pp;prices[g][k.key]=v;priceName[g][k.key]=nm.replace(/aguacates?/i,'').trim();LS[i]={k:'n'};continue;}}
+      if(!dateRe.test(line)){LS[i]={k:'x',b:null};continue;}mode='';}
     const it=isItem(line);
     if(it){if(it.lf)fi=it.lf;let prod=it.k.prod==='aguacate'?'a':(it.k.prod?'c':'');
       if(!prod)prod=it.k.key==='grueso'?'a':(it.k.key==='pareja'&&lastProd==='a'?'a':'c');lastProd=prod;
       if(!cur){cur={cl:'',f:m.f,items:[]};blocks.push(cur);}
-      cur.items.push({q:it.q,key:it.k.key,prod,fi,rest:it.rest,raw:line,loose:bl>=2&&!!it.lf});continue;}
+      {const io={q:it.q,key:it.k.key,prod,fi,rest:it.rest,raw:line,loose:bl>=2&&!!it.lf};cur.items.push(io);LS[i]={k:'i',it:io};}continue;}
     const dm=line.match(dateRe);
     if(dm&&/[a-zñ]{3,}/i.test(line.replace(dateRe,''))){const f=mkDate(dm);const nm=line.replace(dateRe,' ').replace(/[.\-_:,;]+/g,' ').replace(/\s+/g,' ').trim();
-      if(f&&nm.split(' ').length<=5){cur={cl:wfClient(nm),f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}}
+      if(f&&nm.split(' ').length<=5){cur={cl:wfClient(nm),f,items:[],head:line};blocks.push(cur);fi='';lastProd='';LS[i]={k:'h',b:cur};continue;}}
     if(!/\d/.test(line)){const f=wfFinca(line);const nx=nextReal(i);
-      if(f){fi=f;lastProd='';continue;}
-      if(/^\s*(la\s+)?fincas?\b/i.test(line)){fi='';continue;}
-      if(line.split(/\s+/).length<=4&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ .]+$/.test(line)&&nx&&(wfFinca(nx)||isItem(nx))&&!wfKey(line).ok){cur={cl:wfClient(line),f:m.f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}
-      const tk=line.split(/\s+/);const lf=tk.length>1?wfFinca(tk.slice(-1)[0]):'';if(lf&&wfKey(tk.slice(0,-1).join(' ')).ok){skipped.push(line);continue;}}
+      if(f){fi=f;lastProd='';LS[i]={k:'f',b:cur,fi:f};continue;}
+      if(/^\s*(la\s+)?fincas?\b/i.test(line)){fi='';LS[i]={k:'x',b:cur};continue;}
+      if(line.split(/\s+/).length<=4&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ .]+$/.test(line)&&nx&&(wfFinca(nx)||isItem(nx))&&!wfKey(line).ok){cur={cl:wfClient(line),f:m.f,items:[],head:line};blocks.push(cur);fi='';lastProd='';LS[i]={k:'h',b:cur};continue;}
+      const tk=line.split(/\s+/);const lf=tk.length>1?wfFinca(tk.slice(-1)[0]):'';if(lf&&wfKey(tk.slice(0,-1).join(' ')).ok){skipped.push(line);LS[i]={k:'x',b:cur};continue;}}
+    LS[i]={k:'x',b:cur};
   }
   const nItems=blocks.reduce((a,b)=>a+b.items.length,0);const np=Object.keys(prices.c).length+Object.keys(prices.a).length;
   if(nItems<2){if(np>=2){const o=[];o.prices=prices;o.np=np;return o;}return null;}
@@ -3384,7 +3392,7 @@ function waFrutaList(m,ext){
       let usedExt=false;const lines=g.items.map(it=>{let pr=P[it.key]||0;if(!pr&&ext&&ext.prices[g.prod][it.key]){pr=ext.prices[g.prod][it.key];usedExt=true;}if(!pr){const cn=wfCalName(it.key,g.prod==='a'?'aguacate':'',it.rest);pr=frutaPrecioOf(cn)||0;}
         const cal=wfCalName(it.key,g.prod==='a'?'aguacate':'',PN[it.key]||it.rest);if(!pr)miss.push(cal);return{cal,q:it.q,p:Math.round(pr)};});
       const d={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'fruta',warn:[],t:'I',f:b.f,fi:g.fi,cl:b.cl,co:'',fa:'',ab:0,e:'X',fruta:lines,
-        src:{au:m.au,f:m.f,hm:m.hm,txt:[b.head,g.fi&&!g.items.every(x=>x.loose)?g.fi:''].concat(g.items.map(x=>x.raw)).filter(Boolean).join('\n')}};
+        src:{au:m.au,f:m.f,hm:m.hm,full:String(m.txt).slice(0,6000),st:LS.map(x=>!x||x.k==='n'?'u':x.k==='i'?(g.items.includes(x.it)?'u':'o'):x.k==='h'?(x.b===b?'u':'o'):x.k==='f'?((!x.b||x.b===b)&&x.fi===g.fi?'u':'o'):(!x.b||x.b===b?'x':'o')).join(''),txt:[b.head,g.fi&&!g.items.every(x=>x.loose)?g.fi:''].concat(g.items.map(x=>x.raw)).filter(Boolean).join('\n')}};
       const want=g.prod==='a'?'aguacate':'';let c='';
       if(want)c=cats.find(x=>vzNorm(x).includes(want))||'';
       else{const cnt={};MOVS.forEach(x=>{if(x.t==='I'&&x.fruta&&x.c&&x.fi===g.fi&&!/aguacate/.test(vzNorm(x.c)))cnt[x.c]=(cnt[x.c]||0)+1;});const top=Object.entries(cnt).sort((a,b2)=>b2[1]-a[1])[0];
@@ -3402,7 +3410,7 @@ function waFrutaFix(d,keep){const L=(d.fruta||[]).filter(l=>(+l.q||0)>0);d.fruta
 function waFrutaReady(d){return !!(d.fi&&d.c&&d.f&&d.cl&&(d.fruta||[]).length&&d.fruta.every(l=>+l.p>0&&+l.q>0)&&d.tot>0);}
 function waFrutaCardHTML(d){const ok=waFrutaReady(d);
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
-    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     <div class="wa-body">
       <div class="wa-top"><span class="chip pay">Venta de fruta</span><span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente (por cobrar)':'Pagada'}</span><b class="wa-tot tnum pos">${fmt(d.tot)}</b></div>
       <div class="wa-grid">
@@ -3429,7 +3437,7 @@ function waFrutaEditTot(){const L=ui._wf||[];L.forEach((l,i)=>{const e=document.
 function waFrutaEdit(id,approveAfter){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._wf=JSON.parse(JSON.stringify(d.fruta||[]));if(!ui._wf.length)ui._wf=[{cal:'',q:'',p:0}];
   showModal(approveAfter?'Completa la venta para aprobar':'Editar venta de fruta',`
-    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     <div class="form-grid">
       <div class="field"><label>Fecha de la venta</label><input class="input tnum" type="date" id="wf_f" value="${d.f}"></div>
       <div class="field"><label>Cliente</label><input class="input" id="wf_cl" list="wf_clist" value="${esc(d.cl||'')}" autocomplete="off"><datalist id="wf_clist">${(CFG.clientes||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
@@ -3453,13 +3461,17 @@ async function waFrutaEditSave(id,approve){
     await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Venta aprobada: '+fmt(d.tot)+' · '+d.cl);return;}
   await persistCfg();closeModal();renderMovs();toast('Cambios guardados. Falta aprobar');
 }
+/* Mensaje original completo; resalta lo que no se entendió y atenúa lo que va en otra tarjeta */
+function waSrcHTML(src){if(!src)return '';const text=String(src.full||src.txt||'');const st=String(src.st||'');if(!st)return esc(text);
+  let hx=false,ho=false;const body=text.split('\n').map((l,i)=>{const c=st[i]||'u';if(!l.trim())return '';if(c==='x'){hx=true;return `<span class="wa-x">${esc(l)}</span>`;}if(c==='o'){ho=true;return `<span class="wa-o">${esc(l)}</span>`;}return esc(l);}).join('\n');
+  return body+(hx||ho?`<span class="wa-leg">${hx?'<span class="wa-x">Resaltado</span> no lo entendí: no quedó en esta tarjeta. ':''}${ho?'<span class="wa-o">En gris</span>: va en otra tarjeta o ya estaba registrado.':''}</span>`:'');}
 function waCliMatch(name,debts){const n=vzNorm(name||'').trim();if(!n)return null;debts=debts||waCliDebts();return debts.find(x=>vzNorm(x.cl)===n)||debts.find(x=>{const c=vzNorm(x.cl);return c.includes(n)||n.includes(c);})||null;}
 function waAbonoModal(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
   if(!debts.length){showModal('No hay deuda a la cual abonar',`<p>Ningún cliente tiene ventas pendientes por cobrar, así que no hay a qué abonarle este pago.</p><div class="note">Los pagos de clientes no crean un movimiento: se registran como <b>abono en Clientes</b>. Primero registra la venta como <b>Pendiente</b> en Movimientos y luego vuelve a esta tarjeta. Si esto no era el pago de un cliente, usa el botón <b>No es un abono</b> de la tarjeta.</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
   const sel=(waCliMatch(d.cl,debts)||{}).cl||'';
   showModal(d.img?'Abonar consignación a la deuda':'Abonar pago a la deuda',`
-    ${d.img?'':`<div class="wa-msg" style="border-radius:10px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>`}
+    ${d.img?'':`<div class="wa-msg" style="border-radius:10px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>`}
     ${d.img?`<div class="wa-thumb big" onclick="waViewImg('${d.img}')"><img data-waimg="${d.img}" alt="Foto"></div>`:''}
     <div class="form-grid" style="margin-top:12px">
       <div class="field full"><label>Cliente que ${d.img?'consignó':'pagó'}</label><select class="input" id="wb_cl" onchange="waAbonoPrev(true)">${sel?'':'<option value="" selected>— Elige el cliente —</option>'}${debts.map(x=>`<option value="${esc(x.cl)}" ${x.cl===sel?'selected':''}>${esc(x.cl)} — debe ${fmt(x.deuda)}</option>`).join('')}</select></div>
@@ -3496,7 +3508,7 @@ function waReady(d){if(d.kind==='fruta')return waFrutaReady(d);return !!(d.kind!
 function waAbonoCardHTML(d){
   const g=waCliMatch(d.cl);const warn=(d.warn||[]).slice();if(d.cl&&!g)warn.push('Este cliente no tiene ventas pendientes por cobrar');
   return `<div class="card wa-card ${g?'':'wa-miss'}" id="wa_${d.id}">
-    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     ${d.img?`<div class="wa-thumb" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>`:''}
     <div class="wa-body">
       <div class="wa-top"><span class="chip pay">${d.img?'Consignación':'Pago de cliente'}</span><span class="chip i">Abono en Clientes</span><b class="wa-tot tnum pos">${fmt(d.tot)}</b></div>
@@ -3515,7 +3527,7 @@ function waCardHTML(d){
   if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
-    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     ${d.img?`<div class="wa-thumb" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>`:''}
     <div class="wa-body">
       <div class="wa-top">${d.kind==='abono'?'<span class="chip pay">Consignación</span>':(d.img?'<span class="chip pend">Foto</span>':'')}<span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
@@ -3546,9 +3558,9 @@ function waRenderReview(){
 }
 function waToMov(d){const m={id:seq++,f:d.f,fi:d.fi,t:d.t,c:d.c,d:d.d||'',u:d.u||'',q:+d.q||1,pu:Math.round(+d.pu||0),tot:Math.round(+d.tot||0),e:d.e||'P',ab:d.e==='X'?Math.round(+d.ab||0):0,fa:d.fa||'',co:d.t==='E'?(d.co||''):'',cl:d.t==='I'?(d.cl||''):''};
   if(m.ab>0)m.abs=[{f:m.f,v:m.ab}];if(d.fruta&&d.t==='I')m.fruta=d.fruta;
-  m.wa=d.src?{au:d.src.au||'',f:d.src.f||'',hm:d.src.hm||'',txt:String(d.src.txt||'').slice(0,300)}:1;return m;}
+  m.wa=d.src?{au:d.src.au||'',f:d.src.f||'',hm:d.src.hm||'',txt:String(d.src.full||d.src.txt||'').slice(0,1500),...(d.src.st?{st:d.src.st}:{})}:1;return m;}
 function waShowSrc(id){const m=MOVS.find(x=>x.id===id);if(!m||!m.wa)return;const w=m.wa===1?null:m.wa;
-  showModal('Movimiento creado desde WhatsApp',w?`<div class="wa-msg" style="border-radius:10px;border:1px solid var(--line)"><span class="wa-meta">${esc(w.au)} · ${w.f?fmtFecha(w.f):''} ${esc(w.hm||'')}</span>${esc(w.txt)}</div><div class="note">Este es el mensaje original del chat. El movimiento quedó así: <b>${esc(m.fi)}</b> · ${esc(m.c)} · <b>${fmt(m.tot)}</b>.</div>`:'<p>Este movimiento se creó al importar un chat de WhatsApp.</p>',[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
+  showModal('Movimiento creado desde WhatsApp',w?`<div class="wa-msg" style="border-radius:10px;border:1px solid var(--line)"><span class="wa-meta">${esc(w.au)} · ${w.f?fmtFecha(w.f):''} ${esc(w.hm||'')}</span>${waSrcHTML(w)}</div><div class="note">Este es el mensaje original del chat. El movimiento quedó así: <b>${esc(m.fi)}</b> · ${esc(m.c)} · <b>${fmt(m.tot)}</b>.</div>`:'<p>Este movimiento se creó al importar un chat de WhatsApp.</p>',[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
 async function waCommit(list){
   const ids=new Set(list.map(d=>d.id));let cfgNames=false;
   list.forEach(d=>{const m=waToMov(d);MOVS.push(m);
@@ -3579,7 +3591,7 @@ function waEdit(id,approveAfter){
   const fopts=(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('');
   showModal(d.kind==='abono'?'Convertir en un movimiento normal':approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
     ${d.kind==='abono'?'<div class="fac-warn" style="margin-bottom:12px">Usa esto solo si <b>no</b> era el pago de un cliente. Al guardar deja de ser un abono y pasa a ser un movimiento.</div>':''}
-    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     ${d.img?`<div class="wa-thumb big" style="margin-bottom:12px" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>${d.ocr?`<details class="wa-ocr"><summary>Texto que leí en la foto</summary>${esc(d.ocr)}</details>`:''}`:''}
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="we_f" value="${d.f}"></div>
