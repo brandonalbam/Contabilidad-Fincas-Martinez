@@ -379,6 +379,18 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .cfin-n{font-size:12px;color:var(--muted)}
 .dr-pay{display:flex;flex-wrap:wrap;gap:6px}
 .fac-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)}
+.wa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
+.wa-card{padding:0;overflow:hidden}.wa-card.wa-miss{border-color:var(--amber)}
+.wa-msg{background:var(--surface2);padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}
+.wa-meta{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.wa-body{padding:12px 14px}
+.wa-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}.wa-tot{margin-left:auto;font-family:var(--display);font-size:18px}
+.wa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.wa-grid .full{grid-column:1/-1}
+.wa-grid span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wa-grid b{font-size:13.5px;font-weight:600;overflow-wrap:anywhere}.wa-grid .bad b{color:var(--amber)}
+.wa-warn{margin-top:10px;padding:7px 10px;border-radius:9px;border-left:3px solid var(--amber);background:var(--surface2);font-size:12.5px}
+.wa-act{display:flex;gap:8px;margin-top:12px}.wa-act .btn{flex:1;justify-content:center}
+@media(max-width:640px){.wa-list{grid-template-columns:1fr}}
 .fac-k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .fac-v{font-weight:600;font-size:13.5px;line-height:1.3;margin-top:2px;overflow-wrap:anywhere}
 .fac-s{font-size:12px;color:var(--muted);margin-top:2px}
@@ -1690,7 +1702,8 @@ function filteredMovs(){
   });
 }
 function renderMovs(){
-  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn" onclick="facPick()" title="Crear el movimiento leyendo el PDF de una factura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Subir PDF</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
+  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn" onclick="facPick()" title="Crear el movimiento leyendo el PDF de una factura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Subir PDF</button><button class="btn" onclick="waPick()" title="Crear movimientos a partir de un chat exportado de WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>WhatsApp</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
+  if(ui.mWa){if(waDrafts().length){waRenderReview();return;}ui.mWa=false;}
   const list=filteredMovs();
   const per=40,pages=Math.max(1,Math.ceil(list.length/per));
   if(ui.mPage>pages)ui.mPage=1;
@@ -1715,6 +1728,7 @@ function renderMovs(){
       <optgroup label="Comercios">${[...new Set([...CFG.comercios,...MOVS.filter(m=>m.co).map(m=>m.co)])].sort((a,b)=>a.localeCompare(b)).map(c=>`<option ${ui.mQuien===c?'selected':''}>${esc(c)}</option>`).join('')}</optgroup></select></div>
     <div class="field"><label>Periodo</label><select class="input" onchange="ui.mPeriodo=this.value;ui.mPage=1;renderMovs()"><option value="">Todos</option>${periodos.map(p=>`<option ${ui.mPeriodo===p?'selected':''} value="${p}">${MES_ABV[+p.slice(5)-1]} ${p.slice(0,4)}</option>`).join('')}</select></div>
   </div>
+  ${waDrafts().length?`<div class="fa-dup-banner" style="border-left-color:var(--green2)"><span><svg style="color:var(--green2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><b>${waDrafts().length}</b> movimiento${waDrafts().length===1?'':'s'} de WhatsApp por revisar</span><button class="btn sm primary" onclick="ui.mWa=true;renderMovs()">Revisar</button></div>`:''}
   ${(()=>{const st=faDupState();const pend=Object.values(st).filter(x=>!x.ok);const n=pend.reduce((a,x)=>a+x.n,0);const g=pend.length;const okG=Object.values(st).filter(x=>x.ok).length;
      if(!n&&!ui.mFaDup)return '';
      return `<div class="fa-dup-banner"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${n?`<b>${n}</b> movimientos tienen el número de factura repetido (${g} número${g===1?'':'s'}). Toca la marca roja para revisar y darles OK.`:'No hay facturas repetidas pendientes de revisar'}${okG?` <span style="color:var(--muted)">· ${okG} con OK</span>`:''}</span><button class="btn sm" onclick="ui.mFaDup=!ui.mFaDup;ui.mPage=1;renderMovs()">${ui.mFaDup?'Ver todos':'Ver solo las repetidas'}</button></div>`;})()}
@@ -2998,6 +3012,278 @@ async function facSend(isDup,confirmed){
     await persistCfg();}
   await persistMovs();closeModal();ui._fac=null;render();
   toast(add.length>1?`${add.length} movimientos registrados de la factura ${fa||''}`:`Factura ${fa||''} registrada: ${fmt(tot)} en ${fi}`);
+}
+/* =====================  WHATSAPP → MOVIMIENTOS PRELIMINARES  =====================
+   Lee un chat exportado (.txt o .zip), interpreta cada mensaje con el mismo motor del dictado y deja
+   movimientos preliminares para revisar. Nada entra a las cuentas hasta que se aprueba. Todo se hace en el celular. */
+const waDrafts=()=>Array.isArray(CFG.waDrafts)?CFG.waDrafts:[];
+function waPick(){
+  let inp=document.getElementById('wa_in');
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='wa_in';inp.accept='.txt,.zip,text/plain,application/zip';inp.style.display='none';
+    inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value='';if(f)waLoadFile(f);};document.body.appendChild(inp);}
+  showModal('Importar chat de WhatsApp',`
+    <p style="margin-bottom:10px">La app lee el chat, arma los movimientos de forma <b>preliminar</b> y tú los revisas y apruebas uno por uno. Nada entra a las cuentas sin tu aprobación.</p>
+    <div class="note" style="margin:0 0 4px"><b>Cómo sacar el chat de WhatsApp:</b><br>1. Abre el chat (o grupo) en WhatsApp.<br>2. Toca los <b>tres puntitos ⋮</b> de arriba → <b>Más</b> → <b>Exportar chat</b>.<br>3. Elige <b>Sin archivos</b>.<br>4. Guárdalo en el celular (por ejemplo en «Mis archivos» o Drive).<br>5. Vuelve aquí y toca <b>Elegir archivo del chat</b>.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Elegir archivo del chat',cls:'btn primary',fn:()=>inp.click()}]);
+}
+async function waUnzipTxt(buf){
+  const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);let eo=-1;
+  for(let i=buf.length-22;i>=Math.max(0,buf.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){eo=i;break;}}
+  if(eo<0)throw new Error('El archivo .zip está dañado');
+  const n=dv.getUint16(eo+10,true);let p=dv.getUint32(eo+16,true);const td=new TextDecoder('utf-8');let best=null;
+  for(let k=0;k<n&&p+46<=buf.length;k++){if(dv.getUint32(p,true)!==0x02014b50)break;
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lho=dv.getUint32(p+42,true);
+    const name=td.decode(buf.subarray(p+46,p+46+nl));if(/\.txt$/i.test(name)&&(!best||csize>best.csize))best={method,csize,lho,name};p+=46+nl+el+cl;}
+  if(!best)throw new Error('El .zip no trae el archivo de texto del chat');
+  const nl2=dv.getUint16(best.lho+26,true),el2=dv.getUint16(best.lho+28,true);const start=best.lho+30+nl2+el2;const data=buf.subarray(start,start+best.csize);
+  if(best.method===0)return td.decode(data);
+  if(best.method!==8||typeof DecompressionStream==='undefined')throw new Error('Este navegador no puede abrir el .zip. Exporta el chat «Sin archivos» y sube el archivo .txt');
+  const out=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();return td.decode(out);
+}
+async function waLoadFile(file){
+  showModal('Leyendo chat…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Leyendo <b>${esc(file.name)}</b>…</span></div>`,[]);
+  try{
+    const buf=new Uint8Array(await file.arrayBuffer());
+    const isZip=buf.length>4&&buf[0]===0x50&&buf[1]===0x4b;
+    const text=isZip?await waUnzipTxt(buf):new TextDecoder('utf-8').decode(buf);
+    const msgs=waParseChat(text);
+    if(!msgs.length){showModal('No se pudo leer el chat',`<p>El archivo no parece un chat exportado de WhatsApp.</p><div class="note">Debe ser el archivo que genera WhatsApp con <b>Exportar chat</b> (termina en .txt o .zip).</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+    ui._waMsgs=msgs;waOptionsModal(file.name);
+  }catch(e){console.warn(e);showModal('No se pudo leer el chat',`<p>${esc(e&&e.message||'Error al abrir el archivo')}</p>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
+}
+function waParseChat(text){
+  text=String(text||'').replace(/[‎‏‪-‮﻿]/g,'').replace(/[  ]/g,' ');
+  const re=/^\[?(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::\d{2})?\s*(?:([ap])\.?\s?m\.?)?\]?\s*(?:[-–]\s*)?(.*)$/i;
+  const raw=[];let cur=null;
+  for(const line of text.split(/\r?\n/)){const m=line.match(re);
+    if(m){cur={a:+m[1],b:+m[2],y:+m[3],h:+m[4],mi:+m[5],ap:(m[6]||'').toLowerCase(),rest:m[7]};raw.push(cur);}
+    else if(cur)cur.rest+='\n'+line;}
+  const mdy=raw.some(x=>x.b>12)&&!raw.some(x=>x.a>12);
+  const out=[];
+  for(const x of raw){const i=x.rest.indexOf(': ');if(i<1||i>60||/\n/.test(x.rest.slice(0,i)))continue; // mensajes del sistema
+    const d=mdy?x.b:x.a,mo=mdy?x.a:x.b;let y=x.y<100?2000+x.y:x.y;let h=x.h;if(x.ap==='p'&&h<12)h+=12;if(x.ap==='a'&&h===12)h=0;
+    if(!(mo>=1&&mo<=12&&d>=1&&d<=31))continue;
+    const txt=x.rest.slice(i+2).trim();
+    if(!txt||/^<[^>]*(omitid|omitted)[^>]*>$/i.test(txt)||/(multimedia|imagen|audio|video|sticker|documento|gif|contacto)\s+omitid/i.test(txt)||/\(archivo adjunto\)|\(file attached\)/i.test(txt)||/^(se elimin[oó] este mensaje|eliminaste este mensaje|this message was deleted|you deleted this message|null|llamada perdida.*|videollamada perdida.*)\.?$/i.test(txt))continue;
+    out.push({au:x.rest.slice(0,i).trim(),f:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,hm:String(h).padStart(2,'0')+':'+String(x.mi).padStart(2,'0'),txt:txt.replace(/<se edit[oó] este mensaje\.?>|<this message was edited>/gi,'').trim()});}
+  return out;
+}
+function waHash(t){let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return (h>>>0).toString(36);}
+function waOptionsModal(fname){
+  const msgs=ui._waMsgs||[];const authors={};msgs.forEach(m=>authors[m.au]=(authors[m.au]||0)+1);
+  const f0=msgs[0].f,f1=msgs[msgs.length-1].f;
+  const lastSeen=CFG.waLast||'';const desde=lastSeen&&lastSeen>=f0&&lastSeen<=f1?lastSeen:f0;
+  showModal('Chat leído · elige qué importar',`
+    <p style="color:var(--muted);margin-bottom:12px"><b>${msgs.length}</b> mensajes de texto, del ${fmtFecha(f0)} al ${fmtFecha(f1)}.</p>
+    <div class="form-grid">
+      <div class="field"><label>Desde la fecha</label><input class="input tnum" type="date" id="wa_d0" value="${desde}" min="${f0}" max="${f1}"></div>
+      <div class="field"><label>Hasta la fecha</label><input class="input tnum" type="date" id="wa_d1" value="${f1}" min="${f0}" max="${f1}"></div>
+      <div class="field full"><label>Finca, si el mensaje no la dice</label><select class="input" id="wa_fi"><option value="">— Dejar sin finca (la elijo al revisar) —</option>${(CFG.fincas||[]).map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
+      <div class="field full"><label>¿De quién tomo los mensajes?</label><div class="secgrid2">${Object.keys(authors).map((a,i)=>`<label class="seccheck"><input type="checkbox" class="wa_au" value="${esc(a)}" checked> <span>${esc(a)}</span><em>${authors[a]}</em></label>`).join('')}</div></div>
+    </div>
+    <div class="note">Solo se toman los mensajes que hablan de plata (traen un valor). Los saludos y demás mensajes se ignoran. Los mensajes que ya importaste antes no se repiten.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Interpretar mensajes',cls:'btn primary',fn:waRun}]);
+}
+/* Palabras que ayudan a decidir tipo, categoría y estado */
+const WA_ING=/\b(vendi|vendimos|vendio|vendieron|venta|ventas|se vendio|se vendieron|recibi|recibimos|me pagaron|nos pagaron|me pago|nos pago|me consigno|nos consigno|me consignaron|nos consignaron|consignaron|me abono|nos abono|abonaron|me transfirio|me transfirieron|entro|entraron|ingreso|cobre|cobramos|me cancelo|nos cancelo|cancelaron la|pago la fruta|pagaron la fruta)\b/;
+const WA_EGR=/\b(pague|pagamos|pago de|pago del|pago a|pago al|pagar|se pago|compre|compramos|compro|compraron|se compro|se compraron|compra|gaste|gastamos|gasto|gastos|costo|valio|cobro|cobraron|me cobraron|factura|recibo|jornal|jornales|nomina|le di|le dimos|le consigne|consigne|le transferi|transferi|le gire|gire|le mande|flete|peaje|arreglo|reparacion|mantenimiento|tanqueo|tanqueada|tanquie|egreso|adelanto|anticipo|prestamo|preste)\b/;
+const WA_PEND=/\b(debiendo|debo|debemos|se debe|deben|quedo debiendo|quedaron debiendo|fiado|fiaron|fio|a credito|credito|pendiente|por pagar|por cobrar|no han pagado|no ha pagado|no pago|falta pagar|sin pagar|quedo de pagar|quedaron de pagar|paga despues|para pagar)\b/;
+const WA_PAID=/\b(pagado|pagada|pague|pagamos|cancelado|cancelada|cancele|de contado|contado|en efectivo|efectivo|ya pago|ya pagaron|ya se pago|transferencia|consignado|consigne|nequi|daviplata)\b/;
+const WA_CATS=[[/\b(jornal|jornales|nomina|trabajador|trabajadores|obrero|obreros|guadanada|guadanero|guadanador|plateo|recolectores|cogedores|cosecheros|dia de trabajo|dias de trabajo|quincena|sueldo|pago a .* trabaj)\b/,/nomina|mano de obra|jornal/],
+  [/\b(gasolina|acpm|diesel|combustible|tanqueo|tanqueada|tanquie|aceite|lubricante|valvulina|grasa)\b/,/combustible|lubric/],
+  [/\b(flete|fletes|transporte|acarreo|viaje|peaje|peajes|pasaje|pasajes|parqueadero|carro|camion|turbo)\b/,/transporte|flete/],
+  [/\b(luz|energia|agua|acueducto|gas|internet|recibo|recibos|servicio|servicios|celular|plan)\b/,/servicios/],
+  [/\b(arreglo|arreglar|reparacion|reparar|repuesto|repuestos|soldadura|soldar|mecanico|taller|mantenimiento|llanta|llantas|despinche|bateria)\b/,/reparac|mantenim|repuesto/],
+  [/\b(abono|abonada|fertilizante|urea|triple|cal|gallinaza|compost|dap|kcl|foliar)\b/,/fertiliz|abon|insumo/],
+  [/\b(veneno|venenos|quimico|quimicos|fungicida|insecticida|herbicida|glifosato|fumigo|fumigada|fumigacion|insumo|insumos)\b/,/insumo|quimic/],
+  [/\b(machete|machetes|limas|lima|guadana|guadanas|motosierra|fumigadora|bomba|herramienta|herramientas|pala|palin|tijera|tijeras|carretilla|manguera)\b/,/herramienta|maquinaria|ferreter/],
+  [/\b(cemento|alambre|puntilla|puntillas|grapa|grapas|tubo|tubos|pvc|ferreteria|tornillo|tornillos|pintura|teja|tejas|poste|postes)\b/,/ferreter|otros/],
+  [/\b(vacuna|vacunas|veterinario|purga|droga|medicamento|ivermectina|bano del ganado)\b/,/veterin|vacuna/],
+  [/\b(sal|concentrado|melaza|silo|heno|pasto|alimento)\b/,/alimento/],
+  [/\b(impuesto|impuestos|predial|ica|retencion|dian)\b/,/impuesto/],[/\b(seguro|seguros|poliza|soat)\b/,/seguro/],[/\b(contador|contadora|contabilidad|contaduria)\b/,/contadur|otros/],
+  [/\b(botas|guantes|overol|careta|tapabocas|dotacion|gorra|impermeable)\b/,/indument|accesor|otros/],[/\b(semilla|semillas|arboles|arbolitos|plantulas|injertos|vivero)\b/,/semilla/]];
+const WA_FRUTA=/\b(canastilla|canastillas|canasta|canastas|naranja|naranjas|mandarina|mandarinas|aguacate|aguacates|limon|limones|fruta|frutas|cosecha|tangelo|valencia|arrayana|oneco)\b/;
+function waCatFromHistory(t,nd){
+  const words=nd.split(' ').filter(w=>w.length>=5&&!/^\d/.test(w));if(!words.length)return '';const cnt={};
+  MOVS.forEach(m=>{if(m.t!==t||!m.c||!m.d)return;const md=' '+vzNorm(m.d)+' ';let sc=0;words.forEach(w=>{if(md.includes(' '+w+' '))sc++;});if(sc)cnt[m.c]=(cnt[m.c]||0)+sc;});
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);return top.length&&top[0][1]>=2&&(!top[1]||top[0][1]>=top[1][1]*1.5)?top[0][0]:'';
+}
+function waInterpret(line,msg,defFi,ctx){
+  const n=vzNumbers(vzNorm(line));
+  const bigNums=(n.match(/\b\d+(?:\.\d+)?\b/g)||[]).map(Number).filter(v=>v>=1000);
+  if(!bigNums.length)return null;
+  if(/^\s*(?:\+?57)?\s*3\d{9}\s*$/.test(n.replace(/\s/g,''))||/https?:\/\//i.test(line)&&bigNums.length<1)return null;
+  // teléfonos, cuentas y referencias no son valores
+  const money=bigNums.filter(v=>v<=2e9&&!(String(v).length===10&&/^3/.test(String(v))));if(!money.length)return null;
+  let r;try{r=vzParse(line);}catch(e){r={};}
+  const d={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),warn:[],src:{au:msg.au,f:msg.f,hm:msg.hm,txt:line.length>400?line.slice(0,400)+'…':line}};
+  // fecha: la del mensaje, salvo «ayer/antier» o una fecha escrita
+  d.f=msg.f;if(/\bantier\b|\banteayer\b|\bantes de ayer\b/.test(n))d.f=addDaysISO(msg.f,-2);else if(/\bayer\b/.test(n))d.f=addDaysISO(msg.f,-1);
+  else if(r.f&&(/\b\d{1,2}\s*[\/\-]\s*\d{1,2}\b/.test(line)||/\b\d{1,2}\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/.test(n))&&r.f<=addDaysISO(msg.f,1))d.f=r.f;
+  // tipo
+  const ing=WA_ING.test(n),egr=WA_EGR.test(n),fru=WA_FRUTA.test(n);
+  let t=r.t&&(/\b(ingreso|egreso|gasto|venta|vendi|vendimos|compre|compra|pague)\b/.test(n))?r.t:'';
+  if(ing&&!egr)t='I';else if(egr&&!ing)t='E';
+  else if(!t||ing&&egr){if(/\b(pago|pagaron|cancelo|cancelaron|consigno|consignaron|abono|abonaron|transfirio)\b/.test(n)&&(fru||(r.cl||'')!=='')){t='I';d.warn.push('Revisa si es ingreso o egreso');}
+    else if(ing&&egr){t=n.search(WA_ING)<n.search(WA_EGR)?'I':'E';d.warn.push('Revisa si es ingreso o egreso');}
+    else if(!t&&ctx.t){t=ctx.t;}
+    else if(!t){t=fru&&/\b(a|por)\s+\d/.test(n)&&/\b(canastilla|canastillas|canastas|kilos|toneladas|kg)\b/.test(n)?'I':'E';d.warn.push('No dice si es ingreso o egreso: revisa el tipo');}}
+  d.t=t;
+  // finca
+  d.fi=r.fi||ctx.fi||defFi||'';if(!r.fi&&ctx.fi)d.fiCtx=1;
+  // venta de fruta con calidades
+  if(t==='I'&&fru){let fr=null;try{fr=frvParse(line);}catch(e){}
+    if(fr&&fr.lines&&fr.lines.length){const ls=fr.lines.filter(l=>(+l.q||0)>0&&(+l.p||0)>0).map(l=>({cal:l.cal||'Fruta',q:+l.q,p:Math.round(+l.p)}));
+      const tot=Math.round(ls.reduce((a,l)=>a+l.q*l.p,0));
+      if(ls.length&&tot>=1000&&(ls.length>1||ls[0].cal!=='Fruta'||/\b(canastilla|canastillas|canastas|kilos|kg|toneladas)\b/.test(n))){
+        const q=ls.reduce((a,l)=>a+l.q,0);d.fruta=ls;d.q=q;d.pu=Math.round(tot/q);d.tot=tot;d.u=fr.u||r.u||'';d.d='Venta de fruta: '+frutaDescLines(ls);if(fr.cl)d.cl=fr.cl;if(fr.cat)d.c=fr.cat;if(fr.fi&&!r.fi)d.fi=fr.fi;if(fr.e)d.e=fr.e;}}}
+  if(d.tot==null){let q=+r.q||1,pu=+r.pu||0;if(!(pu>0)){pu=money[money.length-1];q=1;}
+    if(pu<1000&&money.length){pu=money[money.length-1];q=1;}
+    d.q=q;d.pu=Math.round(pu);d.tot=Math.round(q*pu);d.u=r.u||'';
+    if(money.length>1&&!r.q)d.warn.push('El mensaje trae varios valores: revisa el total');}
+  // categoría
+  const cats=t==='I'?(CFG.catIngresos||[]):(CFG.catEgresos||[]);
+  if(!d.c&&t==='I'){const fn=['naranja','mandarina','aguacate','limon','ganado','novillo','vaca','ternero','leche'].find(w=>n.includes(w));
+    if(fn){const key=/novillo|vaca|ternero/.test(fn)?'ganado':fn;d.c=cats.find(c=>vzNorm(c).includes(key))||'';}
+    if(!d.c&&fru){const cnt={};MOVS.forEach(m=>{if(m.t==='I'&&m.fruta&&m.c&&(!d.fi||m.fi===d.fi))cnt[m.c]=(cnt[m.c]||0)+1;});const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+      d.c=(top&&cats.includes(top[0])?top[0]:'')||(ui.frCat&&cats.includes(ui.frCat)?ui.frCat:'');if(d.c&&d.fruta)d.warn.push('Revisa qué fruta se vendió (categoría)');}}
+  if(!d.c&&t==='E'){for(const[re,cre]of WA_CATS){if(re.test(n)){const c=cats.find(x=>cre.test(vzNorm(x)));if(c){d.c=c;break;}}}}
+  if(!d.c&&t==='E'&&r.co){const cnt={};MOVS.forEach(m=>{if(m.t==='E'&&m.c&&m.co&&vzNorm(m.co)===vzNorm(r.co))cnt[m.c]=(cnt[m.c]||0)+1;});const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];if(top&&cats.includes(top[0]))d.c=top[0];}
+  if(!d.c&&r.c&&cats.includes(r.c)&&!(/\bfactura\b/.test(n)&&/servicios/i.test(r.c)&&!/\b(luz|agua|energia|gas|internet)\b/.test(n)))d.c=r.c;
+  if(!d.c)d.c=waCatFromHistory(t,n);
+  if(!d.c){const o=cats.find(c=>/^otros/i.test(c));if(o){d.c=o;d.warn.push('No reconocí la categoría: quedó en «'+o+'»');}}
+  // comercio / cliente
+  if(t==='I'){d.cl=d.cl||r.cl||'';if(!d.cl&&r.co){d.cl=r.co;}d.co='';
+    if(!d.cl){const mc=line.match(/\b(?:don|doña|dona|señor|señora|sr\.?|sra\.?)\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})?)\s+(?:me\s+|nos\s+|ya\s+)?(?:pag[oó]|consign[oó]|abon[oó]|cancel[oó]|transfiri[oó]|compr[oó])/i);
+      if(mc){const nm=mc[1].toUpperCase();d.cl=(CFG.clientes||[]).find(c=>vzNorm(c).includes(vzNorm(nm)))||nm;}}}else{d.co=r.co||'';d.cl='';}
+  // descripción
+  if(!d.d){let ds=r.d||'';
+    if(!ds){ds=line.replace(/\s+/g,' ').replace(/\$\s?[\d.,]+|\b\d[\d.,]*\s*(mil|millon(es)?|pesos|k|m|barras|lucas)?\b/gi,' ').replace(/\b(por favor|buenos dias|buenas tardes|buenas noches|buenas|hola|don|doña|gracias|listo|ok|vale)\b/gi,' ').replace(/[,;:.\-–$]+\s*$/,'').replace(/\s+/g,' ').trim();
+      ds=ds.replace(/\b(?:por\s+|de\s+|a\s+)?(?:(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|quince|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa|cien|ciento|doscientos|trescientos|cuatrocientos|quinientos|seiscientos|setecientos|ochocientos|novecientos|medio|y)\s+)*(?:mil|mill[oó]n|millones)(?:\s+(?:un|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa|cien|ciento|doscientos|trescientos|cuatrocientos|quinientos|seiscientos|setecientos|ochocientos|novecientos|mil|y|medio))*(?:\s+pesos)?\b/gi,' ');
+      const esc2=x=>vzNorm(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const strip=(nm)=>{if(!nm)return;const w=esc2(nm).replace(/a/g,'[aá]').replace(/e/g,'[eé]').replace(/i/g,'[ií]').replace(/o/g,'[oó]').replace(/u/g,'[uú]');ds=ds.replace(new RegExp('(?:\\s|^)(?:(?:en|para|de|del|a|al|donde)\\s+)?(?:(?:la|el|los|las)\\s+)?(?:finca\\s+)?'+w+'(?=\\s|$)','gi'),' ');};
+      strip(d.fi);strip(d.co);strip(d.cl);
+      ds=ds.replace(/\b(qued[oó] debiendo|quedaron debiendo|a cr[eé]dito|de contado|en efectivo|pagad[oa]|cancelad[oa]|pendiente|fiado|ayer|antier|hoy)\b/gi,' ').replace(/^\s*(se\s+)?(pagu[eé]|pagamos|compr[eé]|compramos|compraron|compr[oó]|gast[eé]|gastamos)\s+/i,'').replace(/\s+/g,' ');
+      for(let k=0;k<3;k++)ds=ds.replace(/\b(a|en|por|de|del|para|la|el|y|con|al)\s+(?=(a|en|por|para|de|del)\b)/gi,'').replace(/\s+(a|en|por|de|del|para|la|el|y|con|al)\s*$/i,'').trim();
+      if(ds.length>90)ds=ds.slice(0,90).replace(/\s+\S*$/,'')+'…';}
+    ds=ds.replace(/\s+/g,' ').trim();if(/^factura$/i.test(ds)&&r.co)ds='Factura '+r.co;
+    d.d=ds?ds.charAt(0).toUpperCase()+ds.slice(1):(d.c||'Movimiento de WhatsApp');}
+  // estado
+  if(!d.e){d.e=r.e||(WA_PEND.test(n)&&!/\b(ya pago|ya pagaron|ya se pago|me pago lo que|pago lo que)\b/.test(n)?'X':'P');}
+  d.ab=d.e==='X'?(+r.ab||0):0;d.fa=r.fa?String(r.fa).replace(/\D+/g,''):'';
+  if(!d.fi)d.warn.unshift('Falta la finca');
+  return d;
+}
+async function waRun(){
+  const msgs=ui._waMsgs||[];const d0=document.getElementById('wa_d0').value,d1=document.getElementById('wa_d1').value;const defFi=document.getElementById('wa_fi').value;
+  const aus=new Set([...document.querySelectorAll('.wa_au:checked')].map(x=>x.value));
+  if(!aus.size){toast('Marca al menos una persona');return;}
+  const seen=new Set(CFG.waSeen||[]);const out=[];let nMsg=0,nRep=0;
+  for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
+    const lines=m.txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+    const hasMoney=l=>{const n=vzNumbers(vzNorm(l));return (n.match(/\b\d+(?:\.\d+)?\b/g)||[]).some(v=>+v>=1000);};
+    const moneyLines=lines.filter(hasMoney);
+    // un mensaje con varias líneas con valor = una lista: cada línea es un movimiento
+    const units=moneyLines.length>=2?lines:[lines.join(' ')];
+    const ctx={fi:'',t:''};
+    if(moneyLines.length>=2){const hd=vzNorm(lines.filter(l=>!hasMoney(l)).join(' '));if(/\b(gasto|gastos|compras|compra|pagos|egresos|facturas)\b/.test(hd))ctx.t='E';else if(/\b(ventas|venta|ingresos|entradas)\b/.test(hd))ctx.t='I';}
+    if(moneyLines.length>=2){for(const l of lines){if(!hasMoney(l)){const h=vzFincaLast(vzNorm(l).split(/\s+/));if(h){ctx.fi=h.name;break;}}}}
+    units.forEach((u,ui2)=>{if(!hasMoney(u)){if(moneyLines.length>=2){const h=vzFincaLast(vzNorm(u).split(/\s+/));if(h&&u.split(/\s+/).length<=4)ctx.fi=h.name;}return;}
+      if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3)return; // la línea de total de una lista no es otro movimiento
+      const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}
+      const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;out.push(d);});}
+  if(!out.length){showModal('Sin movimientos nuevos',`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos nuevos.</p>${nRep?`<div class="note">${nRep} ya los habías importado antes.</div>`:'<div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>'}`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+  CFG.waDrafts=waDrafts().concat(out);CFG.waSeen=(CFG.waSeen||[]).concat(out.map(d=>d.key)).slice(-6000);CFG.waLast=d1||todayISO();
+  await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();
+  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya importados':''}`);
+}
+function waReady(d){return !!(d.fi&&d.c&&d.f&&(+d.tot||0)>0);}
+function waCardHTML(d){
+  const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
+  return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-body">
+      <div class="wa-top"><span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
+      <div class="wa-grid">
+        <div><span>Fecha</span><b>${fmtFecha(d.f)}</b></div>
+        <div class="${d.fi?'':'bad'}"><span>Finca</span><b>${d.fi?`<span class="fdot"><i style="background:${fincaColor(d.fi)}"></i>${esc(d.fi)}</span>`:'Falta'}</b></div>
+        <div class="${d.c?'':'bad'}"><span>Categoría</span><b>${esc(d.c||'Falta')}</b></div>
+        <div><span>${d.t==='I'?'Cliente':'Comercio'}</span><b>${esc(who||'—')}</b></div>
+        <div class="full"><span>Descripción</span><b>${esc(d.d||'—')}</b></div>
+        ${d.q&&d.q!==1?`<div><span>Cantidad</span><b>${(+d.q).toLocaleString('es-CO')}${d.u?' '+esc(d.u):''} × ${fmt(d.pu)}</b></div>`:''}
+        ${d.fa?`<div><span>Factura</span><b>${esc(d.fa)}${faMatches(d.fa,null).length?' <span class="chip fa-dup">Ya registrada</span>':''}</b></div>`:''}
+        ${d.e==='X'&&d.ab?`<div><span>Abono</span><b>${fmt(d.ab)}</b></div>`:''}
+      </div>
+      ${d.warn&&d.warn.length?`<div class="wa-warn">${d.warn.map(esc).join(' · ')}</div>`:''}
+      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm" onclick="waEdit('${d.id}')">Editar</button><button class="btn sm primary" onclick="waApprove('${d.id}')" ${ok?'':'title="Completa lo que falta con Editar"'}>${ok?'Aprobar':'Completar y aprobar'}</button></div>
+    </div></div>`;
+}
+function waRenderReview(){
+  const ds=waDrafts();const ready=ds.filter(waReady).length;
+  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="ui.mWa=false;renderMovs()">← Volver a movimientos</button>`;
+  document.getElementById('content').innerHTML=`
+   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length}</b> preliminar${ds.length===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready} con datos por completar</p></div></div>
+     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="waApproveAll()" ${ready?'':'disabled'}>Aprobar los ${ready} listos</button><button class="btn" onclick="waPick()">Importar otro chat</button><button class="btn" onclick="waDiscardAll()">Descartar todos</button></div>
+     <div class="note">Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes.</div></div>
+   <div class="wa-list">${ds.map(waCardHTML).join('')}</div>`;
+}
+function waToMov(d){const m={id:seq++,f:d.f,fi:d.fi,t:d.t,c:d.c,d:d.d||'',u:d.u||'',q:+d.q||1,pu:Math.round(+d.pu||0),tot:Math.round(+d.tot||0),e:d.e||'P',ab:d.e==='X'?Math.round(+d.ab||0):0,fa:d.fa||'',co:d.t==='E'?(d.co||''):'',cl:d.t==='I'?(d.cl||''):''};
+  if(m.ab>0)m.abs=[{f:m.f,v:m.ab}];if(d.fruta&&d.t==='I')m.fruta=d.fruta;return m;}
+async function waCommit(list){
+  const ids=new Set(list.map(d=>d.id));let cfgNames=false;
+  list.forEach(d=>{const m=waToMov(d);MOVS.push(m);
+    if(m.cl&&!(CFG.clientes||[]).some(x=>vzNorm(x)===vzNorm(m.cl))){CFG.clientes=CFG.clientes||[];CFG.clientes.push(m.cl);cfgNames=true;}
+    if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}});
+  CFG.waDrafts=waDrafts().filter(d=>!ids.has(d.id));
+  await persistMovs();await persistCfg();
+}
+async function waApprove(id){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;
+  if(!waReady(d)){waEdit(id,true);return;}
+  await waCommit([d]);if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);
+}
+async function waApproveAll(){
+  const list=waDrafts().filter(waReady);if(!list.length)return;
+  confirmModal('Aprobar movimientos',`Se enviarán <b>${list.length}</b> movimientos a las cuentas por un total de <b>${fmt(list.reduce((a,d)=>a+(+d.tot||0),0))}</b>.${waDrafts().length>list.length?' Los que tienen datos por completar se quedan aquí.':''}`,async()=>{
+    await waCommit(list);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(list.length+' movimientos aprobados');});
+}
+async function waDiscard(id){CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Descartado');}
+function waDiscardAll(){confirmModal('Descartar todos',`Se quitarán los <b>${waDrafts().length}</b> movimientos preliminares. No se registra nada en las cuentas.`,async()=>{CFG.waDrafts=[];await persistCfg();closeModal();ui.mWa=false;renderMovs();toast('Preliminares descartados');});}
+function waEdit(id,approveAfter){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._waT=d.t;
+  const fopts=(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('');
+  showModal(approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
+    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="form-grid">
+      <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="we_f" value="${d.f}"></div>
+      <div class="field"><label>Tipo</label><select class="input" id="we_t" onchange="waEditType(this.value)"><option value="E" ${d.t==='E'?'selected':''}>Egreso</option><option value="I" ${d.t==='I'?'selected':''}>Ingreso</option></select></div>
+      <div class="field"><label>Finca</label><select class="input" id="we_fi">${d.fi?'':'<option value="" selected>— Elige la finca —</option>'}${fopts}</select></div>
+      <div class="field"><label>Categoría</label><select class="input" id="we_c">${d.c?'':'<option value="" selected>— Elige —</option>'}${catOpts(d.t,d.c)}</select></div>
+      <div class="field full"><label>Descripción</label><input class="input" id="we_d" value="${esc(d.d||'')}"></div>
+      <div class="field"><label id="we_wl">${d.t==='I'?'Cliente':'Comercio / proveedor'}</label><input class="input" id="we_w" list="we_wlist" value="${esc(d.t==='I'?(d.cl||''):(d.co||''))}" autocomplete="off"><datalist id="we_wlist">${(d.t==='I'?(CFG.clientes||[]):facComercios()).map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+      <div class="field"><label># Factura</label><input class="input tnum" id="we_fa" value="${esc(d.fa||'')}"></div>
+      ${d.fruta?`<div class="field full"><label>Calidades de la venta</label><div class="note" style="margin:0">${esc(frutaDescLines(d.fruta))}<br>Total: <b>${fmt(d.tot)}</b>. Después de aprobar puedes ajustar precios en el botón de detalle de la factura.</div></div>`:
+      `<div class="field"><label>Cantidad</label><input class="input tnum" type="number" step="any" id="we_q" value="${d.q||1}" oninput="waEditCalc()"></div>
+      <div class="field"><label>Precio unitario</label><input class="input tnum money" inputmode="numeric" id="we_pu" value="${fmn(d.pu||0)}" oninput="waEditCalc()"></div>
+      <div class="field full"><div class="note" style="margin:0">Total: <b id="we_tot">${fmt(d.tot)}</b></div></div>`}
+      <div class="field"><label>Estado</label><select class="input" id="we_e" onchange="document.getElementById('we_abw').style.display=this.value==='X'?'':'none'"><option value="P" ${d.e!=='X'?'selected':''}>Pagado / Recibido</option><option value="X" ${d.e==='X'?'selected':''}>Pendiente</option></select></div>
+      <div class="field" id="we_abw" style="${d.e==='X'?'':'display:none'}"><label>Abono ya hecho</label><input class="input tnum money" inputmode="numeric" id="we_ab" value="${d.ab?fmn(d.ab):''}" placeholder="0"></div>
+    </div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn',fn:()=>waEditSave(id,false)},{label:'Guardar y aprobar',cls:'btn primary',fn:()=>waEditSave(id,true)}]);
+}
+function waEditType(t){ui._waT=t;const c=document.getElementById('we_c');if(c)c.innerHTML='<option value="" selected>— Elige —</option>'+catOpts(t,'');const l=document.getElementById('we_wl');if(l)l.textContent=t==='I'?'Cliente':'Comercio / proveedor';
+  const dl=document.getElementById('we_wlist');if(dl)dl.innerHTML=(t==='I'?(CFG.clientes||[]):facComercios()).map(c=>`<option value="${esc(c)}">`).join('');}
+function waEditCalc(){const q=+document.getElementById('we_q').value||0,pu=num(document.getElementById('we_pu').value);const e=document.getElementById('we_tot');if(e)e.textContent=fmt(Math.round(q*pu));}
+async function waEditSave(id,approve){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;const g=x=>(document.getElementById(x)||{}).value||'';
+  d.f=g('we_f')||d.f;d.t=g('we_t');d.fi=g('we_fi');d.c=g('we_c');d.d=g('we_d').trim();d.fa=g('we_fa').trim();d.e=g('we_e')||'P';d.ab=d.e==='X'?Math.round(num(g('we_ab'))):0;
+  const w=g('we_w').trim();if(d.t==='I'){d.cl=w;d.co='';}else{d.co=w;d.cl='';}
+  if(d.fruta&&d.t!=='I')delete d.fruta;
+  if(!d.fruta&&document.getElementById('we_q')){d.q=+g('we_q')||1;d.pu=Math.round(num(g('we_pu')));d.tot=Math.round(d.q*d.pu);}
+  d.warn=(d.warn||[]).filter(w=>!/finca|categor|tipo|ingreso o egreso|total/i.test(w));
+  if(approve){if(!d.fi){toast('Elige la finca');return;}if(!d.c){toast('Elige la categoría');return;}if(!(d.tot>0)){toast('Falta el valor');return;}
+    if(d.ab>d.tot){toast('El abono no puede ser mayor que el total');return;}
+    await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);return;}
+  await persistCfg();closeModal();renderMovs();toast('Cambios guardados. Falta aprobar');
 }
 function voiceMovModal(){
   ui._vzOnUpdate=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
