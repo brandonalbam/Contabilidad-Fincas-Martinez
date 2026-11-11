@@ -402,7 +402,7 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .wa-grid span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .wa-grid b{font-size:13.5px;font-weight:600;overflow-wrap:anywhere}.wa-grid .bad b{color:var(--amber)}
 .wa-warn{margin-top:10px;padding:7px 10px;border-radius:9px;border-left:3px solid var(--amber);background:var(--surface2);font-size:12.5px}
-.wa-act{display:flex;gap:8px;margin-top:12px}.wa-act .btn{flex:1;justify-content:center}
+.wa-act{display:flex;gap:8px;margin-top:12px}.wa-act4{flex-wrap:wrap}.wa-act4 .btn{flex:1 1 40%}.wa-act .btn{flex:1;justify-content:center}
 @media(max-width:640px){.wa-list{grid-template-columns:1fr}}
 .fac-k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .fac-v{font-weight:600;font-size:13.5px;line-height:1.3;margin-top:2px;overflow-wrap:anywhere}
@@ -3148,7 +3148,7 @@ function waInterpret(line,msg,defFi,ctx){
   const ing=WA_ING.test(n),egr=WA_EGR.test(n),fru=WA_FRUTA.test(n);
   let t=r.t&&(/\b(ingreso|egreso|gasto|venta|vendi|vendimos|compre|compra|pague)\b/.test(n))?r.t:'';
   if(ing&&!egr)t='I';else if(egr&&!ing)t='E';
-  else if(!t||ing&&egr){if(/\b(pago|pagaron|cancelo|cancelaron|consigno|consignaron|abono|abonaron|transfirio)\b/.test(n)&&(fru||(r.cl||'')!=='')){t='I';d.warn.push('Revisa si es ingreso o egreso');}
+  else if(!t||ing&&egr){if(/\b(pago|pagaron|cancelo|cancelaron|consigno|consignaron|abono|abonaron|transfirio)\b/.test(n)&&(fru||(r.cl||'')!==''||/(pagó|consignó|abonó|transfirió|canceló)/i.test(line)||/\b(?:don|doña|dona|señor|señora|sr|sra)\.?\s+[A-Za-zÁÉÍÓÚÑáéíóúñ]{3,}/i.test(line))){t='I';d.warn.push('Revisa si es ingreso o egreso');}
     else if(ing&&egr){t=n.search(WA_ING)<n.search(WA_EGR)?'I':'E';d.warn.push('Revisa si es ingreso o egreso');}
     else if(!t&&ctx.t){t=ctx.t;}
     else if(!t){t=fru&&/\b(a|por)\s+\d/.test(n)&&/\b(canastilla|canastillas|canastas|kilos|toneladas|kg)\b/.test(n)?'I':'E';d.warn.push('No dice si es ingreso o egreso: revisa el tipo');}}
@@ -3227,7 +3227,8 @@ async function waRun(){
       const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;LST[ui2]='o';return;}if(inQ.has(key)){nQ++;LST[ui2]='o';return;}
       if(m.att)return; // el texto que acompaña a una foto se interpreta junto con la foto
       const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;d.mi=msgs.indexOf(m);out.push(d);LST[ui2]='o';made.push([d,ui2]);});
-    made.forEach(([d,k])=>{if(units.length>1){d.src.full=units.join('\n').slice(0,6000);d.src.st=LST.map((c,j)=>j===k||c==='n'?'u':c).join('');}else d.src.full=String(m.txt).slice(0,6000);});}
+    made.forEach(([d,k])=>{if(units.length>1){d.src.full=units.join('\n').slice(0,6000);d.src.st=LST.map((c,j)=>j===k||c==='n'?'u':c).join('');}else d.src.full=String(m.txt).slice(0,6000);});
+    if(!made.length&&!m.att&&!LST.includes('o')&&waRelevant(m.txt)){const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|NONE|'+m.txt);if(!seen.has(key)&&!inQ.has(key))out.push({id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'none',key,mi:msgs.indexOf(m),warn:[],src:{au:m.au,f:m.f,hm:m.hm,txt:String(m.txt).slice(0,6000)},t:'E',f:m.f,fi:defFi||'',c:'',d:'',q:1,pu:0,tot:0,e:'P',ab:0,fa:'',co:'',cl:''});}}
   // ---- fotos ----
   const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
   if(wantImg){const todo=[];
@@ -3240,7 +3241,7 @@ async function waRun(){
           const id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
           const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));await waImgPut(id,blob);
           let text='';if(worker){try{const res=await worker.recognize(cv);text=(res&&res.data&&res.data.text)||'';}catch(e){console.warn(e);}}
-          const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;
+          const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;d.mi=msgs.indexOf(m);
           /* el mensaje anterior o el siguiente a la foto suele decir qué cliente consignó */
           if(d.kind==='abono'){const fw=waNamePick(msgs,msgs.indexOf(m));const j=fw?fw.j:-1;
             if(fw){d.cl=fw.cl;d.warn=(d.warn||[]).filter(w=>!/cliente/i.test(w));d.src.txt=fw.before?msgs[j].txt+(m.txt?' · '+m.txt:''):(m.txt?m.txt+' · ':'')+msgs[j].txt;if(d.abFi&&vzNorm(d.abFi)===vzNorm(d.cl))d.abFi='';
@@ -3252,9 +3253,10 @@ async function waRun(){
   if(!out.length){
     if(nQ){await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();toast(`${nQ} movimiento${nQ===1?'':'s'} de este chat ya está${nQ===1?'':'n'} aquí esperando tu aprobación${nRep?' · '+nRep+' ya aprobados':''}`);return;}
     showModal(nRep?'Estos movimientos ya fueron importados':'Sin movimientos nuevos',nRep?`<p>Revisé <b>${nMsg}</b> mensajes. Los <b>${nRep}</b> movimientos de este chat ya fueron <b>revisados y aprobados</b> antes, así que no se repiten.</p>`:`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos.</p><div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
-  CFG.waDrafts=waDrafts().concat(out);
+  out.sort((a,b)=>(a.mi==null?1e9:a.mi)-(b.mi==null?1e9:b.mi));const nNo=out.filter(d=>d.kind==='none').length;
+  CFG.waDrafts=waSortDrafts(waDrafts().concat(out));
   await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();
-  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya aprobados antes':''}${nQ?' · '+nQ+' ya estaban por revisar':''}${nImgOk+nImgNo?` · ${nImgOk} foto${nImgOk===1?'':'s'} leída${nImgOk===1?'':'s'}${nImgNo?' y '+nImgNo+' para revisar a mano':''}`:''}`);
+  toast(`${out.length-nNo} preliminar${out.length-nNo===1?'':'es'} de ${nMsg} mensajes${nNo?` · ${nNo} mensaje${nNo===1?'':'s'} sin tarjeta`:''}${nRep?' · '+nRep+' ya aprobados antes':''}${nQ?' · '+nQ+' ya estaban por revisar':''}${nImgOk+nImgNo?` · ${nImgOk} foto${nImgOk===1?'':'s'} leída${nImgOk===1?'':'s'}${nImgNo?' y '+nImgNo+' para revisar a mano':''}`:''}`);
 }
 /* --- fotos del chat: se guardan en el celular (IndexedDB) mientras están en la bandeja --- */
 function waIdb(){return ui._waDb||(ui._waDb=new Promise((res,rej)=>{const r=indexedDB.open('fle_wa',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));}
@@ -3456,7 +3458,7 @@ function waFrutaEdit(id,approveAfter){
       <div class="field"><label>Finca</label><select class="input" id="wf_fi">${d.fi?'':'<option value="" selected>— Elige la finca —</option>'}${(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
       <div class="field"><label>¿Qué se vendió?</label><select class="input" id="wf_c">${d.c?'':'<option value="" selected>— Elige —</option>'}${catOpts('I',d.c)}</select></div>
       <div class="field"><label>Unidad</label><select class="input" id="wf_u">${(CFG.unidades||[]).map(u=>`<option ${u===d.u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
-      <div class="field"><label>Estado</label><select class="input" id="wf_e"><option value="X" ${d.e==='X'?'selected':''}>Pendiente (por cobrar)</option><option value="P" ${d.e!=='X'?'selected':''}>Pagado / Recibido</option></select></div>
+      <div class="field"><label>Estado</label><select class="input" id="wf_e"><option value="X" ${d.e==='X'||d.kind==='none'?'selected':''}>Pendiente (por cobrar)</option><option value="P" ${d.e!=='X'&&d.kind!=='none'?'selected':''}>Pagado / Recibido</option></select></div>
     </div>
     <div class="fruta-line head" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:12px"><span>CALIDAD</span><span>CANT.</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
     <div class="fruta-lines" id="wf_lines">${waFrutaLinesHTML()}</div>
@@ -3467,7 +3469,7 @@ function waFrutaEdit(id,approveAfter){
 async function waFrutaEditSave(id,approve){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const g=x=>(document.getElementById(x)||{}).value||'';
   d.f=g('wf_f')||d.f;d.cl=g('wf_cl').trim();{const ex=(CFG.clientes||[]).find(c=>vzNorm(c)===vzNorm(d.cl));if(ex)d.cl=ex;else d.cl=d.cl.toUpperCase();}
-  d.fi=g('wf_fi');d.c=g('wf_c');d.u=g('wf_u');d.e=g('wf_e')||'X';
+  d.fi=g('wf_fi');d.c=g('wf_c');d.u=g('wf_u');d.e=g('wf_e')||'X';d.kind='fruta';d.t='I';d.co='';
   d.fruta=(ui._wf||[]).map(l=>({cal:String(l.cal||'').trim()||'Fruta',q:+l.q||0,p:Math.round(+l.p||0)}));waFrutaFix(d,false);
   if(approve){if(!waFrutaReady(d)){await persistCfg();toast(d.warn[0]||'Faltan datos de la venta');return;}
     await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Venta aprobada: '+fmt(d.tot)+' · '+d.cl);return;}
@@ -3477,6 +3479,20 @@ async function waFrutaEditSave(id,approve){
 function waSrcHTML(src){if(!src)return '';const text=String(src.full||src.txt||'');const st=String(src.st||'');if(!st)return esc(text);
   let hx=false,ho=false;const body=text.split('\n').map((l,i)=>{const c=st[i]||'u';if(!l.trim())return '';if(c==='x'){hx=true;return `<span class="wa-x">${esc(l)}</span>`;}if(c==='o'){ho=true;return `<span class="wa-o">${esc(l)}</span>`;}return esc(l);}).join('\n');
   return body+(hx||ho?`<span class="wa-leg">${hx?'<span class="wa-x">Resaltado</span> no lo entendí: no quedó en esta tarjeta. ':''}${ho?'<span class="wa-o">En gris</span>: va en otra tarjeta o ya estaba registrado.':''}</span>`:'');}
+function waSortDrafts(a){return a.map((d,i)=>[d,i]).sort((x,y)=>{const kx=(x[0].src&&x[0].src.f||'')+' '+(x[0].src&&x[0].src.hm||''),ky=(y[0].src&&y[0].src.f||'')+' '+(y[0].src&&y[0].src.hm||'');return kx<ky?-1:kx>ky?1:x[1]-y[1];}).map(x=>x[0]);}
+/* ¿El mensaje parece traer algo de cuentas (algún número que no sea teléfono, hora o enlace)? */
+function waRelevant(txt){const n=vzNumbers(vzNorm(txt)).replace(/https?:\/\/\S+/g,' ').replace(/\b(?:\+?57\s?)?3\d{2}[\s.\-]?\d{3}[\s.\-]?\d{4}\b/g,' ').replace(/\b\d{1,2}:\d{2}\b/g,' ').replace(/\b(a las|a la|tipo|como a las)\s+\d{1,2}\b/g,' ');
+  return (n.match(/\b\d+(?:[.,]\d+)?\b/g)||[]).some(v=>parseFloat(v)>=10);}
+function waNoneCardHTML(d){
+  return `<div class="card wa-card wa-miss" id="wa_${d.id}">
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span><span class="wa-x">${esc(d.src.txt)}</span></div>
+    <div class="wa-body">
+      <div class="wa-top"><span class="chip pend">Sin tarjeta</span></div>
+      <div class="wa-warn">De este mensaje no se generó ninguna tarjeta porque no lo entendí. Léelo y, si hace falta, créala a mano.</div>
+      <div class="wa-act wa-act4"><button class="btn sm" onclick="waNoneDismiss('${d.id}')" title="No vuelve a salir al importar el chat">No hace falta</button><button class="btn sm" onclick="waEdit('${d.id}',true)">Movimiento</button><button class="btn sm" onclick="waFrutaEdit('${d.id}',true)">Venta de fruta</button><button class="btn sm" onclick="waAbonoModal('${d.id}')">Abono de cliente</button></div>
+    </div></div>`;
+}
+async function waNoneDismiss(id){const d=waDrafts().find(x=>x.id===id);if(!d)return;CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Quitado: no volverá a salir');}
 function waCliMatch(name,debts){const n=vzNorm(name||'').trim();if(!n)return null;debts=debts||waCliDebts();return debts.find(x=>vzNorm(x.cl)===n)||debts.find(x=>{const c=vzNorm(x.cl);return c.includes(n)||n.includes(c);})||null;}
 function waAbonoModal(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
@@ -3536,7 +3552,7 @@ function waAbonoCardHTML(d){
     </div></div>`;
 }
 function waCardHTML(d){
-  if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);
+  if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);if(d.kind==='none')return waNoneCardHTML(d);
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
     <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
@@ -3559,12 +3575,12 @@ function waCardHTML(d){
     </div></div>`;
 }
 function waRenderReview(){
-  const ds=waDrafts();const ready=ds.filter(waReady).length;const nAb=ds.filter(d=>d.kind==='abono').length;
+  const ds=waSortDrafts(waDrafts());const ready=ds.filter(waReady).length;const nAb=ds.filter(d=>d.kind==='abono').length;const nNo=ds.filter(d=>d.kind==='none').length;
   document.getElementById('topctl').innerHTML=`<button class="btn" onclick="ui.mWa=false;renderMovs()">← Volver a movimientos</button>`;
   document.getElementById('content').innerHTML=`
-   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length}</b> preliminar${ds.length===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready-nAb} con datos por completar${nAb?` · <b>${nAb}</b> pago${nAb===1?'':'s'} de clientes para abonar`:''}</p></div></div>
+   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length-nNo}</b> preliminar${ds.length-nNo===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready-nAb-nNo} con datos por completar${nNo?` · <b>${nNo}</b> mensaje${nNo===1?'':'s'} sin tarjeta`:''}${nAb?` · <b>${nAb}</b> pago${nAb===1?'':'s'} de clientes para abonar`:''}</p></div></div>
      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="waApproveAll()" ${ready?'':'disabled'}>Aprobar los ${ready} listos</button><button class="btn" onclick="waPick()">Importar otro chat</button><button class="btn" onclick="waDiscardAll()">Descartar todos</button></div>
-     <div class="note">Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes. Los <b>pagos y consignaciones de clientes</b> no crean un movimiento: con <b>Abonar a la deuda</b> quedan como abono en la sección Clientes.</div></div>
+     <div class="note">Las tarjetas van en el orden en que se enviaron los mensajes, del más antiguo al más reciente. Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes. Los <b>pagos y consignaciones de clientes</b> no crean un movimiento: con <b>Abonar a la deuda</b> quedan como abono en la sección Clientes.</div></div>
    <div class="wa-list">${ds.map(waCardHTML).join('')}</div>`;
   waLoadThumbs();
 }
@@ -3632,7 +3648,7 @@ async function waEditSave(id,approve){
   const w=g('we_w').trim();if(d.t==='I'){d.cl=w;d.co='';}else{d.co=w;d.cl='';}
   if(d.fruta&&d.t!=='I')delete d.fruta;
   if(!d.fruta&&document.getElementById('we_q')){d.q=+g('we_q')||1;d.pu=Math.round(num(g('we_pu')));d.tot=Math.round(d.q*d.pu);}
-  d.warn=(d.warn||[]).filter(w=>!/finca|categor|tipo|ingreso o egreso|total|foto|cliente/i.test(w));if(d.kind==='abono'||d.kind==='img')d.kind='manual';
+  d.warn=(d.warn||[]).filter(w=>!/finca|categor|tipo|ingreso o egreso|total|foto|cliente/i.test(w));if(d.kind==='abono'||d.kind==='img'||d.kind==='none')d.kind='manual';
   if(approve){if(!d.fi){toast('Elige la finca');return;}if(!d.c){toast('Elige la categoría');return;}if(!(d.tot>0)){toast('Falta el valor');return;}
     if(d.ab>d.tot){toast('El abono no puede ser mayor que el total');return;}
     await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);return;}
