@@ -382,6 +382,7 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .wa-tag{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:none;background:rgba(37,211,102,.16);color:#1faa55;cursor:pointer;margin-right:6px;vertical-align:-4px;padding:0}.wa-tag svg{width:12px;height:12px}
 .wa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
 .wa-card{padding:0;overflow:hidden}.wa-card.wa-miss{border-color:var(--amber)}
+.wf-line{margin-bottom:8px}
 .wa-msg{background:var(--surface2);padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}
 .wa-thumb{background:#0b0f0d;display:flex;justify-content:center;cursor:zoom-in;max-height:190px;overflow:hidden;border-bottom:1px solid var(--line)}
 .wa-thumb img{max-width:100%;max-height:190px;object-fit:contain;display:block;min-height:60px}
@@ -487,6 +488,7 @@ button.chip.fa-dup,button.chip.fa-ok{cursor:pointer;font-family:inherit;font-wei
 @media(max-width:640px){
   .fruta-line{grid-template-columns:1fr 1fr 1fr auto;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line)}
   .fruta-line>select{grid-column:1/-1}
+  .wf-line>input:first-child{grid-column:1/-1}
   .fruta-line .ro{align-self:center}
   .fruta-line.head{display:none}
 }
@@ -3202,8 +3204,11 @@ async function waRun(){
   /* Solo cuentan como «ya importados» los mensajes cuyo movimiento fue APROBADO. Los que están en la bandeja no se duplican. */
   if(!CFG.waSeenV2){CFG.waSeen=[];CFG.waSeenV2=1;}
   const seen=new Set(CFG.waSeen||[]);const inQ=new Set([].concat(...waDrafts().map(d=>[d.key].concat(d.keys2||[]))));const out=[];let nMsg=0,nRep=0,nQ=0;
+  const plists=[];msgs.forEach((m,i)=>{if(m.att||!/precio/i.test(m.txt||''))return;const r=waFrutaList(m);if(r&&r.np>=2)plists.push({f:m.f,i,prices:r.prices});});
   for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
     if(m.att&&!m.txt)continue;
+    if(!m.att){let fl=waFrutaList(m);if(fl&&fl.length&&fl.some(d=>d.fruta.some(l=>!(l.p>0)))&&plists.length){const same=plists.filter(x=>x.f===m.f);const prev=plists.filter(x=>x.i<msgs.indexOf(m));const ext=same[same.length-1]||prev[prev.length-1]||plists[0];fl=waFrutaList(m,ext)||fl;}
+      if(fl){fl.forEach(d=>{const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|FR|'+d.pk);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}d.key=key;d.mi=msgs.indexOf(m);out.push(d);});continue;}}
     const lines=m.txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
     const hasMoney=l=>{const n=vzNumbers(vzNorm(l));return (n.match(/\b\d+(?:\.\d+)?\b/g)||[]).some(v=>+v>=1000);};
     const moneyLines=lines.filter(hasMoney);
@@ -3317,6 +3322,135 @@ function waInterpretImg(text,m,defFi,imgId,ocrOk){
   return d;
 }
 function waCliDebts(){const g={};MOVS.forEach(m=>{if(m.t==='I'&&m.e==='X'&&m.cl&&saldo(m)>0){(g[m.cl]=g[m.cl]||{cl:m.cl,deuda:0,n:0,fincas:{}});g[m.cl].deuda+=saldo(m);g[m.cl].n++;g[m.cl].fincas[m.fi]=(g[m.cl].fincas[m.fi]||0)+saldo(m);}});return Object.values(g).sort((a,b)=>b.deuda-a.deuda);}
+/* ===== WhatsApp: listas de venta de fruta (cliente + fecha, finca, cantidades por calidad y precios abajo) ===== */
+function wfKey(text){
+  const out=new Set();let prod='';
+  vzNorm(text).replace(/[^a-zñ ]+/g,' ').split(/\s+/).filter(Boolean).forEach(w=>{
+    if(/^(aguacates?|hass|lorena|papelillo)$/.test(w)){prod='aguacate';return;}
+    if(/^(naranjas?|mandarinas?|limon(es)?|tangelos?)$/.test(w)){prod=prod||w.replace(/e?s$/,'');return;}
+    if(/^(de|la|el|los|las|con|y|canastillas?|canastas?|kilos?|kg)$/.test(w))return;
+    if(/^semi/.test(w)){out.add('semi');out.add('mancha');return;}
+    if(/^extras?$/.test(w))return out.add('extra');
+    if(/^median[oa]s?$/.test(w))return out.add('mediana');
+    if(/^parej[oa]s?$|^p$/.test(w))return out.add('pareja');
+    if(/^manch(a|as|ada|adas|ado|ados|itas?)$|^m$/.test(w))return out.add('mancha');
+    if(/^grues[oa]s?$|^g$|^grandes?$/.test(w))return out.add('grueso');
+    if(/^limpi[oa]s?$|^l$/.test(w))return out.add('limpia');
+    if(/^pip(o|os|ito|itos)$/.test(w))return out.add('pipos');
+    out.add('?'+w);});
+  const a=[...out].sort();return{key:a.join(' '),ok:a.length>0&&!a.some(x=>x[0]==='?'),prod};
+}
+function wfFinca(text){const n=vzNorm(text).replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim().replace(/^(finca|la|el|los|las)\s+/,'');if(!n||n.length<3)return '';
+  const st=x=>vzNorm(x).replace(/^(finca|la|el|los|las)\s+/,'').trim();return (CFG.fincas||[]).find(f=>st(f)===n)||(CFG.fincas||[]).find(f=>n.length>=5&&vzSim(st(f),n)>=0.84)||'';}
+function wfClient(name){const n=vzNorm(name).replace(/[^a-zñ ]+/g,' ').replace(/\s+/g,' ').trim();if(!n)return '';const L=CFG.clientes||[];
+  return L.find(c=>vzNorm(c).trim()===n)||L.find(c=>{const cn=' '+vzNorm(c)+' ';return n.split(' ').every(w=>cn.includes(' '+w+' '));})||L.find(c=>n.split(' ').length===1&&n.length>=5&&vzNorm(c).split(' ').some(w=>vzSim(w,n)>=0.84))||n.toUpperCase();}
+function wfCalName(key,prod,fallback){const c=(CFG.frutaCalidades||[]).find(x=>{const k=wfKey(x.n);return k.key===key&&(!k.prod||!prod||(k.prod==='aguacate')===(prod==='aguacate'));});if(c)return c.n;
+  const t=String(fallback||key).replace(/\s+/g,' ').trim().toLowerCase();return t.charAt(0).toUpperCase()+t.slice(1);}
+function waFrutaList(m,ext){
+  const raw=String(m.txt||'').split(/\n/);if(raw.length<3)return null;
+  const prices={c:{},a:{}};const priceName={c:{},a:{}};const blocks=[];let cur=null,fi='',mode='',pp='c',blank=0,lastProd='';const skipped=[];
+  const dateRe=/(\d{1,2})\s*[.\/\-]\s*(\d{1,2})(?:\s*[.\/\-]\s*(\d{2,4}))?/;
+  const mkDate=mt=>{let d=+mt[1],mo=+mt[2];if(!(d>=1&&d<=31&&mo>=1&&mo<=12))return '';let y=mt[3]?(+mt[3]<100?2000+ +mt[3]:+mt[3]):+m.f.slice(0,4);let f=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!mt[3]&&f>addDaysISO(m.f,3))f=`${y-1}${f.slice(4)}`;return f;};
+  const nextReal=i=>{for(let k=i+1;k<raw.length;k++){if(raw[k].trim())return raw[k].trim();}return '';};
+  const isItem=l=>{const mt=l.match(/^(\d+(?:[.,]\d+)?)\s+(\D.*)$/);if(!mt)return null;let rest=mt[2].trim();let lf='';const tk=rest.split(/\s+/);
+    for(let n2=Math.min(2,tk.length-1);n2>=1;n2--){const f=wfFinca(tk.slice(-n2).join(' '));if(f){lf=f;rest=tk.slice(0,-n2).join(' ');break;}}
+    const k=wfKey(rest);if(!k.ok)return null;return{q:parseFloat(mt[1].replace(',','.')),k,lf,rest};};
+  for(let i=0;i<raw.length;i++){const line=raw[i].trim();if(!line){blank++;continue;}const n=vzNorm(line);const bl=blank;blank=0;
+    if(/^\s*(lista\s+de\s+)?precios?\b/.test(n)){mode='price';pp=/aguacate/.test(n)?'a':'c';continue;}
+    if(mode==='price'){const a=line.match(/^\$?\s*(\d[\d.,]*)\s*(?:mil\s+)?(\D+)$/),b=line.match(/^(\D+?)\s*[:=\-]?\s*\$?\s*(\d[\d.,]*)\s*(mil)?\s*$/i);const nm=a?a[2]:(b?b[1]:''),nv=a?a[1]:(b?b[2]:'');
+      if(nm&&nv){const k=wfKey(nm);let v=Math.round(num(nv));if(/[.,]\d{1,2}$/.test(nv)&&v<1000)v=Math.round(parseFloat(nv.replace(',','.')));if(v>0&&v<1000)v*=1000;
+        if(k.ok&&v>0){const g=k.prod==='aguacate'?'a':pp;prices[g][k.key]=v;priceName[g][k.key]=nm.replace(/aguacates?/i,'').trim();continue;}}
+      if(!dateRe.test(line))continue;mode='';}
+    const it=isItem(line);
+    if(it){if(it.lf)fi=it.lf;let prod=it.k.prod==='aguacate'?'a':(it.k.prod?'c':'');
+      if(!prod)prod=it.k.key==='grueso'?'a':(it.k.key==='pareja'&&lastProd==='a'?'a':'c');lastProd=prod;
+      if(!cur){cur={cl:'',f:m.f,items:[]};blocks.push(cur);}
+      cur.items.push({q:it.q,key:it.k.key,prod,fi,rest:it.rest,raw:line,loose:bl>=2&&!!it.lf});continue;}
+    const dm=line.match(dateRe);
+    if(dm&&/[a-zñ]{3,}/i.test(line.replace(dateRe,''))){const f=mkDate(dm);const nm=line.replace(dateRe,' ').replace(/[.\-_:,;]+/g,' ').replace(/\s+/g,' ').trim();
+      if(f&&nm.split(' ').length<=5){cur={cl:wfClient(nm),f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}}
+    if(!/\d/.test(line)){const f=wfFinca(line);const nx=nextReal(i);
+      if(f){fi=f;lastProd='';continue;}
+      if(line.split(/\s+/).length<=4&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ .]+$/.test(line)&&nx&&(wfFinca(nx)||isItem(nx))&&!wfKey(line).ok){cur={cl:wfClient(line),f:m.f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}
+      const tk=line.split(/\s+/);const lf=tk.length>1?wfFinca(tk.slice(-1)[0]):'';if(lf&&wfKey(tk.slice(0,-1).join(' ')).ok){skipped.push(line);continue;}}
+  }
+  const nItems=blocks.reduce((a,b)=>a+b.items.length,0);const np=Object.keys(prices.c).length+Object.keys(prices.a).length;
+  if(nItems<2){if(np>=2){const o=[];o.prices=prices;o.np=np;return o;}return null;}
+  const out=[];const cats=CFG.catIngresos||[];
+  blocks.forEach(b=>{const groups={};b.items.forEach(it=>{const k=it.fi+'|'+it.prod;(groups[k]=groups[k]||{fi:it.fi,prod:it.prod,items:[]}).items.push(it);});
+    Object.values(groups).forEach(g=>{const P=prices[g.prod],PN=priceName[g.prod];const miss=[];
+      let usedExt=false;const lines=g.items.map(it=>{let pr=P[it.key]||0;if(!pr&&ext&&ext.prices[g.prod][it.key]){pr=ext.prices[g.prod][it.key];usedExt=true;}if(!pr){const cn=wfCalName(it.key,g.prod==='a'?'aguacate':'',it.rest);pr=frutaPrecioOf(cn)||0;}
+        const cal=wfCalName(it.key,g.prod==='a'?'aguacate':'',PN[it.key]||it.rest);if(!pr)miss.push(cal);return{cal,q:it.q,p:Math.round(pr)};});
+      const d={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'fruta',warn:[],t:'I',f:b.f,fi:g.fi,cl:b.cl,co:'',fa:'',ab:0,e:'X',fruta:lines,
+        src:{au:m.au,f:m.f,hm:m.hm,txt:[b.head,g.fi&&!g.items.every(x=>x.loose)?g.fi:''].concat(g.items.map(x=>x.raw)).filter(Boolean).join('\n')}};
+      const want=g.prod==='a'?'aguacate':'';let c='';
+      if(want)c=cats.find(x=>vzNorm(x).includes(want))||'';
+      else{const cnt={};MOVS.forEach(x=>{if(x.t==='I'&&x.fruta&&x.c&&x.fi===g.fi&&!/aguacate/.test(vzNorm(x.c)))cnt[x.c]=(cnt[x.c]||0)+1;});const top=Object.entries(cnt).sort((a,b2)=>b2[1]-a[1])[0];
+        c=(top&&cats.includes(top[0])?top[0]:'')||cats.find(x=>/naranja/.test(vzNorm(x)))||'';if(c)d.warn.push('Revisa qué fruta se vendió ('+c+')');}
+      d.c=c;const U=CFG.unidades||[];d.u=(g.prod==='a'?U.find(u=>/^(kg|kilo)/i.test(u)):U.find(u=>/canast/i.test(u)))||U[0]||'';
+      if(usedExt)d.warn.push('Precios tomados de la lista del '+fmtFecha(ext.f)+': revísalos');
+      if(g.items.some(x=>x.loose))d.warn.push('Unas cantidades venían sueltas al final: revisa que sean de este cliente');
+      d.pk=[b.cl,b.f,g.fi,g.prod].join('|');waFrutaFix(d,true);out.push(d);});});
+  out.skipped=skipped;out.prices=prices;out.np=np;return out.length?out:null;
+}
+function waFrutaFix(d,keep){const L=(d.fruta||[]).filter(l=>(+l.q||0)>0);d.fruta=L;const tot=Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0));const q=L.reduce((a,l)=>a+(+l.q||0),0);
+  d.q=q;d.tot=tot;d.pu=q?Math.round(tot/q):tot;d.d='Venta de fruta'+(L.length?': '+frutaDescLines(L):'');
+  const w=keep?(d.warn||[]).filter(x=>/^Revisa|sueltas|^Precios tomados/.test(x)):[];const miss=L.filter(l=>!(+l.p>0)).map(l=>l.cal);
+  if(!d.cl)w.unshift('Falta el cliente');if(!d.fi)w.unshift('Falta la finca');if(!d.c)w.unshift('Falta decir qué fruta es (categoría)');if(miss.length)w.unshift('Falta el precio de: '+miss.join(', '));d.warn=w;}
+function waFrutaReady(d){return !!(d.fi&&d.c&&d.f&&d.cl&&(d.fruta||[]).length&&d.fruta.every(l=>+l.p>0&&+l.q>0)&&d.tot>0);}
+function waFrutaCardHTML(d){const ok=waFrutaReady(d);
+  return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-body">
+      <div class="wa-top"><span class="chip pay">Venta de fruta</span><span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente (por cobrar)':'Pagada'}</span><b class="wa-tot tnum pos">${fmt(d.tot)}</b></div>
+      <div class="wa-grid">
+        <div><span>Fecha de la venta</span><b>${fmtFecha(d.f)}</b></div>
+        <div class="${d.cl?'':'bad'}"><span>Cliente</span><b>${esc(d.cl||'Falta')}${d.cl&&!(CFG.clientes||[]).includes(d.cl)?' <span class="chip pend">Nuevo</span>':''}</b></div>
+        <div class="${d.fi?'':'bad'}"><span>Finca</span><b>${d.fi?`<span class="fdot"><i style="background:${fincaColor(d.fi)}"></i>${esc(d.fi)}</span>`:'Falta'}</b></div>
+        <div class="${d.c?'':'bad'}"><span>¿Qué se vendió?</span><b>${esc(d.c||'Falta')}</b></div>
+      </div>
+      <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Calidad</th><th class="r">Subtotal</th></tr></thead><tbody>
+        ${(d.fruta||[]).map(l=>`<tr><td><b>${esc(l.cal)}</b><div class="tnum" style="font-size:12px;color:var(--muted)">${(+l.q).toLocaleString('es-CO')} × ${+l.p>0?fmt(l.p):'<span style="color:var(--amber)">falta el precio</span>'}</div></td><td class="r tnum">${fmt(Math.round(l.q*l.p))}</td></tr>`).join('')}
+        <tr><td><b>Total</b> · <span class="tnum">${(+d.q).toLocaleString('es-CO')}</span> ${esc(d.u||'')}</td><td class="r tnum"><b>${fmt(d.tot)}</b></td></tr></tbody></table></div>
+      ${d.warn&&d.warn.length?`<div class="wa-warn">${d.warn.map(esc).join(' · ')}</div>`:''}
+      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm" onclick="waFrutaEdit('${d.id}')">Editar</button><button class="btn sm primary" onclick="waApprove('${d.id}')">${ok?'Aprobar venta':'Completar y aprobar'}</button></div>
+    </div></div>`;
+}
+function waFrutaLinesHTML(){const L=ui._wf||[];const cals=(CFG.frutaCalidades||[]).map(c=>c.n);
+  return `<datalist id="wf_cals">${cals.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`+L.map((l,i)=>`<div class="fruta-line wf-line">
+     <input class="input" list="wf_cals" placeholder="Calidad" value="${esc(l.cal||'')}" oninput="ui._wf[${i}].cal=this.value">
+     <input class="input tnum" type="number" step="any" placeholder="Cant." value="${l.q}" oninput="ui._wf[${i}].q=this.value;waFrutaEditTot()">
+     <input class="input tnum money" inputmode="numeric" placeholder="Precio" value="${+l.p?fmn(l.p):''}" oninput="ui._wf[${i}].p=num(this.value);waFrutaEditTot()">
+     <div class="ro tnum" data-wfs="${i}" style="text-align:right;align-self:center">${fmt(Math.round((+l.q||0)*(+l.p||0)))}</div>
+     <button class="iconbtn del" title="Quitar" onclick="ui._wf.splice(${i},1);document.getElementById('wf_lines').innerHTML=waFrutaLinesHTML();waFrutaEditTot()">✕</button></div>`).join('');}
+function waFrutaEditTot(){const L=ui._wf||[];L.forEach((l,i)=>{const e=document.querySelector(`[data-wfs="${i}"]`);if(e)e.textContent=fmt(Math.round((+l.q||0)*(+l.p||0)));});const t=document.getElementById('wf_tot');if(t)t.textContent=fmt(Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0)));}
+function waFrutaEdit(id,approveAfter){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._wf=JSON.parse(JSON.stringify(d.fruta||[]));if(!ui._wf.length)ui._wf=[{cal:'',q:'',p:0}];
+  showModal(approveAfter?'Completa la venta para aprobar':'Editar venta de fruta',`
+    <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="form-grid">
+      <div class="field"><label>Fecha de la venta</label><input class="input tnum" type="date" id="wf_f" value="${d.f}"></div>
+      <div class="field"><label>Cliente</label><input class="input" id="wf_cl" list="wf_clist" value="${esc(d.cl||'')}" autocomplete="off"><datalist id="wf_clist">${(CFG.clientes||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+      <div class="field"><label>Finca</label><select class="input" id="wf_fi">${d.fi?'':'<option value="" selected>— Elige la finca —</option>'}${(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+      <div class="field"><label>¿Qué se vendió?</label><select class="input" id="wf_c">${d.c?'':'<option value="" selected>— Elige —</option>'}${catOpts('I',d.c)}</select></div>
+      <div class="field"><label>Unidad</label><select class="input" id="wf_u">${(CFG.unidades||[]).map(u=>`<option ${u===d.u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
+      <div class="field"><label>Estado</label><select class="input" id="wf_e"><option value="X" ${d.e==='X'?'selected':''}>Pendiente (por cobrar)</option><option value="P" ${d.e!=='X'?'selected':''}>Pagado / Recibido</option></select></div>
+    </div>
+    <div class="fruta-line head" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:12px"><span>CALIDAD</span><span>CANT.</span><span>PRECIO</span><span style="text-align:right">SUBTOTAL</span><span></span></div>
+    <div class="fruta-lines" id="wf_lines">${waFrutaLinesHTML()}</div>
+    <button class="btn sm" style="margin-top:10px" onclick="ui._wf.push({cal:'',q:'',p:0});document.getElementById('wf_lines').innerHTML=waFrutaLinesHTML()">+ Agregar calidad</button>
+    <div class="note">Total de la venta: <b id="wf_tot">${fmt(d.tot)}</b>. Al aprobar se crea el movimiento igual que desde Cuentas de fruta.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn',fn:()=>waFrutaEditSave(id,false)},{label:'Guardar y aprobar',cls:'btn primary',fn:()=>waFrutaEditSave(id,true)}]);
+}
+async function waFrutaEditSave(id,approve){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;const g=x=>(document.getElementById(x)||{}).value||'';
+  d.f=g('wf_f')||d.f;d.cl=g('wf_cl').trim();{const ex=(CFG.clientes||[]).find(c=>vzNorm(c)===vzNorm(d.cl));if(ex)d.cl=ex;else d.cl=d.cl.toUpperCase();}
+  d.fi=g('wf_fi');d.c=g('wf_c');d.u=g('wf_u');d.e=g('wf_e')||'X';
+  d.fruta=(ui._wf||[]).map(l=>({cal:String(l.cal||'').trim()||'Fruta',q:+l.q||0,p:Math.round(+l.p||0)}));waFrutaFix(d,false);
+  if(approve){if(!waFrutaReady(d)){await persistCfg();toast(d.warn[0]||'Faltan datos de la venta');return;}
+    await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Venta aprobada: '+fmt(d.tot)+' · '+d.cl);return;}
+  await persistCfg();closeModal();renderMovs();toast('Cambios guardados. Falta aprobar');
+}
 function waCliMatch(name,debts){const n=vzNorm(name||'').trim();if(!n)return null;debts=debts||waCliDebts();return debts.find(x=>vzNorm(x.cl)===n)||debts.find(x=>{const c=vzNorm(x.cl);return c.includes(n)||n.includes(c);})||null;}
 function waAbonoModal(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
@@ -3356,7 +3490,7 @@ async function waAbonoApply(){
   CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].concat(d.keys2||[]).filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);if(d.src&&d.src.f&&(!CFG.waLast||d.src.f>CFG.waLast))CFG.waLast=d.src.f;
   await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} registrado en Clientes (${plan.length} venta${plan.length===1?'':'s'})`);
 }
-function waReady(d){return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
+function waReady(d){if(d.kind==='fruta')return waFrutaReady(d);return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
 function waAbonoCardHTML(d){
   const g=waCliMatch(d.cl);const warn=(d.warn||[]).slice();if(d.cl&&!g)warn.push('Este cliente no tiene ventas pendientes por cobrar');
   return `<div class="card wa-card ${g?'':'wa-miss'}" id="wa_${d.id}">
@@ -3376,7 +3510,7 @@ function waAbonoCardHTML(d){
     </div></div>`;
 }
 function waCardHTML(d){
-  if(d.kind==='abono')return waAbonoCardHTML(d);
+  if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
     <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
@@ -3427,6 +3561,7 @@ async function waCommit(list){
 async function waApprove(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;
   if(d.kind==='abono'){waAbonoModal(id);return;}
+  if(d.kind==='fruta'&&!waFrutaReady(d)){waFrutaEdit(id,true);return;}
   if(!(d.fi&&d.c&&d.f&&(+d.tot||0)>0)){waEdit(id,true);return;}
   await waCommit([d]);if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);
 }
@@ -3438,7 +3573,7 @@ async function waApproveAll(){
 async function waDiscard(id){{const d0=waDrafts().find(x=>x.id===id);if(d0&&d0.img)waImgDel(d0.img);}CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Descartado');}
 function waDiscardAll(){confirmModal('Descartar todos',`Se quitarán los <b>${waDrafts().length}</b> movimientos preliminares. No se registra nada en las cuentas.`,async()=>{waDrafts().forEach(d=>{if(d.img)waImgDel(d.img);});CFG.waDrafts=[];await persistCfg();closeModal();ui.mWa=false;renderMovs();toast('Preliminares descartados');});}
 function waEdit(id,approveAfter){
-  const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._waT=d.t;
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;if(d.kind==='fruta')return waFrutaEdit(id,approveAfter);ui._waT=d.t;
   const fopts=(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('');
   showModal(d.kind==='abono'?'Convertir en un movimiento normal':approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
     ${d.kind==='abono'?'<div class="fac-warn" style="margin-bottom:12px">Usa esto solo si <b>no</b> era el pago de un cliente. Al guardar deja de ser un abono y pasa a ser un movimiento.</div>':''}
