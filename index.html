@@ -3139,6 +3139,12 @@ function waShort(line){const t=String(line).trim();const n=vzNumbers(vzNorm(waSt
   if(!mt){const e=t.match(/([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s+(\d{2,3})\s*$/);if(e){mt=[e[0],e[2],e[1]];pos=t.length-e[0].length+e[0].indexOf(e[2],e[1].length);}}
   if(!mt||WA_COUNT.test(vzNorm(mt[2]))||+mt[1]<10)return null;if((t.match(/\d+/g)||[]).length!==1)return null;if(t.split(/\s+/).length<2)return null;
   return{txt:pos?t.slice(0,pos)+mt[1]+'.000':mt[1]+'.000'+t.slice(mt[1].length),v:+mt[1]};}
+/* Regla: si el mensaje dice «abona», «abono», «abonó»… es un abono de un cliente (salvo que hable de abono de fertilizar) */
+const WA_ABW=/\b(abono|abona|abonan|abonaron|abonos|abonado|abonar|abonando)\b/;
+const WA_FERT=/\b(bultos?|cargue|cargada|abonada|abonadas|gallinaza|fertiliz\w*|urea|facturas? de abono|abono (organico|foliar|quimico|triple)|de abonos?\b(?! (a|de|del|ala) ))/;
+function waIsAbonoTxt(t){const n=vzNorm(t);return WA_ABW.test(n)&&!WA_FERT.test(n);}
+function waAbonoName(t){const nm=vzNorm(waStripDates(t)).replace(/[\d.,$]+/g,' ').replace(/\b(abon[oa]s?|abonan|abonaron|abonado|pag[oa]s?|pagaron|consign\w*|recib\w*|transf\w*|factura|facturas|futuras|cuenta|ala|a|al|de|del|la|el|los|las|lo|que|me|nos|ya|se|don|dona|sra|en|efectivo|mil|millon|millones|pesos|fruta|naranja|mandarina|tangelo|aguacate|otros|otro|para|con|esta|este|compra|anterior|pedido|deuda|valor|total|confirmad[oa]s?)\b/g,' ').replace(/[^a-zñ ]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!nm)return '';const k=wfClient(nm,true);if(k)return k;if(nm.split(' ').length>3||wfFinca(nm)||nm.split(' ').some(w=>wfFinca(w)||w.length<3))return '';const dm=(waCliMatch(nm)||{}).cl;if(dm)return dm;return String(t).trim().split(/\s+/).length<=5?nm.toUpperCase():'';}
 function waCatFromHistory(t,nd){
   const words=nd.split(' ').filter(w=>w.length>=5&&!/^\d/.test(w)&&!wfFinca(w));if(!words.length)return '';const cnt={};
   MOVS.forEach(m=>{if(m.t!==t||!m.c||!m.d)return;const md=' '+vzNorm(m.d)+' ';let sc=0;words.forEach(w=>{if(md.includes(' '+w+' '))sc++;});if(sc)cnt[m.c]=(cnt[m.c]||0)+sc;});
@@ -3161,8 +3167,9 @@ function waInterpret(line,msg,defFi,ctx){
   {const kc=wfClient(line.replace(/[\d.,$]+/g,' ').replace(/\b(pag[oóa]|pagaron|abon[oóa]s?|recib[ií]|recibo|recibe|se|de|del|la|el|los|las|en|efectivo|consign\w*|confirmo|confirmadas?|transf\w*|don|doña|dona|sra|otros|al|dia|con|todas|facturas?|factura|cuenta|ala|a|mas|más|y)\b/gi,' '),true);
     const rest=vzNorm(line).replace(/[\d.,$]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!/^(pago|paga|pagaron|abono|abona|abonos|recibi|recibo|recibe|efectivo|consign\w*|confirmo|confirmadas?|transf\w*|don|dona|sra|otros|dia|con|todas|facturas?|cuenta|ala|mas|del|los|las|fecha|asta|hasta|esta)$/.test(w));
     const restOther=kc?rest.filter(w=>!vzNorm(kc).split(' ').some(c=>c===w||vzSim(c,w)>=0.75)).length:99;
-    if(kc&&restOther<=1&&!/\b(vendi|vendimos|venta|ventas|saldo|deuda|debe|total)\b/.test(n)){let v=money[0];if(/\bm[aá]s\b|\+/.test(line)&&money.length>1)v=money.reduce((a,b)=>a+b,0);
-      d.t='I';d.kind='abono';d.cl=kc;d.e='P';d.ab=0;d.q=1;d.tot=d.pu=Math.round(v);d.fi='';d.c='';d.d='Pago de cliente';d.abFi='';d.co='';
+    const abRule=waIsAbonoTxt(line);
+    if(abRule||(kc&&restOther<=1&&!/\b(vendi|vendimos|venta|ventas|saldo|deuda|debe|total)\b/.test(n))){let v=money[0];if(/\bm[aá]s\b|\+/.test(line)&&money.length>1)v=money.reduce((a,b)=>a+b,0);
+      d.t='I';d.kind='abono';d.cl=kc||waAbonoName(line)||waAbonoName(String(msg.txt||'').split('\n')[0]);d.e='P';if(!d.cl)d.warn.push('Elige el cliente que abonó');d.ab=0;d.q=1;d.tot=d.pu=Math.round(v);d.fi='';d.c='';d.d='Pago de cliente';d.abFi='';d.co='';
       if(d.tot<10000){d.tot=d.pu=d.tot*1000;d.warn.push('Tomé el valor en miles ('+fmt(d.tot)+'): revísalo');}else if(money.length>1&&v===money[0])d.warn.push('El mensaje trae varios valores: revisa');
       d.f=dIn||d.f;return d;}}
   // tipo
@@ -3233,6 +3240,8 @@ async function waRun(){
   for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
     if(m.att&&!m.txt)continue;
     if(!m.att){const mi0=msgs.indexOf(m);let fl=FL[mi0];if(fl&&fl.length&&fl.some(d=>d.fruta.some(l=>!(l.p>0)))&&plists.length){const cand=plists.filter(x=>x.i!==mi0&&Math.abs(x.i-mi0)<=6&&x.f>=addDaysISO(m.f,-1)&&x.f<=addDaysISO(m.f,1)).sort((a,b)=>(Math.abs(a.i-mi0)-(a.i>mi0?0.5:0))-(Math.abs(b.i-mi0)-(b.i>mi0?0.5:0)));if(cand[0]){try{fl=waFrutaList(m,cand[0])||fl;}catch(e){console.warn(e);}}}
+      if(fl&&fl.abonos)fl.abonos.forEach(ab=>{const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|AB|'+ab.raw);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}
+        out.push({id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'abono',key,mi:mi0,warn:ab.cl?[]:['Elige el cliente que abonó'],t:'I',f:ab.f||m.f,cl:ab.cl,tot:ab.v,pu:ab.v,q:1,e:'P',ab:0,fa:'',co:'',fi:'',c:'',d:'Pago de cliente',abFi:'',src:{au:m.au,f:m.f,hm:m.hm,txt:ab.raw,full:String(m.txt).slice(0,6000),st:String(m.txt).split('\n').map((x,k)=>k===ab.li?'u':'o').join('')}});});
       if(fl){fl.forEach(d=>{const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|FR|'+d.pk);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}d.key=key;d.mi=msgs.indexOf(m);out.push(d);});continue;}}
     const hasMoney=l=>{const n=vzNumbers(vzNorm(waStripDates(l)));return (n.match(/\b\d+(?:\.\d+)?\b/g)||[]).some(v=>+v>=1000);};
     const isRecap=!m.att&&(/\b(saldo|saldos|deuda|deudas|estado de cuenta)\b/i.test(m.txt)||/^\s*(clientes|precios)\b/i.test(m.txt));
@@ -3259,7 +3268,7 @@ async function waRun(){
     made.forEach(([d,k])=>{if(units.length>1){d.src.full=units.join('\n').slice(0,6000);d.src.st=LST.map((c,j)=>j===k||c==='n'?'u':c).join('');}else{d.src.full=String(m.txt).slice(0,6000);d.src.txt=d.src.full.length>400?d.src.full.slice(0,400)+'…':d.src.full;}});
     if(!made.length&&!m.att&&!LST.includes('o')&&waRelevant(m.txt)){const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|NONE|'+m.txt);if(!seen.has(key)&&!inQ.has(key))out.push({id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'none',key,mi:msgs.indexOf(m),warn:[],src:{au:m.au,f:m.f,hm:m.hm,txt:String(m.txt).slice(0,6000)},t:'E',f:m.f,fi:defFi||'',c:'',d:'',q:1,pu:0,tot:0,e:'P',ab:0,fa:'',co:'',cl:''});}}
   // ---- fotos ----
-  const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
+  const usedCtx=new Set();const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
   if(wantImg){const todo=[];
     for(const m of msgs){if(!m.att||!z.has(m.att)||!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+m.att);if(seen.has(key)){nRep++;continue;}if(inQ.has(key)){nQ++;continue;}todo.push({m,key});}
     if(todo.length){ui._waCancel=false;
@@ -3268,7 +3277,7 @@ async function waRun(){
       for(let i=0;i<todo.length&&!ui._waCancel;i++){const{m,key}=todo[i];const pe=document.getElementById('wa_prog');if(pe)pe.innerHTML=`Leyendo foto <b>${i+1}</b> de <b>${todo.length}</b>…`;
         try{const mi=msgs.indexOf(m);if(/^STK-/i.test(m.att))continue;
           {const pv=msgs[mi-1];if(pv&&pv.att&&m.txt&&pv.txt===m.txt&&pv.au===m.au&&pv.f===m.f&&waCapAmount(m.txt))continue;} // dos fotos de la misma factura
-          const cx=waImgCtx(msgs,mi);const linked=cx&&cx.j!==mi?out.filter(o=>o.mi===cx.j&&o.kind!=='none'&&!o.fromImg):[];
+          const cx=waImgCtx(msgs,mi);if(cx&&cx.j!==mi)usedCtx.add(cx.j);const linked=cx&&cx.j!==mi?out.filter(o=>o.mi===cx.j&&o.kind!=='none'&&!o.fromImg):[];
           const bytes=await z.get(m.att);const cv=await waImgCanvas(bytes,m.att);if(!cv)continue;
           const id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
           if(linked.length){ // el texto ya trae el valor: la foto queda como soporte de esa tarjeta
@@ -3281,6 +3290,11 @@ async function waRun(){
           out.push(d);if(d.tot>0)nImgOk++;else nImgNo++;
         }catch(e){console.warn(e);}}
     }}
+  msgs.forEach((m,i)=>{if(m.att||!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1)||usedCtx.has(i)||!waIsAbonoTxt(m.txt)||m.txt.trim().split(/\s+/).length>6)return;
+    if(out.some(o=>o.mi===i&&o.kind!=='none'))return;const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|AB0|'+m.txt);if(seen.has(key)||inQ.has(key))return;
+    if(/\b(saldo|saldos|deuda|deudas|estado de cuenta)\b/i.test(m.txt))return;
+    for(let k=out.length-1;k>=0;k--){if(out[k].mi===i&&out[k].kind==='none')out.splice(k,1);}
+    const cl=waAbonoName(m.txt);out.push({id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'abono',key,mi:i,warn:['El mensaje no trae el valor: escríbelo al abonar'].concat(cl?[]:['Elige el cliente que abonó']),t:'I',f:waDateIn(m.txt,m.f)||m.f,cl,tot:0,pu:0,q:1,e:'P',ab:0,fa:'',co:'',fi:'',c:'',d:'Pago de cliente',abFi:'',src:{au:m.au,f:m.f,hm:m.hm,txt:m.txt}});});
   if(!out.length){
     if(nQ){await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();toast(`${nQ} movimiento${nQ===1?'':'s'} de este chat ya está${nQ===1?'':'n'} aquí esperando tu aprobación${nRep?' · '+nRep+' ya aprobados':''}`);return;}
     showModal(nRep?'Estos movimientos ya fueron importados':'Sin movimientos nuevos',nRep?`<p>Revisé <b>${nMsg}</b> mensajes. Los <b>${nRep}</b> movimientos de este chat ya fueron <b>revisados y aprobados</b> antes, así que no se repiten.</p>`:`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos.</p><div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
@@ -3393,6 +3407,7 @@ function waInterpretImg(text,m,defFi,imgId,ocrOk){
   const outPay=/\b(abono|consignacion|pago|transferencia|giro)\s+(para|a|al)\b|\bdesde la cuenta\b/.test(Tn);
   if(isStmt){d.kind='none';d.warn=[];d.d='';d.tot=0;}
   else if(!outPay&&kc&&(abV||payV||restW<=1)&&restW<=2){asAbono(kc);}
+  else if(waIsAbonoTxt(cap)){asAbono(kc||waAbonoName(cap)||wfClient(m.au,true)||'');if(outPay)d.warn.push('El mensaje dice «abono para…»: si fue un pago que ustedes hicieron, toca «No es un abono»');}
   else if(!outPay&&!stOnly&&abV&&wfClient(m.au,true)){asAbono(wfClient(m.au,true));}
   else if(!outPay&&!stOnly&&abV&&nameTxt&&Tn.split(' ').length<=4&&nameTxt.split(' ').length<=3&&!fiT&&!/\b(syca|sika|cacayal|agroinsumos|ferreteria|cuenta)\b/.test(Tn)){asAbono(wfClient(nameTxt));}
   else if(!outPay&&!stOnly&&abV&&isCons&&!fiT){asAbono('');}
@@ -3446,6 +3461,7 @@ function wfClient(name,soft){const n=vzNorm(name).replace(/[^a-zñ ]+/g,' ').rep
   let c1=L.filter(c=>{const w=cw(c);return w.length&&w.every(a=>nw.some(b=>eq(a,b)));}).sort((a,b)=>cw(b).length-cw(a).length);if(c1.length)return c1[0];
   let c2=L.filter(c=>{const w=cw(c);return nw.filter(b=>b.length>=3).length&&nw.filter(b=>b.length>=3).every(b=>w.some(a=>eq(a,b)));});
   if(c2.length){if(c2.length>1){const cnt=c=>MOVS.reduce((a,m)=>a+(m.t==='I'&&m.cl===c?1:0),0);c2.sort((a,b)=>cnt(b)-cnt(a));}return c2[0];}
+  {const c3=L.filter(c=>cw(c).some(a=>a.length>=5&&nw.some(b=>eq(a,b))));if(c3.length===1)return c3[0];}
   return soft?'':n.toUpperCase();}
 const WF_NICE={'extra':'Extra','mediana':'Mediana','mancha semi':'Semi mancha','grueso mancha':'Mancha gruesa','mancha':'Mancha','limpia pareja':'Pareja limpia','mancha pareja':'Pareja mancha','pipos':'Pipos','pareja':'Parejo','grueso':'Grueso','tercera':'Tercera','balin':'Balín','valencia':'Valencia','grueso valencia':'Valencia gruesa','pareja valencia':'Valencia pareja','extra valencia':'Valencia buena'};
 function wfCalName(key,prod,fallback){const c=(CFG.frutaCalidades||[]).find(x=>{const k=wfKey(x.n);return k.key===key&&(!k.prod||!prod||(k.prod==='aguacate')===(prod==='aguacate'));});if(c)return c.n;
@@ -3480,11 +3496,11 @@ function wfScan(raw,m){
 function waFrutaList(m,ext){
   const raw=String(m.txt||'').split(/\n/);
   if(/^\s*(deudas?\b|saldos?\b|estado de cuenta|clientes\b)/i.test(raw[0]||'')||/\bfactura\s+\d{1,2}\s+(de\s+)?[a-z]/i.test(raw[0]||''))return null;
-  const LS=raw.map(()=>null);const prices={c:{},a:{}},priceName={c:{},a:{}};const blocks=[];const skipped=[];
+  const LS=raw.map(()=>null);const prices={c:{},a:{}},priceName={c:{},a:{}};const blocks=[];const skipped=[];const abonos=[];
   let pendSt='',lastDate='';let cur=null,fi='',unkFi='',mode='',pp='c',pq='',ctxProd='',lastProd='',msgDate='',skipAgg=false,posA=0;
   const FILL=/^(para|de|del|la|el|los|las|a|al|y|con|en|venta|ventas|fruta|frutas|ayer|hoy|dia|miercoles|lunes|martes|jueves|viernes|sabado|domingo)$/;
   const newBlock=(cl,f,head)=>{cur={cl,f:f||msgDate||m.f,dated:!!(f||msgDate),items:[],head,st:pendSt,total:0};pendSt='';blocks.push(cur);fi='';unkFi='';lastProd='';ctxProd='';skipAgg=false;return cur;};
-  const setPrice=(nameRaw,vRaw,forceA)=>{let k=wfKey(nameRaw);const isA=forceA||k.prod==='aguacate'||pp==='a';let key=k.key;if(/\b(demas|resto|otras|otros)\b/.test(vzNorm(nameRaw))){key='*';}else if(!k.ok)return false;
+  const setPrice=(nameRaw,vRaw,forceA)=>{let k=wfKey(nameRaw);const isA=forceA||k.prod==='aguacate'||pp==='a';let key=k.key;if(/\b(demas|resto|otras|otros)\b/.test(vzNorm(nameRaw))&&!vzNorm(nameRaw).replace(/\b(todas|todos|todo|las|los|el|la|lo|demas|resto|otras|otros|a|por|y)\b/g,'').trim()){key='*';}else if(!k.ok)return false;
     if(key==='primera')key=isA?'grueso':'extra';if(key==='segunda')key=isA?'pareja':'mediana';
     let v=wfNum(vRaw);if(!(v>0))return false;if(v<1000)v*=1000;if(pq&&key!=='*'&&!key.includes(pq))key=(key+' '+pq).split(' ').sort().join(' ');
     const g=isA?'a':'c';prices[g][key]=Math.round(v);priceName[g][key]=String(nameRaw).replace(/aguacates?/i,'').trim();return true;};
@@ -3507,6 +3523,7 @@ function waFrutaList(m,ext){
   for(let i=0;i<raw.length;i++){const line=raw[i].trim();if(!line){LS[i]={k:'n'};continue;}const n=vzNorm(line);
     if(/^\W*(nueva\s+)?(listas?\s+(de\s+)?)?precios?\b/.test(n)||/^\W*aguacates?\s+precios?\b/.test(n)){mode='price';pp=/aguacate/.test(n)?'a':'c';pq='';posA=0;LS[i]={k:'n'};continue;}
     const sc=wfScan(line,m);
+    if(waIsAbonoTxt(line)&&sc.nums.length&&!/\btotal\b/.test(n)){let v=wfNum(sc.nums[0]);if(v>0&&v<10000)v*=1000;if(v>=1000){abonos.push({cl:wfClient(sc.words.filter(w=>!FILL.test(w)&&!/^abon/.test(w)).join(' '),true)||(cur?cur.cl:''),v:Math.round(v),raw:line,f:sc.f||'',li:i});LS[i]={k:'n'};continue;}}
     if(mode==='price'){if(priceLine(sc)){LS[i]={k:'n'};continue;}
       if(sc.words.length===1&&/^(valencia|tangelo|naranja|mandarina|aguacate|aguacates)$/.test(sc.words[0])&&!sc.nums.length){if(/aguacate/.test(sc.words[0])){pp='a';pq='';}else{pp='c';pq=sc.words[0]==='valencia'?'valencia':'';}LS[i]={k:'n'};continue;}
       if(!sc.f&&!sc.fi&&(!sc.words.length||wfClient(sc.words.join(' '),true))&&!sc.nums.length){LS[i]={k:'n'};continue;}
@@ -3595,7 +3612,7 @@ function waFrutaList(m,ext){
     if(b.total){const mine=out.filter(x=>x._b===bi);const s=mine.reduce((a,x)=>a+x.tot,0);if(mine.length&&mine.every(x=>x.fruta.every(l=>l.p>0))&&Math.abs(s-b.total)>Math.max(1000,b.total*0.005))mine.forEach(x=>{x.warn.push(`El mensaje dice total ${fmt(b.total)} y aquí suma ${fmt(s)}: revisa`);});}
   });
   out.forEach(d=>{delete d._b;});
-  out.skipped=skipped;out.prices=prices;out.np=np;return out.length?out:null;
+  out.skipped=skipped;out.prices=prices;out.np=np;out.abonos=abonos;return out.length?out:null;
 }
 function waFrutaFix(d,keep){const L=(d.fruta||[]).filter(l=>(+l.q||0)>0);d.fruta=L;const tot=Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0));const q=L.reduce((a,l)=>a+(+l.q||0),0);
   d.q=q;d.tot=tot;d.pu=q?Math.round(tot/q):tot;d.d='Venta de fruta'+(L.length?': '+frutaDescLines(L):'');
