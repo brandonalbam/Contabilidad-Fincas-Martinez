@@ -3345,13 +3345,15 @@ function wfKey(text){
     if(/^(naranjas?|mandarinas?|limon(es)?|tangelos?)$/.test(w)){prod=prod||w.replace(/e?s$/,'');return;}
     if(/^(de|la|el|los|las|con|y|canastillas?|canastas?|kilos?|kg)$/.test(w))return;
     if(/^semi/.test(w)){out.add('semi');out.add('mancha');return;}
-    if(/^extras?$/.test(w))return out.add('extra');
+    if(/^extras?$|^buen[ao]s?$/.test(w))return out.add('extra');
     if(/^median[oa]s?$/.test(w))return out.add('mediana');
     if(/^parej[oa]s?$|^p$/.test(w))return out.add('pareja');
     if(/^manch(a|as|ada|adas|ado|ados|itas?)$|^m$/.test(w))return out.add('mancha');
     if(/^grues[oa]s?$|^g$|^grandes?$/.test(w))return out.add('grueso');
     if(/^limpi[oa]s?$|^l$/.test(w))return out.add('limpia');
     if(/^pip(o|os|ito|itos)$/.test(w))return out.add('pipos');
+    if(w.length>=4){const V=[['extra','extra'],['extras','extra'],['mediana','mediana'],['mediano','mediana'],['pareja','pareja'],['parejo','pareja'],['parejas','pareja'],['mancha','mancha'],['manchas','mancha'],['manchada','mancha'],['gruesa','grueso'],['grueso','grueso'],['limpia','limpia'],['pipos','pipos']];
+      let best=null,bs=0;V.forEach(([f,k])=>{const sm=vzSim(w,f);if(sm>bs){bs=sm;best=k;}});if(best&&bs>=0.8){out.add(best);return;}}
     out.add('?'+w);});
   const a=[...out].sort();return{key:a.join(' '),ok:a.length>0&&!a.some(x=>x[0]==='?'),prod};
 }
@@ -3369,7 +3371,7 @@ function waFrutaList(m,ext){
   const dateRe=/(\d{1,2})\s*[.\/\-]\s*(\d{1,2})(?:\s*[.\/\-]\s*(\d{2,4}))?/;
   const mkDate=mt=>{let d=+mt[1],mo=+mt[2];if(!(d>=1&&d<=31&&mo>=1&&mo<=12))return '';let y=mt[3]?(+mt[3]<100?2000+ +mt[3]:+mt[3]):+m.f.slice(0,4);let f=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!mt[3]&&f>addDaysISO(m.f,3))f=`${y-1}${f.slice(4)}`;return f;};
   const nextReal=i=>{for(let k=i+1;k<raw.length;k++){if(raw[k].trim())return raw[k].trim();}return '';};
-  const isItem=l=>{const mt=l.match(/^(\d+(?:[.,]\d+)?)\s+(\D.*)$/);if(!mt)return null;let rest=mt[2].trim();let lf='';const tk=rest.split(/\s+/);
+  const isItem=l=>{let mt=l.match(/^(\d+(?:[.,]\d+)?)\s+(\D.*)$/);if(!mt){const rv=l.match(/^(\D+?)\s*[:=\-]?\s*(\d{1,3}(?:,\d+)?)$/);if(rv)mt=[l,rv[2],rv[1]];}if(!mt)return null;let rest=mt[2].trim();let lf='';const tk=rest.split(/\s+/);
     for(let n2=Math.min(2,tk.length-1);n2>=1;n2--){const f=wfFinca(tk.slice(-n2).join(' '));if(f){lf=f;rest=tk.slice(0,-n2).join(' ');break;}}
     const k=wfKey(rest);if(!k.ok)return null;return{q:parseFloat(mt[1].replace(',','.')),k,lf,rest};};
   for(let i=0;i<raw.length;i++){const line=raw[i].trim();if(!line){blank++;LS[i]={k:'n'};continue;}const n=vzNorm(line);const bl=blank;blank=0;
@@ -3378,6 +3380,7 @@ function waFrutaList(m,ext){
       if(nm&&nv){const k=wfKey(nm);let v=Math.round(num(nv));if(/[.,]\d{1,2}$/.test(nv)&&v<1000)v=Math.round(parseFloat(nv.replace(',','.')));if(v>0&&v<1000)v*=1000;
         if(k.ok&&v>0){const g=k.prod==='aguacate'?'a':pp;prices[g][k.key]=v;priceName[g][k.key]=nm.replace(/aguacates?/i,'').trim();LS[i]={k:'n'};continue;}}
       if(!dateRe.test(line)){LS[i]={k:'x',b:null};continue;}mode='';}
+    {const pv=line.match(/^(\D+?)\s*[:=\-]?\s*\$?\s*(\d[\d.]*)\s*$/);if(pv&&Math.round(num(pv[2]))>=1000){const k=wfKey(pv[1]);if(k.ok){const g=k.prod==='aguacate'?'a':pp;prices[g][k.key]=Math.round(num(pv[2]));priceName[g][k.key]=pv[1].replace(/aguacates?/i,'').trim();LS[i]={k:'n'};continue;}}}
     const it=isItem(line);
     if(it){if(it.lf)fi=it.lf;let prod=it.k.prod==='aguacate'?'a':(it.k.prod?'c':'');
       if(!prod)prod=it.k.key==='grueso'?'a':(it.k.key==='pareja'&&lastProd==='a'?'a':'c');lastProd=prod;
@@ -3401,7 +3404,7 @@ function waFrutaList(m,ext){
       let usedExt=false;const lines=g.items.map(it=>{let pr=P[it.key]||0;if(!pr&&ext&&ext.prices[g.prod][it.key]){pr=ext.prices[g.prod][it.key];usedExt=true;}if(!pr){const cn=wfCalName(it.key,g.prod==='a'?'aguacate':'',it.rest);pr=frutaPrecioOf(cn)||0;}
         const cal=wfCalName(it.key,g.prod==='a'?'aguacate':'',PN[it.key]||it.rest);if(!pr)miss.push(cal);return{cal,q:it.q,p:Math.round(pr)};});
       const d={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'fruta',warn:[],t:'I',f:b.f,fi:g.fi,cl:b.cl,co:'',fa:'',ab:0,e:'X',fruta:lines,
-        src:{au:m.au,f:m.f,hm:m.hm,full:String(m.txt).slice(0,6000),st:LS.map(x=>!x||x.k==='n'?'u':x.k==='i'?(g.items.includes(x.it)?'u':'o'):x.k==='h'?(x.b===b?'u':'o'):x.k==='f'?((!x.b||x.b===b)&&x.fi===g.fi?'u':'o'):(!x.b||x.b===b?'x':'o')).join(''),txt:[b.head,g.fi&&!g.items.every(x=>x.loose)?g.fi:''].concat(g.items.map(x=>x.raw)).filter(Boolean).join('\n')}};
+        src:{au:m.au,f:m.f,hm:m.hm,full:String(m.txt).slice(0,6000),st:LS.map(x=>!x||x.k==='n'?'u':x.k==='i'?(g.items.includes(x.it)?'u':'o'):x.k==='h'?(x.b===b?'u':x.b.items.length?'o':'x'):x.k==='f'?((!x.b||x.b===b)&&x.fi===g.fi?'u':(x.b&&!x.b.items.length?'x':'o')):(!x.b||x.b===b||!x.b.items.length?'x':'o')).join(''),txt:[b.head,g.fi&&!g.items.every(x=>x.loose)?g.fi:''].concat(g.items.map(x=>x.raw)).filter(Boolean).join('\n')}};
       const want=g.prod==='a'?'aguacate':'';let c='';
       if(want)c=cats.find(x=>vzNorm(x).includes(want))||'';
       else{const cnt={};MOVS.forEach(x=>{if(x.t==='I'&&x.fruta&&x.c&&x.fi===g.fi&&!/aguacate/.test(vzNorm(x.c)))cnt[x.c]=(cnt[x.c]||0)+1;});const top=Object.entries(cnt).sort((a,b2)=>b2[1]-a[1])[0];
@@ -3409,7 +3412,7 @@ function waFrutaList(m,ext){
       d.c=c;const U=CFG.unidades||[];d.u=(g.prod==='a'?U.find(u=>/^(kg|kilo)/i.test(u)):U.find(u=>/canast/i.test(u)))||U[0]||'';
       if(usedExt)d.warn.push('Precios tomados de la lista del '+fmtFecha(ext.f)+': revísalos');
       if(g.items.some(x=>x.loose))d.warn.push('Unas cantidades venían sueltas al final: revisa que sean de este cliente');
-      d.pk=[b.cl,b.f,g.fi,g.prod].join('|');waFrutaFix(d,true);out.push(d);});});
+      d.pk=[b.cl,b.f,g.fi,g.prod].join('|');{const rp=out.filter(x=>x.pk0===d.pk).length;d.pk0=d.pk;if(rp)d.pk+='|'+rp;}waFrutaFix(d,true);out.push(d);});});
   out.skipped=skipped;out.prices=prices;out.np=np;return out.length?out:null;
 }
 function waFrutaFix(d,keep){const L=(d.fruta||[]).filter(l=>(+l.q||0)>0);d.fruta=L;const tot=Math.round(L.reduce((a,l)=>a+(+l.q||0)*(+l.p||0),0));const q=L.reduce((a,l)=>a+(+l.q||0),0);
