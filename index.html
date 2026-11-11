@@ -383,6 +383,13 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .wa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
 .wa-card{padding:0;overflow:hidden}.wa-card.wa-miss{border-color:var(--amber)}
 .wa-msg{background:var(--surface2);padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}
+.wa-thumb{background:#0b0f0d;display:flex;justify-content:center;cursor:zoom-in;max-height:190px;overflow:hidden;border-bottom:1px solid var(--line)}
+.wa-thumb img{max-width:100%;max-height:190px;object-fit:contain;display:block;min-height:60px}
+.wa-thumb.big{max-height:300px;border:1px solid var(--line);border-radius:10px}.wa-thumb.big img{max-height:300px}
+.wa-noimg{padding:14px;color:var(--muted);font-size:12.5px}
+.wa-ocr{font-size:12px;color:var(--muted);margin:-4px 0 12px}.wa-ocr summary{cursor:pointer;font-weight:600}
+#wa_zoom{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:zoom-out;padding:10px}
+#wa_zoom img{max-width:100%;max-height:92%;object-fit:contain}#wa_zoom span{color:#bbb;font-size:12px}
 .wa-meta{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
 .wa-body{padding:12px 14px}
 .wa-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}.wa-tot{margin-left:auto;font-family:var(--display);font-size:18px}
@@ -3024,29 +3031,32 @@ function waPick(){
     inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value='';if(f)waLoadFile(f);};document.body.appendChild(inp);}
   showModal('Importar chat de WhatsApp',`
     <p style="margin-bottom:10px">La app lee el chat, arma los movimientos de forma <b>preliminar</b> y tú los revisas y apruebas uno por uno. Nada entra a las cuentas sin tu aprobación.</p>
-    <div class="note" style="margin:0 0 4px"><b>Cómo sacar el chat de WhatsApp:</b><br>1. Abre el chat (o grupo) en WhatsApp.<br>2. Toca los <b>tres puntitos ⋮</b> de arriba → <b>Más</b> → <b>Exportar chat</b>.<br>3. Elige <b>Sin archivos</b>.<br>4. Guárdalo en el celular (por ejemplo en «Mis archivos» o Drive).<br>5. Vuelve aquí y toca <b>Elegir archivo del chat</b>.</div>`,
+    <div class="note" style="margin:0 0 4px"><b>Cómo sacar el chat de WhatsApp:</b><br>1. Abre el chat (o grupo) en WhatsApp.<br>2. Toca los <b>tres puntitos ⋮</b> de arriba → <b>Más</b> → <b>Exportar chat</b>.<br>3. Elige <b>Incluir archivos</b> si quieres que lea las <b>fotos de consignaciones</b>, o <b>Sin archivos</b> si solo quieres el texto (más rápido).<br>4. Guárdalo en el celular (por ejemplo en «Mis archivos» o Drive).<br>5. Vuelve aquí y toca <b>Elegir archivo del chat</b>.</div>`,
     [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Elegir archivo del chat',cls:'btn primary',fn:()=>inp.click()}]);
 }
-async function waUnzipTxt(buf){
+function waZipOpen(buf){
   const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);let eo=-1;
   for(let i=buf.length-22;i>=Math.max(0,buf.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){eo=i;break;}}
   if(eo<0)throw new Error('El archivo .zip está dañado');
-  const n=dv.getUint16(eo+10,true);let p=dv.getUint32(eo+16,true);const td=new TextDecoder('utf-8');let best=null;
+  const n=dv.getUint16(eo+10,true);let p=dv.getUint32(eo+16,true);const td=new TextDecoder('utf-8');const ents={};
   for(let k=0;k<n&&p+46<=buf.length;k++){if(dv.getUint32(p,true)!==0x02014b50)break;
     const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lho=dv.getUint32(p+42,true);
-    const name=td.decode(buf.subarray(p+46,p+46+nl));if(/\.txt$/i.test(name)&&(!best||csize>best.csize))best={method,csize,lho,name};p+=46+nl+el+cl;}
-  if(!best)throw new Error('El .zip no trae el archivo de texto del chat');
-  const nl2=dv.getUint16(best.lho+26,true),el2=dv.getUint16(best.lho+28,true);const start=best.lho+30+nl2+el2;const data=buf.subarray(start,start+best.csize);
-  if(best.method===0)return td.decode(data);
-  if(best.method!==8||typeof DecompressionStream==='undefined')throw new Error('Este navegador no puede abrir el .zip. Exporta el chat «Sin archivos» y sube el archivo .txt');
-  const out=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();return td.decode(out);
+    const name=td.decode(buf.subarray(p+46,p+46+nl));ents[name.split('/').pop()]={method,csize,lho,name};p+=46+nl+el+cl;}
+  const get=async nm=>{const e=ents[nm];if(!e)return null;const nl2=dv.getUint16(e.lho+26,true),el2=dv.getUint16(e.lho+28,true);const st=e.lho+30+nl2+el2;const data=buf.subarray(st,st+e.csize);
+    if(e.method===0)return data;
+    if(e.method!==8||typeof DecompressionStream==='undefined')throw new Error('Este navegador no puede abrir el .zip');
+    return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());};
+  return{ents,get,has:nm=>!!ents[nm]};
 }
 async function waLoadFile(file){
   showModal('Leyendo chat…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Leyendo <b>${esc(file.name)}</b>…</span></div>`,[]);
   try{
     const buf=new Uint8Array(await file.arrayBuffer());
-    const isZip=buf.length>4&&buf[0]===0x50&&buf[1]===0x4b;
-    const text=isZip?await waUnzipTxt(buf):new TextDecoder('utf-8').decode(buf);
+    const isZip=buf.length>4&&buf[0]===0x50&&buf[1]===0x4b;let text;ui._waZip=null;
+    if(isZip){const z=waZipOpen(buf);const txts=Object.keys(z.ents).filter(n=>/\.txt$/i.test(n)).sort((x,y)=>z.ents[y].csize-z.ents[x].csize);
+      if(!txts.length)throw new Error('El .zip no trae el archivo de texto del chat');
+      text=new TextDecoder('utf-8').decode(await z.get(txts[0]));ui._waZip=z;}
+    else text=new TextDecoder('utf-8').decode(buf);
     const msgs=waParseChat(text);
     if(!msgs.length){showModal('No se pudo leer el chat',`<p>El archivo no parece un chat exportado de WhatsApp.</p><div class="note">Debe ser el archivo que genera WhatsApp con <b>Exportar chat</b> (termina en .txt o .zip).</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
     ui._waMsgs=msgs;waOptionsModal(file.name);
@@ -3064,7 +3074,11 @@ function waParseChat(text){
   for(const x of raw){const i=x.rest.indexOf(': ');if(i<1||i>60||/\n/.test(x.rest.slice(0,i)))continue; // mensajes del sistema
     const d=mdy?x.b:x.a,mo=mdy?x.a:x.b;let y=x.y<100?2000+x.y:x.y;let h=x.h;if(x.ap==='p'&&h<12)h+=12;if(x.ap==='a'&&h===12)h=0;
     if(!(mo>=1&&mo<=12&&d>=1&&d<=31))continue;
-    const txt=x.rest.slice(i+2).trim();
+    let txt=x.rest.slice(i+2).trim();let att='';
+    {let m1=txt.match(/^(\S[^\n]*?\.(?:jpe?g|png|webp))\s*\((?:archivo adjunto|file attached)\)\s*/i)||txt.match(/^<(?:adjunto|attached):\s*([^>\n]+\.(?:jpe?g|png|webp))>\s*/i);
+     if(m1){att=m1[1].trim();txt=txt.slice(m1[0].length).trim();}}
+    if(!att&&(/^<multimedia omitido>$|^<media omitted>$/i.test(txt)||/^imagen omitida$|^image omitted$/i.test(txt)))out.omit=(out.omit||0)+1;
+    if(att){out.push({au:x.rest.slice(0,i).trim(),f:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,hm:String(h).padStart(2,'0')+':'+String(x.mi).padStart(2,'0'),txt,att});continue;}
     if(!txt||/^<[^>]*(omitid|omitted)[^>]*>$/i.test(txt)||/(multimedia|imagen|audio|video|sticker|documento|gif|contacto)\s+omitid/i.test(txt)||/\(archivo adjunto\)|\(file attached\)/i.test(txt)||/^(se elimin[oó] este mensaje|eliminaste este mensaje|this message was deleted|you deleted this message|null|llamada perdida.*|videollamada perdida.*)\.?$/i.test(txt))continue;
     out.push({au:x.rest.slice(0,i).trim(),f:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,hm:String(h).padStart(2,'0')+':'+String(x.mi).padStart(2,'0'),txt:txt.replace(/<se edit[oó] este mensaje\.?>|<this message was edited>/gi,'').trim()});}
   return out;
@@ -3072,14 +3086,17 @@ function waParseChat(text){
 function waHash(t){let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return (h>>>0).toString(36);}
 function waOptionsModal(fname){
   const msgs=ui._waMsgs||[];const authors={};msgs.forEach(m=>authors[m.au]=(authors[m.au]||0)+1);
+  const z=ui._waZip;const nImg=msgs.filter(m=>m.att&&z&&z.has(m.att)).length;const nTxt=msgs.filter(m=>!m.att||m.txt).length;
   const f0=msgs[0].f,f1=msgs[msgs.length-1].f;
   const lastSeen=CFG.waLast||'';const desde=lastSeen&&lastSeen>=f0&&lastSeen<=f1?lastSeen:f0;
   showModal('Chat leído · elige qué importar',`
-    <p style="color:var(--muted);margin-bottom:12px"><b>${msgs.length}</b> mensajes de texto, del ${fmtFecha(f0)} al ${fmtFecha(f1)}.</p>
+    <p style="color:var(--muted);margin-bottom:12px"><b>${nTxt}</b> mensajes de texto${nImg?` y <b>${nImg}</b> foto${nImg===1?'':'s'}`:''}, del ${fmtFecha(f0)} al ${fmtFecha(f1)}.</p>
+    ${!nImg&&(msgs.omit||msgs.some(m=>m.att))?`<div class="fac-warn" style="margin:0 0 12px">Este chat tiene fotos, pero se exportó <b>sin archivos</b>. Para leer las consignaciones, expórtalo otra vez eligiendo <b>Incluir archivos</b> y sube el .zip.</div>`:''}
     <div class="form-grid">
       <div class="field"><label>Desde la fecha</label><input class="input tnum" type="date" id="wa_d0" value="${desde}" min="${f0}" max="${f1}"></div>
       <div class="field"><label>Hasta la fecha</label><input class="input tnum" type="date" id="wa_d1" value="${f1}" min="${f0}" max="${f1}"></div>
       <div class="field full"><label>Finca, si el mensaje no la dice</label><select class="input" id="wa_fi"><option value="">— Dejar sin finca (la elijo al revisar) —</option>${(CFG.fincas||[]).map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
+      ${nImg?`<div class="field full"><label class="seccheck" style="margin:0"><input type="checkbox" id="wa_img" checked> <span>Leer también las <b>fotos</b> (consignaciones y recibos)</span><em>${nImg}</em></label></div>`:''}
       <div class="field full"><label>¿De quién tomo los mensajes?</label><div class="secgrid2">${Object.keys(authors).map((a,i)=>`<label class="seccheck"><input type="checkbox" class="wa_au" value="${esc(a)}" checked> <span>${esc(a)}</span><em>${authors[a]}</em></label>`).join('')}</div></div>
     </div>
     <div class="note">Solo se toman los mensajes que hablan de plata (traen un valor). Los saludos y demás mensajes se ignoran. Los mensajes cuyo movimiento ya <b>aprobaste</b> no se repiten; los que descartaste o no aprobaste vuelven a salir.</div>`,
@@ -3182,6 +3199,7 @@ async function waRun(){
   if(!CFG.waSeenV2){CFG.waSeen=[];CFG.waSeenV2=1;}
   const seen=new Set(CFG.waSeen||[]);const inQ=new Set(waDrafts().map(d=>d.key));const out=[];let nMsg=0,nRep=0,nQ=0;
   for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
+    if(m.att&&!m.txt)continue;
     const lines=m.txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
     const hasMoney=l=>{const n=vzNumbers(vzNorm(l));return (n.match(/\b\d+(?:\.\d+)?\b/g)||[]).some(v=>+v>=1000);};
     const moneyLines=lines.filter(hasMoney);
@@ -3193,21 +3211,138 @@ async function waRun(){
     units.forEach((u,ui2)=>{if(!hasMoney(u)){if(moneyLines.length>=2){const h=vzFincaLast(vzNorm(u).split(/\s+/));if(h&&u.split(/\s+/).length<=4)ctx.fi=h.name;}return;}
       if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3)return; // la línea de total de una lista no es otro movimiento
       const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}
+      if(m.att)return; // el texto que acompaña a una foto se interpreta junto con la foto
       const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;out.push(d);});}
+  // ---- fotos ----
+  const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
+  if(wantImg){const todo=[];
+    for(const m of msgs){if(!m.att||!z.has(m.att)||!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+m.att);if(seen.has(key)){nRep++;continue;}if(inQ.has(key)){nQ++;continue;}todo.push({m,key});}
+    if(todo.length){ui._waCancel=false;
+      showModal('Leyendo fotos…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span id="wa_prog">Preparando el lector de fotos…</span></div><div class="note">La primera vez descarga el lector (necesita internet). Las fotos se leen en tu celular; no se envían a ningún lado.</div>`,[{label:'Detener',cls:'btn',fn:()=>{ui._waCancel=true;const e=document.getElementById('wa_prog');if(e)e.textContent='Deteniendo…';}}]);
+      let worker=null;try{worker=await waOcrWorker();}catch(e){console.warn(e);}
+      for(let i=0;i<todo.length&&!ui._waCancel;i++){const{m,key}=todo[i];const pe=document.getElementById('wa_prog');if(pe)pe.innerHTML=`Leyendo foto <b>${i+1}</b> de <b>${todo.length}</b>…`;
+        try{const bytes=await z.get(m.att);const cv=await waImgCanvas(bytes,m.att);if(!cv)continue;
+          const id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+          const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));await waImgPut(id,blob);
+          let text='';if(worker){try{const res=await worker.recognize(cv);text=(res&&res.data&&res.data.text)||'';}catch(e){console.warn(e);}}
+          const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;out.push(d);if(d.tot>0)nImgOk++;else nImgNo++;
+        }catch(e){console.warn(e);}}
+    }}
   if(!out.length){
     if(nQ){await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();toast(`${nQ} movimiento${nQ===1?'':'s'} de este chat ya está${nQ===1?'':'n'} aquí esperando tu aprobación${nRep?' · '+nRep+' ya aprobados':''}`);return;}
     showModal(nRep?'Estos movimientos ya fueron importados':'Sin movimientos nuevos',nRep?`<p>Revisé <b>${nMsg}</b> mensajes. Los <b>${nRep}</b> movimientos de este chat ya fueron <b>revisados y aprobados</b> antes, así que no se repiten.</p>`:`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos.</p><div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
   CFG.waDrafts=waDrafts().concat(out);
   await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();
-  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya aprobados antes':''}${nQ?' · '+nQ+' ya estaban por revisar':''}`);
+  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya aprobados antes':''}${nQ?' · '+nQ+' ya estaban por revisar':''}${nImgOk+nImgNo?` · ${nImgOk} foto${nImgOk===1?'':'s'} leída${nImgOk===1?'':'s'}${nImgNo?' y '+nImgNo+' para revisar a mano':''}`:''}`);
 }
-function waReady(d){return !!(d.fi&&d.c&&d.f&&(+d.tot||0)>0);}
+/* --- fotos del chat: se guardan en el celular (IndexedDB) mientras están en la bandeja --- */
+function waIdb(){return ui._waDb||(ui._waDb=new Promise((res,rej)=>{const r=indexedDB.open('fle_wa',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));}
+async function waImgPut(k,blob){try{const db=await waIdb();await new Promise((res,rej)=>{const t=db.transaction('img','readwrite');t.objectStore('img').put(blob,k);t.oncomplete=res;t.onerror=()=>rej(t.error);});}catch(e){console.warn(e);}}
+async function waImgGet(k){try{const db=await waIdb();return await new Promise((res,rej)=>{const q=db.transaction('img').objectStore('img').get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}catch(e){return null;}}
+async function waImgDel(k){try{const db=await waIdb();db.transaction('img','readwrite').objectStore('img').delete(k);}catch(e){}if(ui._waUrl&&ui._waUrl[k]){URL.revokeObjectURL(ui._waUrl[k]);delete ui._waUrl[k];}}
+async function waImgUrl(k){ui._waUrl=ui._waUrl||{};if(ui._waUrl[k])return ui._waUrl[k];const b=await waImgGet(k);if(!b)return '';return ui._waUrl[k]=URL.createObjectURL(b);}
+function waLoadThumbs(){document.querySelectorAll('img[data-waimg]').forEach(async im=>{if(im.dataset.ok)return;im.dataset.ok='1';const u=await waImgUrl(im.dataset.waimg);if(u)im.src=u;else{const p=im.parentElement;if(p)p.innerHTML='<div class="wa-noimg">La foto no está en este dispositivo (se importó en otro)</div>';}});}
+async function waViewImg(k){const u=await waImgUrl(k);if(!u)return;let o=document.getElementById('wa_zoom');if(!o){o=document.createElement('div');o.id='wa_zoom';o.onclick=()=>{o.style.display='none';};document.body.appendChild(o);}
+  o.innerHTML=`<img src="${u}" alt="Foto del chat"><span>Toca para cerrar</span>`;o.style.display='flex';}
+async function waImgCanvas(bytes,name){
+  const type=/\.png$/i.test(name)?'image/png':(/\.webp$/i.test(name)?'image/webp':'image/jpeg');let bmp;
+  try{bmp=await createImageBitmap(new Blob([bytes],{type}));}catch(e){return null;}
+  const mx=1600,sc=Math.min(1,mx/Math.max(bmp.width,bmp.height));const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*sc);cv.height=Math.round(bmp.height*sc);
+  cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);return cv;
+}
+function waLoadScript(src){return new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=src;sc.onload=res;sc.onerror=()=>rej(new Error('No se pudo cargar el lector de fotos'));document.head.appendChild(sc);});}
+async function waOcrWorker(){
+  if(ui._waOcr)return ui._waOcr;
+  if(!window.Tesseract)await waLoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+  return ui._waOcr=await Tesseract.createWorker('spa',1,{logger:m=>{const e=document.getElementById('wa_prog');if(e&&m&&/load|initiali/i.test(m.status||'')&&!/Leyendo foto/.test(e.textContent))e.textContent='Preparando el lector de fotos… '+Math.round((m.progress||0)*100)+'%';}});
+}
+const WA_BANKS=[['bancolombia','Bancolombia'],['nequi','Nequi'],['daviplata','Daviplata'],['davivienda','Davivienda'],['bbva','BBVA'],['banco de bogota','Banco de Bogotá'],['banco agrario','Banco Agrario'],['agrario','Banco Agrario'],['caja social','Banco Caja Social'],['av villas','AV Villas'],['popular','Banco Popular'],['occidente','Banco de Occidente'],['bancoomeva','Bancoomeva'],['colpatria','Colpatria'],['itau','Itaú'],['falabella','Banco Falabella'],['congente','Congente'],['efecty','Efecty'],['corresponsal','Corresponsal bancario']];
+const WA_MES={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
+function waImgAmount(text){
+  const lines=String(text||'').split(/\n+/).map(l=>l.trim()).filter(Boolean);const cands=[];
+  const bad=/saldo|costo|comisi|iva|gmf|4\s*x\s*1000|disponible|cupo|tarifa|descuento/i,good=/valor|monto|total|cu[aá]nto|cantidad|enviaste|transferiste|consignaste|recibiste|pagaste|consignaci|dep[oó]sito|importe|transferencia|abono/i;
+  lines.forEach((l,i)=>{const prevGood=i>0&&good.test(lines[i-1])&&!/\d{4,}/.test(lines[i-1]);
+    for(const m of l.matchAll(/(\$)?\s*(\d{1,3}(?:[.,' ]\d{3})+(?:[.,]\d{1,2})?|\d{4,9}(?:[.,]\d{2})?)/g)){
+      const rawS=m[2].replace(/[' ]/g,'.');const v=Math.round(facMoney(rawS));if(!(v>=1000&&v<=5e9))continue;
+      const pre=l.slice(Math.max(0,m.index-28),m.index);
+      if(!m[1]&&(/\b(cuenta|ref|referencia|comprobante|nit|cc|cel|celular|tel|aprobaci|autorizaci|no\.|n[°º]|#|cus|convenio|c[oó]digo)\b[^$]*$/i.test(pre)||/^\d{7,}$/.test(m[2])))continue;
+      if(/\b(19|20)\d{2}$/.test(m[2])&&!m[1]&&/[\/\-]/.test(l))continue;
+      let sc=0;if(m[1])sc+=3;if(good.test(l)||prevGood)sc+=3;if(bad.test(l))sc-=5;if(/[.,' ]\d{3}/.test(m[2]))sc+=1;cands.push({v,sc});}});
+  cands.sort((a,b)=>b.sc-a.sc||b.v-a.v);return cands.length&&cands[0].sc>=1?cands[0].v:0;
+}
+function waImgDate(text,ref){
+  const lim0=addDaysISO(ref,-20),lim1=addDaysISO(ref,1);const ok=d=>d>=lim0&&d<=lim1;
+  for(const d of facDates(text))if(ok(d))return d;
+  const n=vzNorm(text);for(const m of n.matchAll(/\b(\d{1,2})\s*(?:de\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-z]*\.?\s*(?:de\s+|del\s+)?(\d{4})\b/g)){const d=`${m[3]}-${String(WA_MES[m[2]]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;if(ok(d))return d;}
+  return ref;
+}
+function waClientIn(t){const n=' '+vzNorm(t).replace(/[^a-z0-9ñ ]+/g,' ')+' ';let best='',bs=0;
+  (CFG.clientes||[]).forEach(c=>{const ws=vzNorm(c).split(/\s+/).filter(w=>w.length>=4&&!/^(frutas?|frutales|comercializadora|distribuidora|del|los|las)$/.test(w));if(!ws.length)return;const hit=ws.filter(w=>n.includes(' '+w+' ')).length;const sc=hit/ws.length;if(hit&&sc>bs){bs=sc;best=c;}});
+  return bs>=0.5?best:'';}
+function waInterpretImg(text,m,defFi,imgId,ocrOk){
+  const cap=m.txt||'';const n=vzNorm(text);
+  const d={id:imgId,img:imgId,kind:'img',warn:[],src:{au:m.au,f:m.f,hm:m.hm,txt:cap||'(foto sin texto)',att:m.att},f:m.f,t:'E',e:'P',q:1,pu:0,tot:0,ab:0,fa:'',co:'',cl:'',fi:'',c:'',u:'',d:''};
+  const isCons=/\b(consignacion|consignaste|transferencia|transferiste|comprobante|bancolombia|nequi|daviplata|davivienda|bbva|bancoomeva|agrario|corresponsal|deposito|transaccion|enviaste|recibiste|envio exitoso|pago exitoso|exitosa|exitoso|aprobada|cuenta de ahorros|cuenta corriente|producto destino|producto origen)\b/.test(n);
+  let amt=waImgAmount(text);
+  let r={};if(cap){try{r=vzParse(cap);}catch(e){}}
+  if(!amt&&cap){const cn=vzNumbers(vzNorm(cap));const mm=(cn.match(/\b\d+(?:\.\d+)?\b/g)||[]).map(Number).filter(v=>v>=1000&&v<=2e9);if(mm.length)amt=Math.round(mm[mm.length-1]);}
+  d.f=waImgDate(text,m.f);d.fi=r.fi||defFi||'';d.cl=waClientIn(cap)||waClientIn(m.au)||waClientIn(text)||'';
+  const bank=(WA_BANKS.find(b=>n.includes(b[0]))||[])[1]||'';
+  const rm=text.match(/(?:comprobante|referencia|aprobaci[oó]n|autorizaci[oó]n|n[uú]mero de transacci[oó]n|transacci[oó]n|recibo)\s*(?:no\.?|n[°º]|nro\.?|#)?\s*:?\s*([A-Z]{0,3}\d{4,}[A-Z0-9]*)/i);d.ref=rm?rm[1]:'';
+  d.ocr=String(text||'').replace(/\s+/g,' ').trim().slice(0,260);
+  if(amt>0){d.tot=amt;d.pu=amt;
+    if(isCons||/\b(abono|abona|consign|transfer|pago de|pagaron)\b/.test(vzNorm(cap))){d.kind='abono';d.t='I';d.d='Consignación'+(bank?' '+bank:'')+(d.ref?' · comp. '+d.ref:'');
+      const cnt={};MOVS.forEach(x=>{if(x.t==='I'&&x.c&&(!d.cl||x.cl===d.cl))cnt[x.c]=(cnt[x.c]||0)+1;});const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];d.c=top?top[0]:((CFG.catIngresos||[])[0]||'');
+      if(!d.cl)d.warn.push('Elige el cliente que consignó');}
+    else{d.t=r.t||'E';d.c=r.c||'';d.co=r.co||'';d.d=r.d||(cap?cap.slice(0,80):'');d.warn.push('No reconocí qué es esta foto: revisa los datos');if(!d.fi)d.warn.push('Falta la finca');}}
+  else{d.d=cap?cap.slice(0,80):'';d.warn.push(ocrOk?'No pude leer el valor en la foto: mírala y completa a mano':'No se pudo cargar el lector de fotos (revisa el internet): mírala y completa a mano');}
+  return d;
+}
+function waCliDebts(){const g={};MOVS.forEach(m=>{if(m.t==='I'&&m.e==='X'&&m.cl&&saldo(m)>0){(g[m.cl]=g[m.cl]||{cl:m.cl,deuda:0,n:0,fincas:{}});g[m.cl].deuda+=saldo(m);g[m.cl].n++;g[m.cl].fincas[m.fi]=(g[m.cl].fincas[m.fi]||0)+saldo(m);}});return Object.values(g).sort((a,b)=>b.deuda-a.deuda);}
+function waAbonoModal(id){
+  const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
+  if(!debts.length){showModal('Consignación',`<p>Ningún cliente tiene cuentas pendientes por cobrar, así que no hay a qué abonarle.</p><div class="note">Puedes registrarla como un ingreso nuevo.</div>`,[{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar como ingreso nuevo',cls:'btn primary',fn:()=>{closeModal();waEdit(id,true);}}]);return;}
+  const sel=debts.find(x=>x.cl===d.cl)?d.cl:'';
+  showModal('Abonar consignación a la deuda',`
+    ${d.img?`<div class="wa-thumb big" onclick="waViewImg('${d.img}')"><img data-waimg="${d.img}" alt="Foto"></div>`:''}
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field full"><label>Cliente que consignó</label><select class="input" id="wb_cl" onchange="waAbonoPrev(true)">${sel?'':'<option value="" selected>— Elige el cliente —</option>'}${debts.map(x=>`<option value="${esc(x.cl)}" ${x.cl===sel?'selected':''}>${esc(x.cl)} — debe ${fmt(x.deuda)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha de la consignación</label><input class="input tnum" type="date" id="wb_f" value="${d.f}"></div>
+      <div class="field"><label>Valor consignado</label><input class="input tnum money" inputmode="numeric" id="wb_v" value="${fmn(d.tot)}" oninput="waAbonoPrev()"></div>
+      <div class="field full"><label>¿A cuál finca se le abona?</label><select class="input" id="wb_fi" onchange="waAbonoPrev()"><option value="">Todas (primero lo más antiguo)</option></select></div>
+    </div>
+    <div id="wb_prev" style="margin-top:10px"></div>
+    <div class="note">El abono paga primero las ventas más antiguas de ese cliente. Si no alcanza para una, le queda el abono parcial y sigue pendiente.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Es otra cosa: editar',cls:'btn',fn:()=>{closeModal();waEdit(id,true);}},{label:'Registrar abono',cls:'btn primary',fn:waAbonoApply}]);
+  waLoadThumbs();waAbonoPrev(true);
+}
+function waAbonoPrev(clChanged){
+  const cl=(document.getElementById('wb_cl')||{}).value||'';const fs=document.getElementById('wb_fi');const el=document.getElementById('wb_prev');if(!el)return;
+  if(clChanged&&fs){const g=waCliDebts().find(x=>x.cl===cl);fs.innerHTML='<option value="">Todas (primero lo más antiguo)</option>'+(g?Object.keys(g.fincas).map(f=>`<option value="${esc(f)}">${esc(f)} — debe ${fmt(g.fincas[f])}</option>`).join(''):'');}
+  if(!cl){el.innerHTML='<div style="color:var(--muted);font-size:12.5px">Elige el cliente para ver cómo se reparte el abono.</div>';return;}
+  const v=Math.round(num(document.getElementById('wb_v').value));const fi=fs?fs.value:'';
+  const{plan,rem}=smartAbonoPlan(cl,v,{t:'I',who:cl,fi:fi||null});
+  el.innerHTML=plan.length?`<div class="tablewrap"><table><thead><tr><th>Fecha venta</th><th>Finca</th><th class="r">Debía</th><th class="r">Abono</th><th class="r">Queda</th></tr></thead><tbody>${plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td>${esc(p.m.fi)}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${p.full?'<span class="chip i">Pagada</span>':fmt(p.sAfter)}</td></tr>`).join('')}</tbody></table></div>${rem>0?`<div class="fac-warn">Sobran <b>${fmt(rem)}</b>: la consignación es mayor que la deuda. Solo se abonará ${fmt(v-rem)}.</div>`:''}`:'<div class="fac-warn">Este cliente no tiene deuda pendiente en esa finca.</div>';
+}
+async function waAbonoApply(){
+  const d=waDrafts().find(x=>x.id===ui._waAb);if(!d)return;const cl=document.getElementById('wb_cl').value;if(!cl){toast('Elige el cliente');return;}
+  const v=Math.round(num(document.getElementById('wb_v').value));const f=document.getElementById('wb_f').value||d.f;const fi=document.getElementById('wb_fi').value;
+  if(!(v>0)){toast('Escribe el valor');return;}
+  const{plan}=smartAbonoPlan(cl,v,{t:'I',who:cl,fi:fi||null});if(!plan.length){toast('No hay deuda a la cual abonar');return;}
+  const bid='b'+Date.now().toString(36);
+  plan.forEach(({m,ap})=>{m.abs=Array.isArray(m.abs)?m.abs:[];m.abs.push({f,v:Math.round(ap),auto:1,b:bid,wa:1});m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));m.ab=(+m.ab||0)+ap;if(m.ab>=(+m.tot||0))m.e='P';});
+  const ap=plan.reduce((a,p)=>a+p.ap,0);
+  CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);
+  await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} repartido en ${plan.length} venta${plan.length===1?'':'s'}`);
+}
+function waReady(d){return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
 function waCardHTML(d){
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
     <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    ${d.img?`<div class="wa-thumb" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>`:''}
     <div class="wa-body">
-      <div class="wa-top"><span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
+      <div class="wa-top">${d.kind==='abono'?'<span class="chip pay">Consignación</span>':(d.img?'<span class="chip pend">Foto</span>':'')}<span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
       <div class="wa-grid">
         <div><span>Fecha</span><b>${fmtFecha(d.f)}</b></div>
         <div class="${d.fi?'':'bad'}"><span>Finca</span><b>${d.fi?`<span class="fdot"><i style="background:${fincaColor(d.fi)}"></i>${esc(d.fi)}</span>`:'Falta'}</b></div>
@@ -3215,11 +3350,12 @@ function waCardHTML(d){
         <div><span>${d.t==='I'?'Cliente':'Comercio'}</span><b>${esc(who||'—')}</b></div>
         <div class="full"><span>Descripción</span><b>${esc(d.d||'—')}</b></div>
         ${d.q&&d.q!==1?`<div><span>Cantidad</span><b>${(+d.q).toLocaleString('es-CO')}${d.u?' '+esc(d.u):''} × ${fmt(d.pu)}</b></div>`:''}
+        ${d.kind==='abono'&&d.ref?`<div><span>Comprobante</span><b>${esc(d.ref)}</b></div>`:''}
         ${d.fa?`<div><span>Factura</span><b>${esc(d.fa)}${faMatches(d.fa,null).length?' <span class="chip fa-dup">Ya registrada</span>':''}</b></div>`:''}
         ${d.e==='X'&&d.ab?`<div><span>Abono</span><b>${fmt(d.ab)}</b></div>`:''}
       </div>
       ${d.warn&&d.warn.length?`<div class="wa-warn">${d.warn.map(esc).join(' · ')}</div>`:''}
-      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm" onclick="waEdit('${d.id}')">Editar</button><button class="btn sm primary" onclick="waApprove('${d.id}')" ${ok?'':'title="Completa lo que falta con Editar"'}>${ok?'Aprobar':'Completar y aprobar'}</button></div>
+      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm" onclick="waEdit('${d.id}')">Editar</button>${d.kind==='abono'?`<button class="btn sm primary" onclick="waAbonoModal('${d.id}')">Abonar a la deuda</button>`:`<button class="btn sm primary" onclick="waApprove('${d.id}')" ${ok?'':'title="Completa lo que falta con Editar"'}>${ok?'Aprobar':(d.img&&!(d.tot>0)?'Hacer a mano':'Completar y aprobar')}</button>`}</div>
     </div></div>`;
 }
 function waRenderReview(){
@@ -3230,6 +3366,7 @@ function waRenderReview(){
      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="waApproveAll()" ${ready?'':'disabled'}>Aprobar los ${ready} listos</button><button class="btn" onclick="waPick()">Importar otro chat</button><button class="btn" onclick="waDiscardAll()">Descartar todos</button></div>
      <div class="note">Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes.</div></div>
    <div class="wa-list">${ds.map(waCardHTML).join('')}</div>`;
+  waLoadThumbs();
 }
 function waToMov(d){const m={id:seq++,f:d.f,fi:d.fi,t:d.t,c:d.c,d:d.d||'',u:d.u||'',q:+d.q||1,pu:Math.round(+d.pu||0),tot:Math.round(+d.tot||0),e:d.e||'P',ab:d.e==='X'?Math.round(+d.ab||0):0,fa:d.fa||'',co:d.t==='E'?(d.co||''):'',cl:d.t==='I'?(d.cl||''):''};
   if(m.ab>0)m.abs=[{f:m.f,v:m.ab}];if(d.fruta&&d.t==='I')m.fruta=d.fruta;
@@ -3241,6 +3378,7 @@ async function waCommit(list){
   list.forEach(d=>{const m=waToMov(d);MOVS.push(m);
     if(m.cl&&!(CFG.clientes||[]).some(x=>vzNorm(x)===vzNorm(m.cl))){CFG.clientes=CFG.clientes||[];CFG.clientes.push(m.cl);cfgNames=true;}
     if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}});
+  list.forEach(d=>{if(d.img)waImgDel(d.img);});
   CFG.waDrafts=waDrafts().filter(d=>!ids.has(d.id));
   CFG.waSeen=(CFG.waSeen||[]).concat(list.map(d=>d.key).filter(Boolean)).slice(-8000);
   {const mx=list.map(d=>d.src&&d.src.f).filter(Boolean).sort().pop();if(mx&&(!CFG.waLast||mx>CFG.waLast))CFG.waLast=mx;}
@@ -3248,7 +3386,8 @@ async function waCommit(list){
 }
 async function waApprove(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;
-  if(!waReady(d)){waEdit(id,true);return;}
+  if(d.kind==='abono'){waAbonoModal(id);return;}
+  if(!(d.fi&&d.c&&d.f&&(+d.tot||0)>0)){waEdit(id,true);return;}
   await waCommit([d]);if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);
 }
 async function waApproveAll(){
@@ -3256,13 +3395,14 @@ async function waApproveAll(){
   confirmModal('Aprobar movimientos',`Se enviarán <b>${list.length}</b> movimientos a las cuentas por un total de <b>${fmt(list.reduce((a,d)=>a+(+d.tot||0),0))}</b>.${waDrafts().length>list.length?' Los que tienen datos por completar se quedan aquí.':''}`,async()=>{
     await waCommit(list);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(list.length+' movimientos aprobados');});
 }
-async function waDiscard(id){CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Descartado');}
-function waDiscardAll(){confirmModal('Descartar todos',`Se quitarán los <b>${waDrafts().length}</b> movimientos preliminares. No se registra nada en las cuentas.`,async()=>{CFG.waDrafts=[];await persistCfg();closeModal();ui.mWa=false;renderMovs();toast('Preliminares descartados');});}
+async function waDiscard(id){{const d0=waDrafts().find(x=>x.id===id);if(d0&&d0.img)waImgDel(d0.img);}CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Descartado');}
+function waDiscardAll(){confirmModal('Descartar todos',`Se quitarán los <b>${waDrafts().length}</b> movimientos preliminares. No se registra nada en las cuentas.`,async()=>{waDrafts().forEach(d=>{if(d.img)waImgDel(d.img);});CFG.waDrafts=[];await persistCfg();closeModal();ui.mWa=false;renderMovs();toast('Preliminares descartados');});}
 function waEdit(id,approveAfter){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._waT=d.t;
   const fopts=(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('');
   showModal(approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
     <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    ${d.img?`<div class="wa-thumb big" style="margin-bottom:12px" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>${d.ocr?`<details class="wa-ocr"><summary>Texto que leí en la foto</summary>${esc(d.ocr)}</details>`:''}`:''}
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input class="input tnum" type="date" id="we_f" value="${d.f}"></div>
       <div class="field"><label>Tipo</label><select class="input" id="we_t" onchange="waEditType(this.value)"><option value="E" ${d.t==='E'?'selected':''}>Egreso</option><option value="I" ${d.t==='I'?'selected':''}>Ingreso</option></select></div>
@@ -3279,6 +3419,7 @@ function waEdit(id,approveAfter){
       <div class="field" id="we_abw" style="${d.e==='X'?'':'display:none'}"><label>Abono ya hecho</label><input class="input tnum money" inputmode="numeric" id="we_ab" value="${d.ab?fmn(d.ab):''}" placeholder="0"></div>
     </div>`,
     [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Guardar cambios',cls:'btn',fn:()=>waEditSave(id,false)},{label:'Guardar y aprobar',cls:'btn primary',fn:()=>waEditSave(id,true)}]);
+  waLoadThumbs();
 }
 function waEditType(t){ui._waT=t;const c=document.getElementById('we_c');if(c)c.innerHTML='<option value="" selected>— Elige —</option>'+catOpts(t,'');const l=document.getElementById('we_wl');if(l)l.textContent=t==='I'?'Cliente':'Comercio / proveedor';
   const dl=document.getElementById('we_wlist');if(dl)dl.innerHTML=(t==='I'?(CFG.clientes||[]):facComercios()).map(c=>`<option value="${esc(c)}">`).join('');}
@@ -3289,7 +3430,7 @@ async function waEditSave(id,approve){
   const w=g('we_w').trim();if(d.t==='I'){d.cl=w;d.co='';}else{d.co=w;d.cl='';}
   if(d.fruta&&d.t!=='I')delete d.fruta;
   if(!d.fruta&&document.getElementById('we_q')){d.q=+g('we_q')||1;d.pu=Math.round(num(g('we_pu')));d.tot=Math.round(d.q*d.pu);}
-  d.warn=(d.warn||[]).filter(w=>!/finca|categor|tipo|ingreso o egreso|total/i.test(w));
+  d.warn=(d.warn||[]).filter(w=>!/finca|categor|tipo|ingreso o egreso|total|foto|cliente/i.test(w));if(d.kind==='abono'||d.kind==='img')d.kind='manual';
   if(approve){if(!d.fi){toast('Elige la finca');return;}if(!d.c){toast('Elige la categoría');return;}if(!(d.tot>0)){toast('Falta el valor');return;}
     if(d.ab>d.tot){toast('El abono no puede ser mayor que el total');return;}
     await waCommit([d]);closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Aprobado: '+fmt(d.tot)+' en '+d.fi);return;}
