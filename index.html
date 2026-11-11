@@ -3188,6 +3188,10 @@ function waInterpret(line,msg,defFi,ctx){
   // estado
   if(!d.e){d.e=r.e||(WA_PEND.test(n)&&!/\b(ya pago|ya pagaron|ya se pago|me pago lo que|pago lo que)\b/.test(n)?'X':'P');}
   d.ab=d.e==='X'?(+r.ab||0):0;d.fa=r.fa?String(r.fa).replace(/\D+/g,''):'';
+  /* Pago de un cliente (no es una venta nueva): no crea movimiento, va como abono en Clientes */
+  if(t==='I'&&!d.fruta&&!(WA_PEND.test(n)&&!/\b(ya pago|ya pagaron|ya se pago|me pago lo que|pago lo que)\b/.test(n))&&/\b(pago|pagaron|consigno|consignaron|abono|abonaron|transfirio|transfirieron|cancelo|cancelaron|giro|giraron|recibi|recibimos)\b/.test(n)&&!/\b(vendi|vendimos|vendio|vendieron|venta|ventas)\b/.test(n)){
+    d.kind='abono';d.e='P';d.ab=0;if(!d.cl)d.cl=waClientIn(line)||'';d.abFi=r.fi&&vzNorm(r.fi)!==vzNorm(d.cl)?r.fi:'';
+    d.warn=d.cl?[]:['Elige el cliente que pagó'];return d;}
   if(!d.fi)d.warn.unshift('Falta la finca');
   return d;
 }
@@ -3286,7 +3290,7 @@ function waInterpretImg(text,m,defFi,imgId,ocrOk){
   let amt=waImgAmount(text);
   let r={};if(cap){try{r=vzParse(cap);}catch(e){}}
   if(!amt&&cap){const cn=vzNumbers(vzNorm(cap));const mm=(cn.match(/\b\d+(?:\.\d+)?\b/g)||[]).map(Number).filter(v=>v>=1000&&v<=2e9);if(mm.length)amt=Math.round(mm[mm.length-1]);}
-  d.f=waImgDate(text,m.f);d.fi=r.fi||defFi||'';d.cl=waClientIn(cap)||waClientIn(m.au)||waClientIn(text)||'';
+  d.f=waImgDate(text,m.f);d.fi=r.fi||defFi||'';d.abFi=r.fi||'';d.cl=waClientIn(cap)||waClientIn(m.au)||waClientIn(text)||'';if(d.abFi&&vzNorm(d.abFi)===vzNorm(d.cl))d.abFi='';
   const bank=(WA_BANKS.find(b=>n.includes(b[0]))||[])[1]||'';
   const rm=text.match(/(?:comprobante|referencia|aprobaci[oó]n|autorizaci[oó]n|n[uú]mero de transacci[oó]n|transacci[oó]n|recibo)\s*(?:no\.?|n[°º]|nro\.?|#)?\s*:?\s*([A-Z]{0,3}\d{4,}[A-Z0-9]*)/i);d.ref=rm?rm[1]:'';
   d.ocr=String(text||'').replace(/\s+/g,' ').trim().slice(0,260);
@@ -3299,22 +3303,25 @@ function waInterpretImg(text,m,defFi,imgId,ocrOk){
   return d;
 }
 function waCliDebts(){const g={};MOVS.forEach(m=>{if(m.t==='I'&&m.e==='X'&&m.cl&&saldo(m)>0){(g[m.cl]=g[m.cl]||{cl:m.cl,deuda:0,n:0,fincas:{}});g[m.cl].deuda+=saldo(m);g[m.cl].n++;g[m.cl].fincas[m.fi]=(g[m.cl].fincas[m.fi]||0)+saldo(m);}});return Object.values(g).sort((a,b)=>b.deuda-a.deuda);}
+function waCliMatch(name,debts){const n=vzNorm(name||'').trim();if(!n)return null;debts=debts||waCliDebts();return debts.find(x=>vzNorm(x.cl)===n)||debts.find(x=>{const c=vzNorm(x.cl);return c.includes(n)||n.includes(c);})||null;}
 function waAbonoModal(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
-  if(!debts.length){showModal('Consignación',`<p>Ningún cliente tiene cuentas pendientes por cobrar, así que no hay a qué abonarle.</p><div class="note">Puedes registrarla como un ingreso nuevo.</div>`,[{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar como ingreso nuevo',cls:'btn primary',fn:()=>{closeModal();waEdit(id,true);}}]);return;}
-  const sel=debts.find(x=>x.cl===d.cl)?d.cl:'';
-  showModal('Abonar consignación a la deuda',`
+  if(!debts.length){showModal('No hay deuda a la cual abonar',`<p>Ningún cliente tiene ventas pendientes por cobrar, así que no hay a qué abonarle este pago.</p><div class="note">Los pagos de clientes no crean un movimiento: se registran como <b>abono en Clientes</b>. Primero registra la venta como <b>Pendiente</b> en Movimientos y luego vuelve a esta tarjeta. Si esto no era el pago de un cliente, usa el botón <b>No es un abono</b> de la tarjeta.</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+  const sel=(waCliMatch(d.cl,debts)||{}).cl||'';
+  showModal(d.img?'Abonar consignación a la deuda':'Abonar pago a la deuda',`
+    ${d.img?'':`<div class="wa-msg" style="border-radius:10px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>`}
     ${d.img?`<div class="wa-thumb big" onclick="waViewImg('${d.img}')"><img data-waimg="${d.img}" alt="Foto"></div>`:''}
     <div class="form-grid" style="margin-top:12px">
-      <div class="field full"><label>Cliente que consignó</label><select class="input" id="wb_cl" onchange="waAbonoPrev(true)">${sel?'':'<option value="" selected>— Elige el cliente —</option>'}${debts.map(x=>`<option value="${esc(x.cl)}" ${x.cl===sel?'selected':''}>${esc(x.cl)} — debe ${fmt(x.deuda)}</option>`).join('')}</select></div>
-      <div class="field"><label>Fecha de la consignación</label><input class="input tnum" type="date" id="wb_f" value="${d.f}"></div>
-      <div class="field"><label>Valor consignado</label><input class="input tnum money" inputmode="numeric" id="wb_v" value="${fmn(d.tot)}" oninput="waAbonoPrev()"></div>
+      <div class="field full"><label>Cliente que ${d.img?'consignó':'pagó'}</label><select class="input" id="wb_cl" onchange="waAbonoPrev(true)">${sel?'':'<option value="" selected>— Elige el cliente —</option>'}${debts.map(x=>`<option value="${esc(x.cl)}" ${x.cl===sel?'selected':''}>${esc(x.cl)} — debe ${fmt(x.deuda)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha del pago</label><input class="input tnum" type="date" id="wb_f" value="${d.f}"></div>
+      <div class="field"><label>Valor del pago</label><input class="input tnum money" inputmode="numeric" id="wb_v" value="${fmn(d.tot)}" oninput="waAbonoPrev()"></div>
       <div class="field full"><label>¿A cuál finca se le abona?</label><select class="input" id="wb_fi" onchange="waAbonoPrev()"><option value="">Todas (primero lo más antiguo)</option></select></div>
     </div>
     <div id="wb_prev" style="margin-top:10px"></div>
-    <div class="note">El abono paga primero las ventas más antiguas de ese cliente. Si no alcanza para una, le queda el abono parcial y sigue pendiente.</div>`,
-    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Es otra cosa: editar',cls:'btn',fn:()=>{closeModal();waEdit(id,true);}},{label:'Registrar abono',cls:'btn primary',fn:waAbonoApply}]);
+    <div class="note">No se crea ningún movimiento nuevo: el pago queda como <b>abono en Clientes</b>. Paga primero las ventas más antiguas de ese cliente; si no alcanza para una, le queda el abono parcial y sigue pendiente.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar abono',cls:'btn primary',fn:waAbonoApply}]);
   waLoadThumbs();waAbonoPrev(true);
+  {const fs=document.getElementById('wb_fi');if(fs&&d.abFi&&[...fs.options].some(o=>o.value===d.abFi)){fs.value=d.abFi;waAbonoPrev();}}
 }
 function waAbonoPrev(clChanged){
   const cl=(document.getElementById('wb_cl')||{}).value||'';const fs=document.getElementById('wb_fi');const el=document.getElementById('wb_prev');if(!el)return;
@@ -3322,7 +3329,7 @@ function waAbonoPrev(clChanged){
   if(!cl){el.innerHTML='<div style="color:var(--muted);font-size:12.5px">Elige el cliente para ver cómo se reparte el abono.</div>';return;}
   const v=Math.round(num(document.getElementById('wb_v').value));const fi=fs?fs.value:'';
   const{plan,rem}=smartAbonoPlan(cl,v,{t:'I',who:cl,fi:fi||null});
-  el.innerHTML=plan.length?`<div class="tablewrap"><table><thead><tr><th>Fecha venta</th><th>Finca</th><th class="r">Debía</th><th class="r">Abono</th><th class="r">Queda</th></tr></thead><tbody>${plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td>${esc(p.m.fi)}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${p.full?'<span class="chip i">Pagada</span>':fmt(p.sAfter)}</td></tr>`).join('')}</tbody></table></div>${rem>0?`<div class="fac-warn">Sobran <b>${fmt(rem)}</b>: la consignación es mayor que la deuda. Solo se abonará ${fmt(v-rem)}.</div>`:''}`:'<div class="fac-warn">Este cliente no tiene deuda pendiente en esa finca.</div>';
+  el.innerHTML=plan.length?`<div class="tablewrap"><table><thead><tr><th>Fecha venta</th><th>Finca</th><th class="r">Debía</th><th class="r">Abono</th><th class="r">Queda</th></tr></thead><tbody>${plan.map(p=>`<tr><td class="tnum">${fmtFecha(p.m.f)}</td><td>${esc(p.m.fi)}</td><td class="r tnum">${fmt(p.sBefore)}</td><td class="r tnum" style="color:var(--green2)">${fmt(p.ap)}</td><td class="r tnum">${p.full?'<span class="chip i">Pagada</span>':fmt(p.sAfter)}</td></tr>`).join('')}</tbody></table></div>${rem>0?`<div class="fac-warn">Sobran <b>${fmt(rem)}</b>: el pago es mayor que la deuda. Solo se abonará ${fmt(v-rem)}.</div>`:''}`:'<div class="fac-warn">Este cliente no tiene deuda pendiente en esa finca.</div>';
 }
 async function waAbonoApply(){
   const d=waDrafts().find(x=>x.id===ui._waAb);if(!d)return;const cl=document.getElementById('wb_cl').value;if(!cl){toast('Elige el cliente');return;}
@@ -3332,11 +3339,30 @@ async function waAbonoApply(){
   const bid='b'+Date.now().toString(36);
   plan.forEach(({m,ap})=>{m.abs=Array.isArray(m.abs)?m.abs:[];m.abs.push({f,v:Math.round(ap),auto:1,b:bid,wa:1});m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));m.ab=(+m.ab||0)+ap;if(m.ab>=(+m.tot||0))m.e='P';});
   const ap=plan.reduce((a,p)=>a+p.ap,0);
-  CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);
-  await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} repartido en ${plan.length} venta${plan.length===1?'':'s'}`);
+  CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);if(d.src&&d.src.f&&(!CFG.waLast||d.src.f>CFG.waLast))CFG.waLast=d.src.f;
+  await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} registrado en Clientes (${plan.length} venta${plan.length===1?'':'s'})`);
 }
 function waReady(d){return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
+function waAbonoCardHTML(d){
+  const g=waCliMatch(d.cl);const warn=(d.warn||[]).slice();if(d.cl&&!g)warn.push('Este cliente no tiene ventas pendientes por cobrar');
+  return `<div class="card wa-card ${g?'':'wa-miss'}" id="wa_${d.id}">
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    ${d.img?`<div class="wa-thumb" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>`:''}
+    <div class="wa-body">
+      <div class="wa-top"><span class="chip pay">${d.img?'Consignación':'Pago de cliente'}</span><span class="chip i">Abono en Clientes</span><b class="wa-tot tnum pos">${fmt(d.tot)}</b></div>
+      <div class="wa-grid">
+        <div><span>Fecha</span><b>${fmtFecha(d.f)}</b></div>
+        <div class="${g?'':'bad'}"><span>Cliente</span><b>${esc(g?g.cl:(d.cl||'Falta'))}</b></div>
+        <div><span>Debe hoy</span><b>${g?fmt(g.deuda)+' en '+g.n+' venta'+(g.n===1?'':'s'):'—'}</b></div>
+        ${d.abFi?`<div><span>Finca</span><b>${esc(d.abFi)}</b></div>`:''}
+        ${d.ref?`<div><span>Comprobante</span><b>${esc(d.ref)}</b></div>`:''}
+      </div>
+      ${warn.length?`<div class="wa-warn">${warn.map(esc).join(' · ')}</div>`:''}
+      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm" onclick="waEdit('${d.id}')" title="Si no era el pago de un cliente, conviértelo en un movimiento normal">No es un abono</button><button class="btn sm primary" onclick="waAbonoModal('${d.id}')">Abonar a la deuda</button></div>
+    </div></div>`;
+}
 function waCardHTML(d){
+  if(d.kind==='abono')return waAbonoCardHTML(d);
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
     <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
@@ -3359,12 +3385,12 @@ function waCardHTML(d){
     </div></div>`;
 }
 function waRenderReview(){
-  const ds=waDrafts();const ready=ds.filter(waReady).length;
+  const ds=waDrafts();const ready=ds.filter(waReady).length;const nAb=ds.filter(d=>d.kind==='abono').length;
   document.getElementById('topctl').innerHTML=`<button class="btn" onclick="ui.mWa=false;renderMovs()">← Volver a movimientos</button>`;
   document.getElementById('content').innerHTML=`
-   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length}</b> preliminar${ds.length===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready} con datos por completar</p></div></div>
+   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length}</b> preliminar${ds.length===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready-nAb} con datos por completar${nAb?` · <b>${nAb}</b> pago${nAb===1?'':'s'} de clientes para abonar`:''}</p></div></div>
      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="waApproveAll()" ${ready?'':'disabled'}>Aprobar los ${ready} listos</button><button class="btn" onclick="waPick()">Importar otro chat</button><button class="btn" onclick="waDiscardAll()">Descartar todos</button></div>
-     <div class="note">Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes.</div></div>
+     <div class="note">Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes. Los <b>pagos y consignaciones de clientes</b> no crean un movimiento: con <b>Abonar a la deuda</b> quedan como abono en la sección Clientes.</div></div>
    <div class="wa-list">${ds.map(waCardHTML).join('')}</div>`;
   waLoadThumbs();
 }
@@ -3400,7 +3426,8 @@ function waDiscardAll(){confirmModal('Descartar todos',`Se quitarán los <b>${wa
 function waEdit(id,approveAfter){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;ui._waT=d.t;
   const fopts=(CFG.fincas||[]).map(f=>`<option ${f===d.fi?'selected':''}>${esc(f)}</option>`).join('');
-  showModal(approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
+  showModal(d.kind==='abono'?'Convertir en un movimiento normal':approveAfter?'Completa los datos para aprobar':'Editar movimiento preliminar',`
+    ${d.kind==='abono'?'<div class="fac-warn" style="margin-bottom:12px">Usa esto solo si <b>no</b> era el pago de un cliente. Al guardar deja de ser un abono y pasa a ser un movimiento.</div>':''}
     <div class="wa-msg" style="border-radius:10px;margin-bottom:12px"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
     ${d.img?`<div class="wa-thumb big" style="margin-bottom:12px" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>${d.ocr?`<details class="wa-ocr"><summary>Texto que leí en la foto</summary>${esc(d.ocr)}</details>`:''}`:''}
     <div class="form-grid">
