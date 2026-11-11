@@ -1716,7 +1716,7 @@ function filteredMovs(){
   });
 }
 function renderMovs(){
-  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn" onclick="facPick()" title="Crear el movimiento leyendo el PDF de una factura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Subir PDF</button><button class="btn" onclick="waPick()" title="Crear movimientos a partir de un chat exportado de WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>WhatsApp</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
+  document.getElementById('topctl').innerHTML=`<button class="btn" onclick="voiceMovModal()" title="Registrar un movimiento hablando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>Dictar</button><button class="btn" onclick="facPick()" title="Crear movimientos leyendo facturas en PDF: una sola, varias a la vez o el .zip de un chat de WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Subir PDF</button><button class="btn" onclick="waPick()" title="Crear movimientos a partir de un chat exportado de WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>WhatsApp</button><button class="btn primary" onclick="openMov()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo movimiento</button>`;
   if(ui.mWa){if(waDrafts().length){waRenderReview();return;}ui.mWa=false;}
   const list=filteredMovs();
   const per=40,pages=Math.max(1,Math.ceil(list.length/per));
@@ -2794,9 +2794,90 @@ function vzPreviewHTML(r){
    reconoce comercio, número, fecha, finca, forma de pago, productos y total, y muestra una vista previa editable. */
 function facPick(){
   let inp=document.getElementById('fac_in');
-  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='fac_in';inp.accept='application/pdf,.pdf';inp.style.display='none';
-    inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value='';if(f)facLoadFile(f);};document.body.appendChild(inp);}
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='fac_in';inp.multiple=true;inp.accept='application/pdf,.pdf,.zip,application/zip,application/x-zip-compressed';inp.style.display='none';
+    inp.onchange=()=>{const fs=[...(inp.files||[])];inp.value='';if(!fs.length)return;
+      if(fs.length===1&&(/pdf$/i.test(fs[0].type||'')||/\.pdf$/i.test(fs[0].name||'')))facLoadFile(fs[0]);else facBatchLoad(fs);};document.body.appendChild(inp);}
   inp.click();
+}
+/* ===== Varias facturas PDF a la vez (un .zip de un chat de WhatsApp o varios PDF) ===== */
+async function facBatchLoad(files){
+  showModal('Abriendo archivos…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Buscando las facturas en PDF…</span></div>`,[]);
+  try{
+    const list=[];let chatTxt='';
+    for(const f of files){const nm=f.name||'';
+      if(/\.zip$/i.test(nm)||/zip/i.test(f.type||'')){const buf=new Uint8Array(await f.arrayBuffer());const z=waZipOpen(buf);
+        for(const k of Object.keys(z.ents)){if(/\.pdf$/i.test(k))list.push({name:k,get:()=>z.get(k)});else if(/\.txt$/i.test(k)&&!chatTxt){const tb=await z.get(k);chatTxt=new TextDecoder('utf-8').decode(tb);}}}
+      else if(/\.pdf$/i.test(nm)||/pdf$/i.test(f.type||''))list.push({name:nm,get:async()=>new Uint8Array(await f.arrayBuffer())});
+      else if(/\.txt$/i.test(nm)&&!chatTxt)chatTxt=await f.text();}
+    if(!list.length){showModal('No encontré facturas en PDF',`<p>El archivo no trae ningún PDF.</p><div class="note">Si es un chat de WhatsApp, expórtalo eligiendo <b>Incluir archivos</b> y sube el .zip que genera. También puedes elegir varios PDF a la vez.</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+    // fecha en que se envió cada PDF al chat
+    const when={};if(chatTxt){const re=/^\[?(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::\d{2})?\s*(?:([ap])\.?\s?m\.?)?\]?\s*(?:[-–]\s*)?([^:\n]{1,60}):\s*(?:<(?:adjunto|attached):\s*)?[‎‏]?([^\n<>]+?\.pdf)/gim;let m;
+      while((m=re.exec(chatTxt.replace(/[‪-‮﻿]/g,'')))){let d=+m[1],mo=+m[2];if(mo>12&&d<=12){const t=d;d=mo;mo=t;}let y=+m[3];if(y<100)y+=2000;let h=+m[4];const ap=(m[6]||'').toLowerCase();if(ap==='p'&&h<12)h+=12;if(ap==='a'&&h===12)h=0;
+        const nm=m[8].replace(/[‎‏]/g,'').trim();if(!when[nm])when[nm]={f:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,hm:String(h).padStart(2,'0')+':'+m[5],au:m[7].trim()};}}
+    list.forEach(x=>{x.w=when[x.name]||null;});
+    list.sort((a,b)=>((a.w?a.w.f+a.w.hm:'9')+a.name).localeCompare((b.w?b.w.f+b.w.hm:'9')+b.name));
+    ui._facBatch=list;const dated=list.filter(x=>x.w);const fs=dated.map(x=>x.w.f).sort();const min=fs[0]||'',max=fs[fs.length-1]||'';
+    const def=CFG.facLast&&CFG.facLast>=min&&CFG.facLast<=max?CFG.facLast:min;
+    showModal('Facturas en PDF · elige cuáles leer',`
+      <p>Encontré <b>${list.length}</b> factura${list.length===1?'':'s'} en PDF${dated.length?`, enviadas del <b>${fmtFecha(min)}</b> al <b>${fmtFecha(max)}</b>`:''}.</p>
+      ${dated.length?`<div class="form-grid" style="margin-top:10px">
+        <div class="field"><label>Leer desde la fecha</label><input class="input tnum" type="date" id="fb_d0" value="${def}" min="${min}" max="${max}" onchange="facBatchCount()"></div>
+        <div class="field"><label>Hasta la fecha</label><input class="input tnum" type="date" id="fb_d1" value="${max}" min="${min}" max="${max}" onchange="facBatchCount()"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" onclick="facBatchRange('${addDaysISO(max,-7)}')">Últimos 7 días</button><button class="btn sm" onclick="facBatchRange('${max.slice(0,8)}01')">Este mes</button><button class="btn sm" onclick="facBatchRange('${min}')">Todas</button></div>
+      ${CFG.facLast?`<div class="fac-s" style="margin-top:8px">La última vez leíste hasta el ${fmtFecha(CFG.facLast)}.</div>`:''}
+      <div class="note" id="fb_n"></div>`:`<div class="note">Estos PDF no vienen de un chat, así que no tienen fecha de envío: se leen todos y cada uno queda con la fecha de su factura.</div>`}
+      <div class="note">Solo se leen los PDF; las fotos y los mensajes no. Cada factura queda como <b>movimiento preliminar</b> para aprobar o editar. Las que ya están en Movimientos (mismo número de factura) se saltan.</div>`,
+      [{label:'Cancelar',cls:'btn',fn:()=>{ui._facBatch=null;closeModal();}},{label:'Leer facturas',cls:'btn primary',fn:facBatchRun}]);
+    facBatchCount();
+  }catch(e){console.warn(e);showModal('No se pudo abrir el archivo',`<p>${esc(e&&e.message||'Error al abrir el archivo')}</p>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
+}
+function facBatchSel(){const L=ui._facBatch||[];const d0=(document.getElementById('fb_d0')||{}).value||'',d1=(document.getElementById('fb_d1')||{}).value||'';return L.filter(x=>!x.w||((!d0||x.w.f>=d0)&&(!d1||x.w.f<=d1)));}
+function facBatchCount(){const e=document.getElementById('fb_n');if(e){const n=facBatchSel().length;e.innerHTML=`Se leerán <b>${n}</b> factura${n===1?'':'s'}.`;}}
+function facBatchRange(d0){const a=document.getElementById('fb_d0');if(a){a.value=d0<a.min?a.min:d0;}const b=document.getElementById('fb_d1');if(b)b.value=b.max;facBatchCount();}
+async function facBatchRun(){
+  const sel=facBatchSel();if(!sel.length){toast('No hay facturas en esas fechas');return;}
+  ui._waCancel=false;
+  showModal('Leyendo facturas…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span id="fb_prog">Preparando el lector de PDF…</span></div><div class="note">Las facturas se leen en tu dispositivo.</div>`,[{label:'Detener',cls:'btn',fn:()=>{ui._waCancel=true;const e=document.getElementById('fb_prog');if(e)e.textContent='Deteniendo…';}}]);
+  if(!CFG.waSeenV2){CFG.waSeen=[];CFG.waSeenV2=1;}
+  const seen=new Set(CFG.waSeen||[]);const inQ=new Set([].concat(...waDrafts().map(d=>[d.key].concat(d.keys2||[]))));
+  const out=[];let nDup=0,nSeen=0,nQ=0,nBad=0,nOther=0,last='';
+  for(let i=0;i<sel.length&&!ui._waCancel;i++){const x=sel[i];const pe=document.getElementById('fb_prog');if(pe)pe.innerHTML=`Leyendo factura <b>${i+1}</b> de <b>${sel.length}</b>…`;
+    const src={au:x.w?x.w.au:'Factura PDF',f:x.w?x.w.f:todayISO(),hm:x.w?x.w.hm:'',txt:x.name};
+    const mk=(extra)=>Object.assign({id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'fac',warn:[],t:'E',f:src.f,fi:'',c:'',d:'',q:1,pu:0,tot:0,e:'X',ab:0,fa:'',co:'',cl:'',u:'',src},extra);
+    try{const bytes=await x.get();if(!bytes){nBad++;continue;}
+      const lines=await facPdfLines(bytes);const txt=lines.map(l=>l.t).join(' ');
+      if(txt.replace(/\s/g,'').length<40){const key=waHash('PDF|'+x.name);if(seen.has(key)){nSeen++;continue;}if(inQ.has(key)){nQ++;continue;}
+        out.push(mk({key,warn:['Este PDF es una foto o un escaneo: no trae texto. Complétalo a mano']}));nBad++;continue;}
+      if(/estado de cuenta/i.test(txt.slice(0,600))){nOther++;continue;}
+      const r=facParse(lines,x.name);
+      const isRC=/DOCUMENTOS?\s+GENERALES\s+INGRESO|RECIBO\s+DE\s+CAJA|Pago factura:/i.test(txt),isNC=!isRC&&/NOTA\s+CR[EÉ]DITO/i.test(txt);
+      if(isRC||isNC){const pv=v=>{v=String(v).trim();if(/[.,]\d{2}$/.test(v))v=v.slice(0,-3);return +v.replace(/\D/g,'')||0;};const items=[];
+        if(isRC){const re=/Pago factura:\s*[A-Za-z]*\s*0*(\d+)\s+([\d.,]+)/g;let mm;while((mm=re.exec(txt)))items.push({fa:mm[1],v:pv(mm[2])});}
+        else{const rel=txt.match(/FACTURA\s+RELACIONADA:?\s*[A-Za-z]*\s*0*(\d+)/i);if(rel)items.push({fa:rel[1],v:Math.round(r.total||0)});}
+        const num=isRC?((txt.match(/INGRESO\s+N[UÚ]MERO\s+0*(\d+)/i)||txt.match(/RECIBO\s+DE\s+CAJA\D{0,20}0*(\d+)/i)||[])[1]||''):(r.fa||'');
+        const fd=txt.match(/Fecha\s*:?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);const f=fd?`${fd[3]}-${String(+fd[2]).padStart(2,'0')}-${String(+fd[1]).padStart(2,'0')}`:(r.f||src.f);
+        const nit=((txt.match(/Nit:?\s*(\d{6,})/i)||[])[1])||(r.nit||'').split('-')[0];const co=(CFG.facNits&&CFG.facNits[nit])||(out.find(o=>o.nit===nit&&o.co&&o.kind==='fac')||{}).co||(waDrafts().find(o=>o.nit===nit&&o.co&&o.kind==='fac')||{}).co||r.co||'';
+        const key=waHash('PDF|'+(isRC?'RC':'NC')+'|'+nit+'|'+(num||x.name));if(x.w&&x.w.f>last)last=x.w.f;
+        if(seen.has(key)){nSeen++;continue;}if(inQ.has(key)||out.some(o=>o.key===key)){nQ++;continue;}
+        const note=isRC?((txt.match(/SUMAS IGUALES[\d.,\s]*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 .]{3,40})/)||[])[1]||'').replace(/_+.*$/,'').trim():'';
+        src.txt=x.name+'\n'+[r.emisor||co,r.cliente?'Cliente: '+r.cliente:'',note].filter(Boolean).join(' · ');
+        out.push(mk({kind:'rc',doc:isRC?'rc':'nc',key,f,co,nit,fa:num,rcItems:items,tot:items.reduce((a,it)=>a+it.v,0),e:'P',warn:items.length?[]:['No pude leer a qué facturas corresponde: revísalo a mano']}));continue;}
+      const key=waHash('PDF|'+(r.nit||'')+'|'+(r.fa||x.name));
+      if(x.w&&x.w.f>last)last=x.w.f;
+      if(seen.has(key)){nSeen++;continue;}if(inQ.has(key)||out.some(o=>o.key===key)){nQ++;continue;}
+      if(r.fa&&faMatches(r.fa,null).length){nDup++;continue;}
+      const tot=Math.round(r.total||r.items.reduce((a,it)=>a+(+it.tot||0),0)||0);
+      src.txt=x.name+'\n'+[r.emisor,r.nit?'NIT '+r.nit:'',r.cliente?'Cliente: '+r.cliente:'',r.pago==='credito'?'Crédito'+(r.plazo?' '+r.plazo+' días':''):r.pago==='contado'?'Contado':''].filter(Boolean).join(' · ');
+      const w=(r.warn||[]).map(t=>String(t).replace(/ Escríbelo abajo\.| Revisa la fecha\./g,''));if(!r.fi)w.unshift('Falta la finca');else if(r.fiBy==='prev')w.push('Finca: puse la de la última compra en este comercio, revísala');else if(r.fiBy==='titular')w.push('Finca: la única de '+r.titular+', revísala');
+      out.push(mk({key,warn:w,f:r.f||src.f,fi:r.fi||'',c:r.c||'',co:r.co||'',fa:r.fa||'',d:(r.d||'').slice(0,400),tot,pu:tot,e:r.pago==='contado'?'P':'X',nit:(r.nit||'').split('-')[0]}));
+    }catch(e){console.warn(e);nBad++;const key=waHash('PDF|'+x.name);if(!seen.has(key)&&!inQ.has(key))out.push(mk({key,warn:['No se pudo leer este PDF: complétalo a mano']}));}}
+  ui._facBatch=null;if(last&&(!CFG.facLast||last>CFG.facLast))CFG.facLast=last;
+  if(!out.length){await persistCfg();
+    if(nQ){closeModal();ui.mWa=true;ui.view='movs';render();toast(`${nQ} factura${nQ===1?'':'s'} ya está${nQ===1?'':'n'} en la bandeja esperando tu aprobación`);return;}
+    showModal('Sin facturas nuevas',`<p>${nDup+nSeen?`Las <b>${nDup+nSeen}</b> facturas de esas fechas ya están registradas en Movimientos o ya las habías revisado.`:'No encontré facturas para leer en esas fechas.'}</p>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+  CFG.waDrafts=waSortDrafts(waDrafts().concat(out));await persistCfg();closeModal();ui.mWa=true;ui.view='movs';render();
+  toast(`${out.length} factura${out.length===1?'':'s'} por revisar${nDup+nSeen?' · '+(nDup+nSeen)+' ya estaban registradas':''}${nQ?' · '+nQ+' ya estaban en la bandeja':''}${nBad?' · '+nBad+' sin poder leer':''}${nOther?' · '+nOther+' estado'+(nOther===1?'':'s')+' de cuenta sin leer':''}`);
 }
 async function facLoadFile(file){
   if(!/pdf$/i.test(file.type||'')&&!/\.pdf$/i.test(file.name||'')){toast('El archivo debe ser un PDF');return;}
@@ -3691,6 +3772,26 @@ function waNoneCardHTML(d){
 }
 async function waNoneDismiss(id){const d=waDrafts().find(x=>x.id===id);if(!d)return;CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);CFG.waDrafts=waDrafts().filter(x=>x.id!==id);await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast('Quitado: no volverá a salir');}
 async function waX1000(id){const d=waDrafts().find(x=>x.id===id);if(!d)return;d.pu=Math.round((+d.pu||0)*1000);d.tot=Math.round((+d.q||1)*d.pu);delete d.low;await persistCfg();renderMovs();}
+function waRcFind(d,fa){const k=faKey(fa);const all=MOVS.filter(m=>m.t==='E'&&m.fa&&faKey(m.fa)===k);const st=all.filter(m=>!d.co||!m.co||vzNorm(m.co)===vzNorm(d.co));return st.length?st:(all.length===1?all:[]);}
+function waRcCardHTML(d){const its=d.rcItems||[];let nOk=0;
+  const rows=its.map(it=>{const ms=waRcFind(d,it.fa);const deb=ms.reduce((a,m)=>a+Math.max(0,saldo(m)),0);let st;if(!ms.length)st='<span style="color:var(--amber)">No está en Movimientos</span>';else if(deb<=0)st='<span class="chip i">Ya pagada</span>';else{nOk++;st='Debe '+fmt(deb);}
+    return `<tr><td><b class="tnum">${esc(it.fa)}</b>${ms[0]&&ms[0].fi?' · '+esc(ms[0].fi):''}<div style="font-size:12px;color:var(--muted)">${st}</div></td><td class="r tnum">${fmt(it.v)}</td></tr>`;}).join('');
+  return `<div class="card wa-card ${nOk?'':'wa-miss'}" id="wa_${d.id}">
+    <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${esc(d.src.txt)}</div>
+    <div class="wa-body">
+      <div class="wa-top"><span class="chip pay">${d.doc==='nc'?'Nota crédito':'Recibo de caja'}</span><span class="chip i">${d.doc==='nc'?'Descuenta de la deuda':'Pago al comercio'}</span><b class="wa-tot tnum">${fmt(d.tot)}</b></div>
+      <div class="wa-grid"><div><span>Fecha</span><b>${fmtFecha(d.f)}</b></div><div><span>Comercio</span><b>${esc(d.co||'—')}</b></div><div><span>${d.doc==='nc'?'Nota':'Recibo'} #</span><b>${esc(d.fa||'—')}</b></div></div>
+      <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Factura</th><th class="r">${d.doc==='nc'?'Descuento':'Pago'}</th></tr></thead><tbody>${rows||'<tr><td colspan="2" style="color:var(--muted)">Sin facturas leídas</td></tr>'}</tbody></table></div>
+      <div class="wa-warn">${d.doc==='nc'?'Una nota crédito no es una compra: baja lo que se debe de esa factura.':'Un recibo de caja no es una compra: es un pago que ustedes hicieron.'} No crea movimientos; queda como abono en cada factura.${its.length>nOk?' Las facturas que no están en Movimientos se aplican cuando las apruebes.':''}${(d.warn||[]).length?' · '+d.warn.map(esc).join(' · '):''}</div>
+      <div class="wa-act"><button class="btn sm" onclick="waDiscard('${d.id}')">Descartar</button><button class="btn sm primary" onclick="waRcApply('${d.id}')" ${nOk?'':'disabled'}>${d.doc==='nc'?'Aplicar descuento':'Registrar pago'}${nOk&&nOk<its.length?` (${nOk} de ${its.length})`:''}</button></div>
+    </div></div>`;
+}
+async function waRcApply(id){const d=waDrafts().find(x=>x.id===id);if(!d)return;const bid='b'+Date.now().toString(36);let ap=0,n=0;const left=[];
+  (d.rcItems||[]).forEach(it=>{const ms=waRcFind(d,it.fa).filter(m=>saldo(m)>0).sort((a,b)=>(a.f||'').localeCompare(b.f||''));if(!ms.length){if(!waRcFind(d,it.fa).length)left.push(it);return;}
+    let rem=it.v;ms.forEach(m=>{if(rem<=0)return;const a=Math.min(rem,saldo(m));if(a<=0)return;m.abs=Array.isArray(m.abs)?m.abs:[];m.abs.push({f:d.f,v:Math.round(a),auto:1,b:bid,rc:(d.doc==='nc'?'NC ':'RC ')+(d.fa||'')});m.abs.sort((x,y)=>(x.f||'').localeCompare(y.f||''));m.ab=(+m.ab||0)+a;if(m.ab>=(+m.tot||0))m.e='P';rem-=a;ap+=a;});n++;});
+  if(!n){toast('Ninguna de esas facturas está pendiente en Movimientos');return;}
+  if(left.length){d.rcItems=left;d.tot=left.reduce((a,it)=>a+it.v,0);}else{CFG.waDrafts=waDrafts().filter(x=>x.id!==id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);}
+  await persistMovs();await persistCfg();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`${d.doc==='nc'?'Descuento':'Pago'} de ${fmt(ap)} aplicado a ${n} factura${n===1?'':'s'}${left.length?' · quedan '+left.length+' por aplicar':''}`);}
 function waCliMatch(name,debts){const n=vzNorm(name||'').trim();if(!n)return null;debts=debts||waCliDebts();return debts.find(x=>vzNorm(x.cl)===n)||debts.find(x=>{const c=vzNorm(x.cl);return c.includes(n)||n.includes(c);})||null;}
 function waAbonoModal(id){
   const d=waDrafts().find(x=>x.id===id);if(!d)return;const debts=waCliDebts();ui._waAb=id;
@@ -3730,7 +3831,7 @@ async function waAbonoApply(){
   CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].concat(d.keys2||[]).filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);if(d.src&&d.src.f&&(!CFG.waLast||d.src.f>CFG.waLast))CFG.waLast=d.src.f;
   await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} registrado en Clientes (${plan.length} venta${plan.length===1?'':'s'})`);
 }
-function waReady(d){if(d.kind==='fruta')return waFrutaReady(d);return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
+function waReady(d){if(d.kind==='rc')return false;if(d.kind==='fruta')return waFrutaReady(d);return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
 function waAbonoCardHTML(d){
   const g=waCliMatch(d.cl);const warn=(d.warn||[]).slice();if(d.cl&&!g)warn.push('Este cliente no tiene ventas pendientes por cobrar');
   return `<div class="card wa-card ${g?'':'wa-miss'}" id="wa_${d.id}">
@@ -3750,13 +3851,13 @@ function waAbonoCardHTML(d){
     </div></div>`;
 }
 function waCardHTML(d){
-  if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);if(d.kind==='none')return waNoneCardHTML(d);
+  if(d.kind==='rc')return waRcCardHTML(d);if(d.kind==='abono')return waAbonoCardHTML(d);if(d.kind==='fruta')return waFrutaCardHTML(d);if(d.kind==='none')return waNoneCardHTML(d);
   const ok=waReady(d);const who=d.t==='I'?(d.cl||''):(d.co||'');
   return `<div class="card wa-card ${ok?'':'wa-miss'}" id="wa_${d.id}">
     <div class="wa-msg"><span class="wa-meta">${esc(d.src.au)} · ${fmtFecha(d.src.f)} ${esc(d.src.hm||'')}</span>${waSrcHTML(d.src)}</div>
     ${d.img?`<div class="wa-thumb" onclick="waViewImg('${d.img}')" title="Toca para ver la foto grande"><img data-waimg="${d.img}" alt="Foto del chat"></div>`:''}
     <div class="wa-body">
-      <div class="wa-top">${d.kind==='abono'?'<span class="chip pay">Consignación</span>':(d.img?'<span class="chip pend">Foto</span>':'')}<span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
+      <div class="wa-top">${d.kind==='fac'?'<span class="chip pay">Factura PDF</span>':d.kind==='abono'?'<span class="chip pay">Consignación</span>':(d.img?'<span class="chip pend">Foto</span>':'')}<span class="chip ${d.t==='I'?'i':'e'}">${d.t==='I'?'Ingreso':'Egreso'}</span>${d.fruta?'<span class="chip pay">Venta de fruta</span>':''}<span class="chip ${d.e==='X'?'pend':'i'}">${d.e==='X'?'Pendiente':'Pagado'}</span><b class="wa-tot tnum ${d.t==='I'?'pos':'neg'}">${fmt(d.tot)}</b></div>
       <div class="wa-grid">
         <div><span>Fecha</span><b>${fmtFecha(d.f)}</b></div>
         <div class="${d.fi?'':'bad'}"><span>Finca</span><b>${d.fi?`<span class="fdot"><i style="background:${fincaColor(d.fi)}"></i>${esc(d.fi)}</span>`:'Falta'}</b></div>
@@ -3774,10 +3875,10 @@ function waCardHTML(d){
     </div></div>`;
 }
 function waRenderReview(){
-  const ds=waSortDrafts(waDrafts());const ready=ds.filter(waReady).length;const nAb=ds.filter(d=>d.kind==='abono').length;const nNo=ds.filter(d=>d.kind==='none').length;
+  const ds=waSortDrafts(waDrafts());const ready=ds.filter(waReady).length;const nAb=ds.filter(d=>d.kind==='abono'||d.kind==='rc').length;const nNo=ds.filter(d=>d.kind==='none').length;
   document.getElementById('topctl').innerHTML=`<button class="btn" onclick="ui.mWa=false;renderMovs()">← Volver a movimientos</button>`;
   document.getElementById('content').innerHTML=`
-   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos de WhatsApp por revisar</h2><p><b>${ds.length-nNo}</b> preliminar${ds.length-nNo===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready-nAb-nNo} con datos por completar${nNo?` · <b>${nNo}</b> mensaje${nNo===1?'':'s'} sin tarjeta`:''}${nAb?` · <b>${nAb}</b> pago${nAb===1?'':'s'} de clientes para abonar`:''}</p></div></div>
+   <div class="card panel" style="margin-bottom:14px"><div class="ph"><div><h2>Movimientos por revisar</h2><p><b>${ds.length-nNo}</b> preliminar${ds.length-nNo===1?'':'es'} · ${ready} listo${ready===1?'':'s'} para aprobar · ${ds.length-ready-nAb-nNo} con datos por completar${nNo?` · <b>${nNo}</b> mensaje${nNo===1?'':'s'} sin tarjeta`:''}${nAb?` · <b>${nAb}</b> pago${nAb===1?'':'s'} para abonar`:''}</p></div></div>
      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="waApproveAll()" ${ready?'':'disabled'}>Aprobar los ${ready} listos</button><button class="btn" onclick="waPick()">Importar otro chat</button><button class="btn" onclick="waDiscardAll()">Descartar todos</button></div>
      <div class="note">Las tarjetas van en el orden en que se enviaron los mensajes, del más antiguo al más reciente. Arriba de cada tarjeta está el mensaje original. <b>Aprobar</b> lo envía a las cuentas; <b>Editar</b> te deja corregir primero; <b>Descartar</b> lo quita. Nada entra a Movimientos hasta que lo apruebes. Los <b>pagos y consignaciones de clientes</b> no crean un movimiento: con <b>Abonar a la deuda</b> quedan como abono en la sección Clientes.</div></div>
    <div class="wa-list">${ds.map(waCardHTML).join('')}</div>`;
@@ -3785,6 +3886,7 @@ function waRenderReview(){
 }
 function waToMov(d){const m={id:seq++,f:d.f,fi:d.fi,t:d.t,c:d.c,d:d.d||'',u:d.u||'',q:+d.q||1,pu:Math.round(+d.pu||0),tot:Math.round(+d.tot||0),e:d.e||'P',ab:d.e==='X'?Math.round(+d.ab||0):0,fa:d.fa||'',co:d.t==='E'?(d.co||''):'',cl:d.t==='I'?(d.cl||''):''};
   if(m.ab>0)m.abs=[{f:m.f,v:m.ab}];if(d.fruta&&d.t==='I')m.fruta=d.fruta;
+  if(d.kind==='fac')return m;
   m.wa=d.src?{au:d.src.au||'',f:d.src.f||'',hm:d.src.hm||'',txt:String(d.src.full||d.src.txt||'').slice(0,1500),...(d.src.st?{st:d.src.st}:{})}:1;return m;}
 function waShowSrc(id){const m=MOVS.find(x=>x.id===id);if(!m||!m.wa)return;const w=m.wa===1?null:m.wa;
   showModal('Movimiento creado desde WhatsApp',w?`<div class="wa-msg" style="border-radius:10px;border:1px solid var(--line)"><span class="wa-meta">${esc(w.au)} · ${w.f?fmtFecha(w.f):''} ${esc(w.hm||'')}</span>${waSrcHTML(w)}</div><div class="note">Este es el mensaje original del chat. El movimiento quedó así: <b>${esc(m.fi)}</b> · ${esc(m.c)} · <b>${fmt(m.tot)}</b>.</div>`:'<p>Este movimiento se creó al importar un chat de WhatsApp.</p>',[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
@@ -3792,7 +3894,8 @@ async function waCommit(list){
   const ids=new Set(list.map(d=>d.id));let cfgNames=false;
   list.forEach(d=>{const m=waToMov(d);MOVS.push(m);
     if(m.cl&&!(CFG.clientes||[]).some(x=>vzNorm(x)===vzNorm(m.cl))){CFG.clientes=CFG.clientes||[];CFG.clientes.push(m.cl);cfgNames=true;}
-    if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}});
+    if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}
+    if(d.kind==='fac'&&d.nit&&m.co){CFG.facNits=CFG.facNits||{};CFG.facNits[d.nit]=m.co;}});
   list.forEach(d=>{if(d.img)waImgDel(d.img);});
   CFG.waDrafts=waDrafts().filter(d=>!ids.has(d.id));
   CFG.waSeen=(CFG.waSeen||[]).concat(list.map(d=>d.key),...list.map(d=>d.keys2||[])).filter(Boolean).slice(-8000);
