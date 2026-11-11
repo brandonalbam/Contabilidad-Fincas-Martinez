@@ -3340,8 +3340,9 @@ function wfKey(text){
     out.add('?'+w);});
   const a=[...out].sort();return{key:a.join(' '),ok:a.length>0&&!a.some(x=>x[0]==='?'),prod};
 }
-function wfFinca(text){const n=vzNorm(text).replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim().replace(/^(finca|la|el|los|las)\s+/,'');if(!n||n.length<3)return '';
-  const st=x=>vzNorm(x).replace(/^(finca|la|el|los|las)\s+/,'').trim();return (CFG.fincas||[]).find(f=>st(f)===n)||(CFG.fincas||[]).find(f=>n.length>=5&&vzSim(st(f),n)>=0.84)||'';}
+function wfFinca(text){const st=x=>{let n=vzNorm(x).replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim(),p;do{p=n;n=n.replace(/^(finca|fincas|de|del|la|el|los|las|lote)\s+/,'');}while(n!==p);return n;};
+  const raw=vzNorm(text).trim();const n=st(text);if(!n||n.length<3)return '';const F=CFG.fincas||[];
+  return F.find(f=>st(f)===n)||F.find(f=>vzNorm(f).trim()===raw)||F.find(f=>n.length>=5&&vzSim(st(f),n)>=0.84)||(/^\s*(la\s+)?finca\b/.test(raw)?F.find(f=>st(f).length>=4&&(' '+n+' ').includes(' '+st(f)+' ')):'')||'';}
 function wfClient(name){const n=vzNorm(name).replace(/[^a-zñ ]+/g,' ').replace(/\s+/g,' ').trim();if(!n)return '';const L=CFG.clientes||[];
   return L.find(c=>vzNorm(c).trim()===n)||L.find(c=>{const cn=' '+vzNorm(c)+' ';return n.split(' ').every(w=>cn.includes(' '+w+' '));})||L.find(c=>n.split(' ').length===1&&n.length>=5&&vzNorm(c).split(' ').some(w=>vzSim(w,n)>=0.84))||n.toUpperCase();}
 function wfCalName(key,prod,fallback){const c=(CFG.frutaCalidades||[]).find(x=>{const k=wfKey(x.n);return k.key===key&&(!k.prod||!prod||(k.prod==='aguacate')===(prod==='aguacate'));});if(c)return c.n;
@@ -3371,6 +3372,7 @@ function waFrutaList(m,ext){
       if(f&&nm.split(' ').length<=5){cur={cl:wfClient(nm),f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}}
     if(!/\d/.test(line)){const f=wfFinca(line);const nx=nextReal(i);
       if(f){fi=f;lastProd='';continue;}
+      if(/^\s*(la\s+)?fincas?\b/i.test(line)){fi='';continue;}
       if(line.split(/\s+/).length<=4&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ .]+$/.test(line)&&nx&&(wfFinca(nx)||isItem(nx))&&!wfKey(line).ok){cur={cl:wfClient(line),f:m.f,items:[],head:line};blocks.push(cur);fi='';lastProd='';continue;}
       const tk=line.split(/\s+/);const lf=tk.length>1?wfFinca(tk.slice(-1)[0]):'';if(lf&&wfKey(tk.slice(0,-1).join(' ')).ok){skipped.push(line);continue;}}
   }
