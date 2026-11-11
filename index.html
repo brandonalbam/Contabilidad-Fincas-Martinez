@@ -3201,7 +3201,7 @@ async function waRun(){
   if(!aus.size){toast('Marca al menos una persona');return;}
   /* Solo cuentan como «ya importados» los mensajes cuyo movimiento fue APROBADO. Los que están en la bandeja no se duplican. */
   if(!CFG.waSeenV2){CFG.waSeen=[];CFG.waSeenV2=1;}
-  const seen=new Set(CFG.waSeen||[]);const inQ=new Set(waDrafts().map(d=>d.key));const out=[];let nMsg=0,nRep=0,nQ=0;
+  const seen=new Set(CFG.waSeen||[]);const inQ=new Set([].concat(...waDrafts().map(d=>[d.key].concat(d.keys2||[]))));const out=[];let nMsg=0,nRep=0,nQ=0;
   for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
     if(m.att&&!m.txt)continue;
     const lines=m.txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
@@ -3216,7 +3216,7 @@ async function waRun(){
       if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3)return; // la línea de total de una lista no es otro movimiento
       const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}
       if(m.att)return; // el texto que acompaña a una foto se interpreta junto con la foto
-      const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;out.push(d);});}
+      const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;d.mi=msgs.indexOf(m);out.push(d);});}
   // ---- fotos ----
   const z=ui._waZip;const wantImg=z&&document.getElementById('wa_img')&&document.getElementById('wa_img').checked;let nImgOk=0,nImgNo=0;
   if(wantImg){const todo=[];
@@ -3229,7 +3229,13 @@ async function waRun(){
           const id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
           const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));await waImgPut(id,blob);
           let text='';if(worker){try{const res=await worker.recognize(cv);text=(res&&res.data&&res.data.text)||'';}catch(e){console.warn(e);}}
-          const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;out.push(d);if(d.tot>0)nImgOk++;else nImgNo++;
+          const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;
+          /* el mensaje que sigue a la foto suele decir qué cliente consignó */
+          if(d.kind==='abono'){const j=msgs.indexOf(m)+1;const fw=waFollowName(m,msgs[j]);
+            if(fw){d.cl=fw.cl;d.warn=(d.warn||[]).filter(w=>!/cliente/i.test(w));d.src.txt=(m.txt?m.txt+' · ':'')+msgs[j].txt;if(d.abFi&&vzNorm(d.abFi)===vzNorm(d.cl))d.abFi='';
+              const fwFi=vzFincaLast(vzNorm(msgs[j].txt).split(/\s+/));if(!d.abFi&&fwFi&&vzNorm(fwFi.name)!==vzNorm(d.cl))d.abFi=fwFi.name;
+              d.keys2=[];for(let k=out.length-1;k>=0;k--){if(out[k].mi===j){d.keys2.push(out[k].key);out.splice(k,1);}}}}
+          out.push(d);if(d.tot>0)nImgOk++;else nImgNo++;
         }catch(e){console.warn(e);}}
     }}
   if(!out.length){
@@ -3283,6 +3289,14 @@ function waImgDate(text,ref){
 function waClientIn(t){const n=' '+vzNorm(t).replace(/[^a-z0-9ñ ]+/g,' ')+' ';let best='',bs=0;
   (CFG.clientes||[]).forEach(c=>{const ws=vzNorm(c).split(/\s+/).filter(w=>w.length>=4&&!/^(frutas?|frutales|comercializadora|distribuidora|del|los|las)$/.test(w));if(!ws.length)return;const hit=ws.filter(w=>n.includes(' '+w+' ')).length;const sc=hit/ws.length;if(hit&&sc>bs){bs=sc;best=c;}});
   return bs>=0.5?best:'';}
+function waFollowName(m,nx){
+  if(!nx||nx.att||!nx.txt||nx.au!==m.au||nx.f!==m.f||nx.txt.length>90||/\n/.test(nx.txt.trim()))return null;
+  const mins=x=>{const p=String(x.hm||'').split(':');return (+p[0]||0)*60+(+p[1]||0);};if(mins(nx)-mins(m)>15||mins(nx)<mins(m))return null;
+  const known=waClientIn(nx.txt);if(known)return{cl:known};
+  let t=vzNorm(nx.txt).replace(/\$?\s*\d[\d.,]*/g,' ').replace(/\b(mil|millon|millones|pesos|consigno|consignacion|consignaron|abono|abona|abonaron|pago|pagaron|transferencia|transfirio|de|del|la|el|los|las|don|dona|doña|senor|senora|sr|sra|cliente|fruta|naranja|mandarina|aguacate|limon|esto|este|esta|es|lo|que|por|para|a|y)\b/g,' ').replace(/[^a-zñ ]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!t||t.length<3||t.split(' ').length>4||/\b(listo|recibido|gracias|ok|vale|bueno|buenas|buenos|hola|si|no|ya|ahi|revisar|favor|envio|envie|mande|llego|quedo|foto|comprobante)\b/.test(t))return null;
+  const fin=(CFG.fincas||[]).find(f=>vzNorm(f)===t);if(fin&&!(CFG.clientes||[]).some(c=>vzNorm(c)===t))return null;
+  const g=waCliMatch(t);return{cl:g?g.cl:t.toUpperCase()};}
 function waInterpretImg(text,m,defFi,imgId,ocrOk){
   const cap=m.txt||'';const n=vzNorm(text);
   const d={id:imgId,img:imgId,kind:'img',warn:[],src:{au:m.au,f:m.f,hm:m.hm,txt:cap||'(foto sin texto)',att:m.att},f:m.f,t:'E',e:'P',q:1,pu:0,tot:0,ab:0,fa:'',co:'',cl:'',fi:'',c:'',u:'',d:''};
@@ -3339,7 +3353,7 @@ async function waAbonoApply(){
   const bid='b'+Date.now().toString(36);
   plan.forEach(({m,ap})=>{m.abs=Array.isArray(m.abs)?m.abs:[];m.abs.push({f,v:Math.round(ap),auto:1,b:bid,wa:1});m.abs.sort((a,b)=>(a.f||'').localeCompare(b.f||''));m.ab=(+m.ab||0)+ap;if(m.ab>=(+m.tot||0))m.e='P';});
   const ap=plan.reduce((a,p)=>a+p.ap,0);
-  CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);if(d.src&&d.src.f&&(!CFG.waLast||d.src.f>CFG.waLast))CFG.waLast=d.src.f;
+  CFG.waDrafts=waDrafts().filter(x=>x.id!==d.id);CFG.waSeen=(CFG.waSeen||[]).concat([d.key].concat(d.keys2||[]).filter(Boolean)).slice(-8000);if(d.img)waImgDel(d.img);if(d.src&&d.src.f&&(!CFG.waLast||d.src.f>CFG.waLast))CFG.waLast=d.src.f;
   await persistMovs();await persistCfg();closeModal();if(!waDrafts().length)ui.mWa=false;renderMovs();toast(`Abono de ${fmt(ap)} a ${cl} registrado en Clientes (${plan.length} venta${plan.length===1?'':'s'})`);
 }
 function waReady(d){return !!(d.kind!=='abono'&&d.fi&&d.c&&d.f&&(+d.tot||0)>0&&!(d.kind==='img'&&(d.warn||[]).length));}
@@ -3406,7 +3420,7 @@ async function waCommit(list){
     if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}});
   list.forEach(d=>{if(d.img)waImgDel(d.img);});
   CFG.waDrafts=waDrafts().filter(d=>!ids.has(d.id));
-  CFG.waSeen=(CFG.waSeen||[]).concat(list.map(d=>d.key).filter(Boolean)).slice(-8000);
+  CFG.waSeen=(CFG.waSeen||[]).concat(list.map(d=>d.key),...list.map(d=>d.keys2||[])).filter(Boolean).slice(-8000);
   {const mx=list.map(d=>d.src&&d.src.f).filter(Boolean).sort().pop();if(mx&&(!CFG.waLast||mx>CFG.waLast))CFG.waLast=mx;}
   await persistMovs();await persistCfg();
 }
