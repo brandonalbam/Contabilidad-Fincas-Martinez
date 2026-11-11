@@ -3081,7 +3081,7 @@ function waOptionsModal(fname){
       <div class="field full"><label>Finca, si el mensaje no la dice</label><select class="input" id="wa_fi"><option value="">— Dejar sin finca (la elijo al revisar) —</option>${(CFG.fincas||[]).map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
       <div class="field full"><label>¿De quién tomo los mensajes?</label><div class="secgrid2">${Object.keys(authors).map((a,i)=>`<label class="seccheck"><input type="checkbox" class="wa_au" value="${esc(a)}" checked> <span>${esc(a)}</span><em>${authors[a]}</em></label>`).join('')}</div></div>
     </div>
-    <div class="note">Solo se toman los mensajes que hablan de plata (traen un valor). Los saludos y demás mensajes se ignoran. Los mensajes que ya importaste antes no se repiten.</div>`,
+    <div class="note">Solo se toman los mensajes que hablan de plata (traen un valor). Los saludos y demás mensajes se ignoran. Los mensajes cuyo movimiento ya <b>aprobaste</b> no se repiten; los que descartaste o no aprobaste vuelven a salir.</div>`,
     [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Interpretar mensajes',cls:'btn primary',fn:waRun}]);
 }
 /* Palabras que ayudan a decidir tipo, categoría y estado */
@@ -3177,7 +3177,9 @@ async function waRun(){
   const msgs=ui._waMsgs||[];const d0=document.getElementById('wa_d0').value,d1=document.getElementById('wa_d1').value;const defFi=document.getElementById('wa_fi').value;
   const aus=new Set([...document.querySelectorAll('.wa_au:checked')].map(x=>x.value));
   if(!aus.size){toast('Marca al menos una persona');return;}
-  const seen=new Set(CFG.waSeen||[]);const out=[];let nMsg=0,nRep=0;
+  /* Solo cuentan como «ya importados» los mensajes cuyo movimiento fue APROBADO. Los que están en la bandeja no se duplican. */
+  if(!CFG.waSeenV2){CFG.waSeen=[];CFG.waSeenV2=1;}
+  const seen=new Set(CFG.waSeen||[]);const inQ=new Set(waDrafts().map(d=>d.key));const out=[];let nMsg=0,nRep=0,nQ=0;
   for(const m of msgs){if(!aus.has(m.au)||(d0&&m.f<d0)||(d1&&m.f>d1))continue;nMsg++;
     const lines=m.txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
     const hasMoney=l=>{const n=vzNumbers(vzNorm(l));return (n.match(/\b\d+(?:\.\d+)?\b/g)||[]).some(v=>+v>=1000);};
@@ -3189,12 +3191,14 @@ async function waRun(){
     if(moneyLines.length>=2){for(const l of lines){if(!hasMoney(l)){const h=vzFincaLast(vzNorm(l).split(/\s+/));if(h){ctx.fi=h.name;break;}}}}
     units.forEach((u,ui2)=>{if(!hasMoney(u)){if(moneyLines.length>=2){const h=vzFincaLast(vzNorm(u).split(/\s+/));if(h&&u.split(/\s+/).length<=4)ctx.fi=h.name;}return;}
       if(/^\s*(total|suma|son|saldo)\b/i.test(u)&&moneyLines.length>=3)return; // la línea de total de una lista no es otro movimiento
-      const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}
+      const key=waHash(m.f+'|'+m.hm+'|'+m.au+'|'+u);if(seen.has(key)){nRep++;return;}if(inQ.has(key)){nQ++;return;}
       const d=waInterpret(u,m,defFi,ctx);if(!d)return;d.key=key;out.push(d);});}
-  if(!out.length){showModal('Sin movimientos nuevos',`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos nuevos.</p>${nRep?`<div class="note">${nRep} ya los habías importado antes.</div>`:'<div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>'}`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
-  CFG.waDrafts=waDrafts().concat(out);CFG.waSeen=(CFG.waSeen||[]).concat(out.map(d=>d.key)).slice(-6000);CFG.waLast=d1||todayISO();
+  if(!out.length){
+    if(nQ){await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();toast(`${nQ} movimiento${nQ===1?'':'s'} de este chat ya está${nQ===1?'':'n'} aquí esperando tu aprobación${nRep?' · '+nRep+' ya aprobados':''}`);return;}
+    showModal(nRep?'Estos movimientos ya fueron importados':'Sin movimientos nuevos',nRep?`<p>Revisé <b>${nMsg}</b> mensajes. Los <b>${nRep}</b> movimientos de este chat ya fueron <b>revisados y aprobados</b> antes, así que no se repiten.</p>`:`<p>Revisé <b>${nMsg}</b> mensajes y no encontré movimientos.</p><div class="note">Solo se toman los mensajes que traen un valor en plata, por ejemplo «gasolina 120 mil en Placer».</div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);return;}
+  CFG.waDrafts=waDrafts().concat(out);
   await persistCfg();ui._waMsgs=null;closeModal();ui.mWa=true;ui.view='movs';render();
-  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya importados':''}`);
+  toast(`${out.length} movimiento${out.length===1?'':'s'} preliminar${out.length===1?'':'es'} de ${nMsg} mensajes${nRep?' · '+nRep+' ya aprobados antes':''}${nQ?' · '+nQ+' ya estaban por revisar':''}`);
 }
 function waReady(d){return !!(d.fi&&d.c&&d.f&&(+d.tot||0)>0);}
 function waCardHTML(d){
@@ -3234,6 +3238,8 @@ async function waCommit(list){
     if(m.cl&&!(CFG.clientes||[]).some(x=>vzNorm(x)===vzNorm(m.cl))){CFG.clientes=CFG.clientes||[];CFG.clientes.push(m.cl);cfgNames=true;}
     if(m.co&&!(CFG.comercios||[]).some(x=>vzNorm(x)===vzNorm(m.co))){CFG.comercios=CFG.comercios||[];CFG.comercios.push(m.co);cfgNames=true;}});
   CFG.waDrafts=waDrafts().filter(d=>!ids.has(d.id));
+  CFG.waSeen=(CFG.waSeen||[]).concat(list.map(d=>d.key).filter(Boolean)).slice(-8000);
+  {const mx=list.map(d=>d.src&&d.src.f).filter(Boolean).sort().pop();if(mx&&(!CFG.waLast||mx>CFG.waLast))CFG.waLast=mx;}
   await persistMovs();await persistCfg();
 }
 async function waApprove(id){
