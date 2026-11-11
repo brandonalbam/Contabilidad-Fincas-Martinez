@@ -3241,9 +3241,9 @@ async function waRun(){
           const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));await waImgPut(id,blob);
           let text='';if(worker){try{const res=await worker.recognize(cv);text=(res&&res.data&&res.data.text)||'';}catch(e){console.warn(e);}}
           const d=waInterpretImg(text,m,defFi,id,!!worker);d.key=key;
-          /* el mensaje que sigue a la foto suele decir qué cliente consignó */
-          if(d.kind==='abono'){const j=msgs.indexOf(m)+1;const fw=waFollowName(m,msgs[j]);
-            if(fw){d.cl=fw.cl;d.warn=(d.warn||[]).filter(w=>!/cliente/i.test(w));d.src.txt=(m.txt?m.txt+' · ':'')+msgs[j].txt;if(d.abFi&&vzNorm(d.abFi)===vzNorm(d.cl))d.abFi='';
+          /* el mensaje anterior o el siguiente a la foto suele decir qué cliente consignó */
+          if(d.kind==='abono'){const fw=waNamePick(msgs,msgs.indexOf(m));const j=fw?fw.j:-1;
+            if(fw){d.cl=fw.cl;d.warn=(d.warn||[]).filter(w=>!/cliente/i.test(w));d.src.txt=fw.before?msgs[j].txt+(m.txt?' · '+m.txt:''):(m.txt?m.txt+' · ':'')+msgs[j].txt;if(d.abFi&&vzNorm(d.abFi)===vzNorm(d.cl))d.abFi='';
               const fwFi=vzFincaLast(vzNorm(msgs[j].txt).split(/\s+/));if(!d.abFi&&fwFi&&vzNorm(fwFi.name)!==vzNorm(d.cl))d.abFi=fwFi.name;
               d.keys2=[];for(let k=out.length-1;k>=0;k--){if(out[k].mi===j){d.keys2.push(out[k].key);out.splice(k,1);}}}}
           out.push(d);if(d.tot>0)nImgOk++;else nImgNo++;
@@ -3300,9 +3300,18 @@ function waImgDate(text,ref){
 function waClientIn(t){const n=' '+vzNorm(t).replace(/[^a-z0-9ñ ]+/g,' ')+' ';let best='',bs=0;
   (CFG.clientes||[]).forEach(c=>{const ws=vzNorm(c).split(/\s+/).filter(w=>w.length>=4&&!/^(frutas?|frutales|comercializadora|distribuidora|del|los|las)$/.test(w));if(!ws.length)return;const hit=ws.filter(w=>n.includes(' '+w+' ')).length;const sc=hit/ws.length;if(hit&&sc>bs){bs=sc;best=c;}});
   return bs>=0.5?best:'';}
+/* El nombre del cliente puede venir justo DESPUÉS de la foto o justo ANTES. Se mira cómo empezó la seguidilla (nombre, foto, nombre, foto… o foto, nombre, foto, nombre…) */
+function waNamePick(msgs,i){const m=msgs[i];const nm=k=>k>=0&&k<msgs.length?waFollowName(m,msgs[k]):null;
+  const link=(a,b)=>a&&b&&a.au===b.au&&a.f===b.f&&!!a.att!==!!b.att&&(a.att?!!waFollowName(a,b):!!waFollowName(b,a));
+  let j=i;while(j>0&&link(msgs[j-1],msgs[j]))j--;
+  const nameFirst=!msgs[j].att;const pv=nm(i-1),nx=nm(i+1);
+  if(nameFirst&&pv&&(i-j)%2===1)return{cl:pv.cl,j:i-1,before:true};
+  if(nx&&!(nameFirst&&(i-j)%2===1))return{cl:nx.cl,j:i+1};
+  if(pv&&!(i>=2&&msgs[i-2].att&&link(msgs[i-2],msgs[i-1])&&!nameFirst))return{cl:pv.cl,j:i-1,before:true};
+  return nx?{cl:nx.cl,j:i+1}:null;}
 function waFollowName(m,nx){
   if(!nx||nx.att||!nx.txt||nx.au!==m.au||nx.f!==m.f||nx.txt.length>90||/\n/.test(nx.txt.trim()))return null;
-  const mins=x=>{const p=String(x.hm||'').split(':');return (+p[0]||0)*60+(+p[1]||0);};if(mins(nx)-mins(m)>15||mins(nx)<mins(m))return null;
+  const mins=x=>{const p=String(x.hm||'').split(':');return (+p[0]||0)*60+(+p[1]||0);};if(Math.abs(mins(nx)-mins(m))>15)return null;
   const known=waClientIn(nx.txt);if(known)return{cl:known};
   let t=vzNorm(nx.txt).replace(/\$?\s*\d[\d.,]*/g,' ').replace(/\b(mil|millon|millones|pesos|consigno|consignacion|consignaron|abono|abona|abonaron|pago|pagaron|transferencia|transfirio|de|del|la|el|los|las|don|dona|doña|senor|senora|sr|sra|cliente|fruta|naranja|mandarina|aguacate|limon|esto|este|esta|es|lo|que|por|para|a|y)\b/g,' ').replace(/[^a-zñ ]+/g,' ').replace(/\s+/g,' ').trim();
   if(!t||t.length<3||t.split(' ').length>4||/\b(listo|recibido|gracias|ok|vale|bueno|buenas|buenos|hola|si|no|ya|ahi|revisar|favor|envio|envie|mande|llego|quedo|foto|comprobante)\b/.test(t))return null;
