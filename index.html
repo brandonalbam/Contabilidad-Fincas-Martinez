@@ -5810,9 +5810,57 @@ function dronSociosPanel(d){
 async function dronSetSocio(i,field,val){if(!CFG.dronSocios)CFG.dronSocios=[];if(field==='p')CFG.dronSocios[i].p=+val||0;else CFG.dronSocios[i].n=(val||'').trim();await persistCfg();renderDron();}
 async function dronAddSocio(){const n=document.getElementById('ds_n').value.trim();const p=+document.getElementById('ds_p').value||0;if(!n){toast('Escribe el nombre del socio');return;}if(!CFG.dronSocios)CFG.dronSocios=[];CFG.dronSocios.push({n,p});await persistCfg();renderDron();toast('Socio agregado');}
 async function dronDelSocio(i){CFG.dronSocios.splice(i,1);await persistCfg();renderDron();}
+/* Compara las fumigaciones del dron con las aplicaciones de los dos cronogramas (fumigadas y abonadas), por finca y fecha */
+function dronCompareData(){
+  const A=[];[['fum','Fumigada'],['ab','Abonada']].forEach(([k,lab])=>{cronoArr(k).forEach(r=>{(r.hist||[]).forEach(h=>A.push({f:h.f||'',fi:r.finca||'',k,lab,ha:+h.ha||0,arb:+h.arboles||0}));});});
+  const B=DRON.filter(r=>r.k==='job').map(r=>({f:r.f||'',fi:r.fi||'',ha:+r.ha||0,id:r.id}));
+  const nFum=A.filter(x=>x.k==='fum').length,nAb=A.filter(x=>x.k==='ab').length;
+  const key=x=>vzNorm(x.fi)+'|'+x.f;const pool={};B.forEach(b=>{(pool[key(b)]=pool[key(b)]||[]).push(b);});
+  let a1=[];A.sort((x,y)=>(x.f||'').localeCompare(y.f||''));A.forEach(a=>{const p=pool[key(a)];if(p&&p.length){p.shift().m=1;}else a1.push(a);});
+  let b1=B.filter(b=>!b.m);const near=[];
+  // misma finca con fecha parecida (hasta 3 días de diferencia)
+  a1=a1.filter(a=>{let best=null,bd=99;b1.forEach(b=>{if(b.m||vzNorm(b.fi)!==vzNorm(a.fi)||!a.f||!b.f)return;const dd=Math.abs(Math.round((new Date(a.f+'T00:00:00')-new Date(b.f+'T00:00:00'))/864e5));if(dd<=3&&dd<bd){bd=dd;best=b;}});
+    if(best){best.m=1;near.push({a,b:best,dd:bd});return false;}return true;});
+  b1=b1.filter(b=>!b.m);
+  // dos aplicaciones del mismo día y finca en los cronogramas (posible repetida)
+  const cnt={};A.forEach(a=>{const k=key(a);(cnt[k]=cnt[k]||[]).push(a);});const dups=Object.values(cnt).filter(v=>v.length>1);
+  return{nFum,nAb,nCr:A.length,nDr:B.length,soloCr:a1,soloDr:b1,near,dups};
+}
+function dronCompare(){
+  const c=dronCompareData();const row=(cells)=>`<tr>${cells.map((x,i)=>`<td${i===0?' class="tnum"':''}>${x}</td>`).join('')}</tr>`;
+  const fd=x=>`<span class="fdot"><i style="background:${fincaColor(x.fi)}"></i>${esc(x.fi)}</span>`;
+  const ok=!c.soloCr.length&&!c.soloDr.length;
+  showModal('Dron y cronogramas · comparación',`
+    <div class="fac-head" style="grid-template-columns:repeat(3,1fr)">
+      <div><div class="fac-k">Dron</div><div class="fac-v">${c.nDr}</div><div class="fac-s">fumigaciones</div></div>
+      <div><div class="fac-k">Cronogramas</div><div class="fac-v">${c.nCr}</div><div class="fac-s">${c.nFum} fumigadas + ${c.nAb} abonadas</div></div>
+      <div><div class="fac-k">Diferencia</div><div class="fac-v">${c.nCr-c.nDr>0?'+':''}${c.nCr-c.nDr}</div><div class="fac-s">${c.nCr===c.nDr?'cuadran':c.nCr>c.nDr?'faltan en el dron':'sobran en el dron'}</div></div>
+    </div>
+    ${ok?`<div class="note">Todas las aplicaciones de los cronogramas tienen su fumigación en el dron, por finca y fecha.</div>`:''}
+    ${c.soloCr.length?`<div class="fac-k" style="margin:14px 0 6px">Están en un cronograma y NO en el dron (${c.soloCr.length})</div>
+      <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca y cronograma</th></tr></thead><tbody>
+      ${c.soloCr.map(a=>row([fmtFecha(a.f),`${fd(a)} · ${a.lab}<div style="margin-top:6px"><button class="btn sm" onclick="dronCompareAdd('${esc(a.fi).replace(/'/g,"\\'")}','${a.f}',${a.ha||0})">Registrar en el dron</button></div>`])).join('')}</tbody></table></div>`:''}
+    ${c.soloDr.length?`<div class="fac-k" style="margin:14px 0 6px">Están en el dron y NO en ningún cronograma (${c.soloDr.length})</div>
+      <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca</th><th class="r">Hectáreas</th></tr></thead><tbody>
+      ${c.soloDr.map(b=>`<tr><td class="tnum">${fmtFecha(b.f)}</td><td>${fd(b)}</td><td class="r tnum">${(b.ha||0).toLocaleString('es-CO')}</td></tr>`).join('')}</tbody></table></div>`:''}
+    ${c.near.length?`<div class="fac-k" style="margin:14px 0 6px">Misma finca pero con fecha distinta (${c.near.length})</div>
+      <div class="tablewrap"><table><thead><tr><th>Finca</th><th>Fechas</th></tr></thead><tbody>
+      ${c.near.map(n=>`<tr><td>${fd(n.a)}<div style="font-size:12px;color:var(--muted)">${n.a.lab}</div></td><td class="tnum">Cronograma: ${fmtFecha(n.a.f)}<br>Dron: ${fmtFecha(n.b.f)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="fac-s" style="margin-top:4px">Las tomé como la misma aplicación (hasta 3 días de diferencia). Si quieres, corrige la fecha en uno de los dos lados.</div>`:''}
+    ${c.dups.length?`<div class="fac-k" style="margin:14px 0 6px">Dos aplicaciones el mismo día en la misma finca (${c.dups.length})</div>
+      <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Finca y cronogramas</th></tr></thead><tbody>
+      ${c.dups.map(v=>`<tr><td class="tnum">${fmtFecha(v[0].f)}</td><td>${fd(v[0])}<div style="font-size:12px;color:var(--muted)">${v.map(x=>x.lab).join(' + ')}</div></td></tr>`).join('')}</tbody></table></div>
+      <div class="fac-s" style="margin-top:4px">Si se fumigó y se abonó en el mismo vuelo, en el dron es una sola fumigación: por eso los totales pueden no coincidir aunque no falte nada. Si es la misma aplicación anotada dos veces, borra una en el cronograma.</div>`:''}
+    <div class="note">La comparación usa todos los registros, sin importar el filtro de fechas del dron. El dron y los cronogramas se anotan por separado: registrar en uno no crea el registro en el otro.</div>`,
+    [{label:'Cerrar',cls:'btn primary',fn:closeModal}]);
+}
+function dronCompareAdd(fi,f,ha){closeModal();const s=document.getElementById('dr_fi');if(!s){toast('Abre la sección Dron para registrar la fumigación');return;}
+  if(![...s.options].some(o=>o.value===fi)){toast('La finca '+fi+' no está en la lista del dron: agrégala primero');return;}
+  s.value=fi;ui.dronFi=fi;try{dronFiChange();}catch(e){}const d=document.getElementById('dr_f');if(d)d.value=f;const h=document.getElementById('dr_ha');if(h&&ha>0){h.value=ha;try{dronCalc();}catch(e){}}
+  s.scrollIntoView({behavior:'smooth',block:'center'});toast('Revisa los datos y toca el botón de registrar la fumigación');}
 function dronRecordsList(d){
   return `<div class="card" style="margin-top:16px">
-    <div style="padding:16px 18px 0"><h2 style="font-family:var(--display);font-size:15px">Movimientos del dron</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">${d.recs.length} registro(s)${d.from||d.to?' en el periodo seleccionado':''}</p></div>
+    <div style="padding:16px 18px 0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div><h2 style="font-family:var(--display);font-size:15px">Movimientos del dron</h2><p style="font-size:12.5px;color:var(--muted);margin-top:2px">${d.recs.length} registro(s)${d.from||d.to?' en el periodo seleccionado':''} · ${d.jobs.length} fumigación(es)</p></div><button class="btn sm" onclick="dronCompare()" title="Ver qué aplicaciones de los cronogramas no están en el dron y al revés">Comparar con cronogramas</button></div></div>
     <div class="tablewrap"><table>
       <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th class="r">Hectáreas</th><th class="r">Valor</th><th></th></tr></thead>
       <tbody>${d.recs.length?d.recs.map(r=>`<tr>
