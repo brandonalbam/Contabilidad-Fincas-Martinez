@@ -383,6 +383,8 @@ td.qname{white-space:normal;overflow-wrap:normal;word-break:normal;min-width:130
 .wa-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
 .wa-card{padding:0;overflow:hidden}.wa-card.wa-miss{border-color:var(--amber)}
 .wf-line{margin-bottom:8px}
+.soc-list{padding:4px 18px 14px}.soc-row{padding:12px 0;border-bottom:1px solid var(--line)}.soc-row:last-child{border-bottom:none}.soc-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}.soc-g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.soc-g>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px}.soc-g span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}.soc-g b{white-space:nowrap;font-size:13.5px}.soc-tot{background:var(--surface2);border-radius:10px;padding:12px}
+.linkbtn{background:none;border:none;padding:2px 0;color:var(--green2);text-decoration:underline;cursor:pointer;font:inherit}
 .wa-x{background:rgba(217,119,6,.28);border-radius:4px;padding:1px 4px;font-weight:600;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .wa-o{opacity:.45}
 .wa-leg{display:block;margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--muted);white-space:normal}
@@ -5787,6 +5789,75 @@ async function dronAddFuel(){
   DRON.push({id:dseq++,k:'fuel',f,gasTot,aceiteTot,tot});
   await persistDron();toast('Combustible y aceite agregado por '+fmt(tot));renderDron();
 }
+/* ===== Reparto de ganancias a los socios del dron: lo entregado se resta de la parte de cada socio ===== */
+function dronDataAll(){const a=ui.dronFrom,b=ui.dronTo;ui.dronFrom='';ui.dronTo='';try{return dronData();}finally{ui.dronFrom=a;ui.dronTo=b;}}
+function dronSocioEnts(n){return (((CFG.dronSocioPagos||{})[n])||[]).slice().sort((a,b)=>(a.f||'').localeCompare(b.f||''));}
+function dronSocioAcct(){const D=dronDataAll();const cobr=D.util-D.porCobrar;
+  return dronSocios().map(s=>{const f=(+s.p||0)/100;const gan=Math.round(D.util*f);const ent=dronSocioEnts(s.n).reduce((a,x)=>a+(+x.v||0),0);return{n:s.n,p:+s.p||0,gan,ent,falta:gan-ent,disp:Math.round(cobr*f)-ent};});}
+function dronRepartoPanel(){
+  const A=dronSocioAcct();if(!A.length)return '';const D=dronDataAll();const T=A.reduce((t,x)=>({gan:t.gan+x.gan,ent:t.ent+x.ent,falta:t.falta+x.falta}),{gan:0,ent:0,falta:0});
+  const ic='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
+  return `<div class="card panel" style="margin-top:16px">
+    <div class="ph"><div><h2>Ganancias entregadas a los socios</h2><p>Desde el inicio, sin importar el filtro de fechas. Lo que se entrega se resta de la parte de cada socio.</p></div>
+      <button class="btn sm primary" onclick="dronRepartoTodos()">Repartir entre todos</button></div>
+    <div class="soc-list">${A.map(x=>{const ne=dronSocioEnts(x.n).length;const q=esc(x.n).replace(/'/g,"\\'");const col=x.falta<0?'var(--red)':x.falta>0?'var(--amber)':'var(--green2)';return `<div class="soc-row">
+        <div class="soc-h"><div><b>${esc(x.n)}</b> <span style="font-size:12px;color:var(--muted)">${x.p}%</span></div><button class="btn sm" onclick="dronSocioEntregar('${q}')">${ic} Entregar</button></div>
+        <div class="soc-g">
+          <div><span>Su ganancia</span><b class="tnum">${fmt(x.gan)}</b></div>
+          <div><span>Entregado</span><b class="tnum">${fmt(x.ent)}</b>${ne?`<button class="linkbtn" style="font-size:12px" onclick="dronSocioVer('${q}')">Ver ${ne} entrega${ne===1?'':'s'}</button>`:''}</div>
+          <div><span>Falta por entregar</span><b class="tnum" style="color:${col}">${x.falta<0?'−'+fmt(-x.falta):fmt(x.falta)}</b>${x.falta<0?'<em style="font-size:11.5px;color:var(--red);font-style:normal">Entregado de más</em>':''}</div>
+        </div></div>`;}).join('')}
+      <div class="soc-row soc-tot"><div class="soc-g">
+        <div><span>Total ganancia</span><b class="tnum">${fmt(T.gan)}</b></div><div><span>Total entregado</span><b class="tnum">${fmt(T.ent)}</b></div><div><span>Total falta</span><b class="tnum">${fmt(T.falta)}</b></div></div></div>
+    </div>
+    ${D.porCobrar>0?`<div class="note">De la utilidad del dron, <b>${fmt(D.porCobrar)}</b> todavía está <b>por cobrar</b> a las fincas externas. Esa parte cuenta en la ganancia de cada socio, pero el dinero aún no ha entrado.</div>`:''}
+  </div>`;
+}
+function dronSocioEntregar(n){const x=dronSocioAcct().find(a=>a.n===n);if(!x)return;
+  showModal('Entregar ganancia a '+esc(n),`
+    <p style="color:var(--muted);margin-bottom:12px">Su ganancia: <b style="color:var(--green2)">${fmt(x.gan)}</b> · Entregado: <b>${fmt(x.ent)}</b> · Falta: <b style="color:var(--amber)">${fmt(x.falta)}</b></p>
+    <div class="form-grid">
+      <div class="field"><label>Fecha de la entrega</label><input class="input tnum" type="date" id="se_f" value="${todayISO()}"></div>
+      <div class="field"><label>Valor entregado</label><input class="input tnum money" inputmode="numeric" id="se_v" placeholder="0" oninput="dronSocioPrev(${x.falta})"></div>
+      <div class="field full"><label>Nota (opcional)</label><input class="input" id="se_d" placeholder="Ej.: transferencia Nequi, efectivo…"></div>
+    </div>
+    ${x.falta>0?`<div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="const e=document.getElementById('se_v');e.value='${fmn(x.falta)}';dronSocioPrev(${x.falta})">Entregar todo lo que falta (${fmt(x.falta)})</button></div>`:''}
+    <div class="note" id="se_prev">Escribe el valor entregado.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar entrega',cls:'btn primary',fn:async()=>{
+      const v=Math.round(num(document.getElementById('se_v').value));const f=document.getElementById('se_f').value||todayISO();const d=(document.getElementById('se_d').value||'').trim();
+      if(!(v>0)){toast('Escribe el valor entregado');return;}
+      dronSocioPush(n,{f,v,d});await persistCfg();closeModal();renderDron();toast(`Entrega de ${fmt(v)} a ${n} registrada`);}}]);
+}
+function dronSocioPrev(falta){const v=Math.round(num((document.getElementById('se_v')||{}).value||''));const e=document.getElementById('se_prev');if(!e)return;
+  if(!(v>0)){e.innerHTML='Escribe el valor entregado.';return;}const q=falta-v;
+  e.innerHTML=q>=0?`Después de esta entrega le faltará <b>${fmt(q)}</b>.`:`<b style="color:var(--red)">Es ${fmt(-q)} más de lo que le corresponde.</b> Quedará como entregado de más y se descontará de sus próximas ganancias.`;}
+function dronSocioPush(n,e){CFG.dronSocioPagos=CFG.dronSocioPagos||{};CFG.dronSocioPagos[n]=CFG.dronSocioPagos[n]||[];CFG.dronSocioPagos[n].push(Object.assign({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)},e));}
+function dronRepartoTodos(){const A=dronSocioAcct();const pt=A.reduce((a,x)=>a+x.p,0);const falta=A.reduce((a,x)=>a+Math.max(0,x.falta),0);
+  showModal('Repartir ganancias entre todos',`
+    <div class="form-grid">
+      <div class="field"><label>Fecha de la entrega</label><input class="input tnum" type="date" id="sr_f" value="${todayISO()}"></div>
+      <div class="field"><label>Valor total a repartir</label><input class="input tnum money" inputmode="numeric" id="sr_v" placeholder="0" oninput="dronRepartoPrev()"></div>
+      <div class="field full"><label>Nota (opcional)</label><input class="input" id="sr_d" placeholder="Ej.: reparto de octubre"></div>
+    </div>
+    ${falta>0?`<div style="display:flex;gap:8px;margin-top:-4px"><button class="btn sm" onclick="document.getElementById('sr_v').value='${fmn(falta)}';dronRepartoPrev()">Repartir todo lo que falta (${fmt(falta)})</button></div>`:''}
+    <div id="sr_prev" style="margin-top:12px"></div>
+    <div class="note">Se reparte según el % de cada socio${pt!==100?` (la suma de % es ${pt}%: se reparte en proporción)`:''}. Queda una entrega registrada para cada uno.</div>`,
+    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Registrar reparto',cls:'btn primary',fn:async()=>{
+      const v=Math.round(num(document.getElementById('sr_v').value));const f=document.getElementById('sr_f').value||todayISO();const d=(document.getElementById('sr_d').value||'').trim();
+      if(!(v>0)){toast('Escribe el valor a repartir');return;}const parts=dronRepartoParts(v);const b='r'+Date.now().toString(36);
+      parts.forEach(x=>{if(x.v>0)dronSocioPush(x.n,{f,v:x.v,d:d||'Reparto entre socios',b});});await persistCfg();closeModal();renderDron();toast(`Reparto de ${fmt(v)} registrado entre ${parts.filter(x=>x.v>0).length} socios`);}}]);
+  dronRepartoPrev();}
+function dronRepartoParts(v){const A=dronSocioAcct();const pt=A.reduce((a,x)=>a+x.p,0)||1;let acc=0;return A.map((x,i)=>{let p=i===A.length-1?v-acc:Math.round(v*x.p/pt);acc+=p;return{n:x.n,v:p,falta:x.falta};});}
+function dronRepartoPrev(){const e=document.getElementById('sr_prev');if(!e)return;const v=Math.round(num((document.getElementById('sr_v')||{}).value||''));const P=dronRepartoParts(v>0?v:0);
+  e.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Socio</th><th class="r">Le toca</th><th class="r">Le faltará</th></tr></thead><tbody>${P.map(x=>{const q=x.falta-x.v;return `<tr><td>${esc(x.n)}</td><td class="r tnum">${fmt(x.v)}</td><td class="r tnum" style="color:${q<0?'var(--red)':'inherit'}">${q<0?'−'+fmt(-q):fmt(q)}</td></tr>`;}).join('')}</tbody></table></div>`;}
+function dronSocioVer(n){const L=dronSocioEnts(n);const x=dronSocioAcct().find(a=>a.n===n)||{gan:0,ent:0,falta:0};
+  showModal('Entregas a '+esc(n),`
+    <p style="color:var(--muted);margin-bottom:12px">Su ganancia: <b style="color:var(--green2)">${fmt(x.gan)}</b> · Entregado: <b>${fmt(x.ent)}</b> · Falta: <b style="color:var(--amber)">${fmt(x.falta)}</b></p>
+    <div class="tablewrap"><table><thead><tr><th>Fecha</th><th class="r">Valor</th><th></th></tr></thead><tbody>
+    ${L.length?L.map(e=>`<tr><td class="tnum">${fmtFecha(e.f)}${e.d?`<div style="font-size:12px;color:var(--muted)">${esc(e.d)}</div>`:''}</td><td class="r tnum">${fmt(e.v)}</td><td class="r"><button class="iconbtn del" title="Borrar esta entrega" onclick="dronSocioDel('${esc(n).replace(/'/g,"\\'")}','${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join(''):'<tr><td colspan="3" style="color:var(--muted)">Sin entregas.</td></tr>'}
+    </tbody></table></div>`,[{label:'Cerrar',cls:'btn primary',fn:closeModal}]);}
+function dronSocioDel(n,id){const e=dronSocioEnts(n).find(x=>x.id===id);if(!e)return;
+  confirmModal('Borrar entrega',`¿Borrar la entrega de <b>${fmt(e.v)}</b> del ${fmtFecha(e.f)} a ${esc(n)}?`,async()=>{CFG.dronSocioPagos[n]=(CFG.dronSocioPagos[n]||[]).filter(x=>x.id!==id);await persistCfg();renderDron();dronSocioVer(n);toast('Entrega borrada');});}
 function dronSociosPanel(d){
   const socios=dronSocios(),pctT=dronPctTotal();
   return `<div class="card panel" style="margin-top:16px">
@@ -5805,11 +5876,11 @@ function dronSociosPanel(d){
       </tbody></table></div>
     <div class="addrow"><input class="input" id="ds_n" placeholder="Nombre del socio" style="flex:2"><input class="input tnum" id="ds_p" type="number" placeholder="%" style="flex:1"><button class="btn sm primary" onclick="dronAddSocio()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
     ${pctT!==100&&socios.length?`<div class="note">La suma de porcentajes es ${pctT}% (lo normal es que sea 100%).</div>`:''}
-  </div>`;
+  </div>`+dronRepartoPanel();
 }
-async function dronSetSocio(i,field,val){if(!CFG.dronSocios)CFG.dronSocios=[];if(field==='p')CFG.dronSocios[i].p=+val||0;else CFG.dronSocios[i].n=(val||'').trim();await persistCfg();renderDron();}
+async function dronSetSocio(i,field,val){if(!CFG.dronSocios)CFG.dronSocios=[];if(field==='p')CFG.dronSocios[i].p=+val||0;else{const old=CFG.dronSocios[i].n,nw=(val||'').trim();CFG.dronSocios[i].n=nw;if(old&&nw&&old!==nw&&CFG.dronSocioPagos&&CFG.dronSocioPagos[old]){CFG.dronSocioPagos[nw]=(CFG.dronSocioPagos[nw]||[]).concat(CFG.dronSocioPagos[old]);delete CFG.dronSocioPagos[old];}}await persistCfg();renderDron();}
 async function dronAddSocio(){const n=document.getElementById('ds_n').value.trim();const p=+document.getElementById('ds_p').value||0;if(!n){toast('Escribe el nombre del socio');return;}if(!CFG.dronSocios)CFG.dronSocios=[];CFG.dronSocios.push({n,p});await persistCfg();renderDron();toast('Socio agregado');}
-async function dronDelSocio(i){CFG.dronSocios.splice(i,1);await persistCfg();renderDron();}
+async function dronDelSocio(i){const n=CFG.dronSocios[i]&&CFG.dronSocios[i].n;const ne=n?dronSocioEnts(n).length:0;const go=async()=>{CFG.dronSocios.splice(i,1);await persistCfg();renderDron();};if(ne)confirmModal('Quitar socio',`${esc(n)} tiene ${ne} entrega${ne===1?'':'s'} registrada${ne===1?'':'s'}. Si lo quitas, sus entregas se guardan y vuelven a aparecer si lo agregas de nuevo con el mismo nombre. ¿Quitarlo?`,go);else go();}
 /* Compara las fumigaciones del dron con las aplicaciones de los dos cronogramas (fumigadas y abonadas), por finca y fecha */
 function dronCompareData(){
   const A=[];[['fum','Fumigada'],['ab','Abonada']].forEach(([k,lab])=>{cronoArr(k).forEach(r=>{(r.hist||[]).forEach(h=>A.push({f:h.f||'',fi:r.finca||'',k,lab,ha:+h.ha||0,arb:+h.arboles||0}));});});
@@ -5972,6 +6043,9 @@ function dronStatementHTML(){
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Socio</th><th class="r">%</th><th class="r">Parte ingresos</th><th class="r">Parte ayudantes</th><th class="r">Parte combust.</th><th class="r">Parte mantenim.</th><th class="r">Parte extras</th><th class="r">Ganancia neta</th></tr></thead>
        <tbody>${socioRows||'<tr><td colspan="8" style="padding:16px;color:var(--muted)">Sin socios registrados.</td></tr>'}<tr style="border-top:2px solid var(--line)"><td><b>TOTAL</b></td><td class="r tnum"><b>${dronPctTotal()}%</b></td><td class="r tnum"><b>${fmt(d.ingresos)}</b></td><td class="r tnum"><b>${fmt(d.pilotos)}</b></td><td class="r tnum"><b>${fmt(d.combustible)}</b></td><td class="r tnum"><b>${fmt(d.mant)}</b></td><td class="r tnum"><b>${fmt(d.extra)}</b></td><td class="r tnum"><b>${fmt(d.util)}</b></td></tr></tbody></table></div></div>
+     ${(()=>{const A=dronSocioAcct();if(!A.length||!A.some(x=>x.ent))return '';return `<div class="sec-title" style="margin-top:18px">Ganancias entregadas a los socios (desde el inicio)<span class="ln"></span></div>
+     <div class="card"><div class="tablewrap" style="border:none"><table><thead><tr><th>Socio</th><th class="r">Su ganancia</th><th class="r">Entregado</th><th class="r">Falta por entregar</th></tr></thead>
+       <tbody>${A.map(x=>`<tr><td>${esc(x.n)}</td><td class="r tnum">${fmt(x.gan)}</td><td class="r tnum">${fmt(x.ent)}</td><td class="r tnum">${x.falta<0?'−'+fmt(-x.falta):fmt(x.falta)}</td></tr>`).join('')}</tbody></table></div></div>`;})()}
      ${pilRows?`<div class="sec-title" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>Pago a ayudantes<span class="ln"></span></div>
      <div class="card"><div class="tablewrap" style="border:none"><table>
        <thead><tr><th>Ayudante</th><th class="r">Hectáreas</th><th class="r">Ganancia</th></tr></thead>
