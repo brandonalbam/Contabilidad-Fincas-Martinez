@@ -157,6 +157,12 @@ td.r,th.r{text-align:right}
 .chip.e{background:var(--red-soft);color:var(--red)}
 .chip.pay{background:rgba(120,140,130,.14);color:var(--muted)}
 .chip.pend{background:var(--amber-soft);color:#c47a3a}
+.nq-range{display:flex;align-items:center;gap:12px;background:var(--green-soft);border-radius:12px;padding:10px 14px}
+.nq-range>div{display:flex;flex-direction:column;gap:2px;flex:1}
+.nq-range span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--green2);font-weight:600}
+.nq-range b{text-transform:capitalize;font-size:13.5px}
+.nq-range svg{width:18px;height:18px;color:var(--green2);flex:0 0 18px}
+.nq-name{margin-top:8px;font-size:14px}
 .chip.fav{background:var(--green-soft);color:var(--green2);font-weight:600}
 .fav-note{display:flex;gap:9px;align-items:flex-start;background:var(--green-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-top:8px}
 .fav-note svg{width:16px;height:16px;flex:0 0 16px;color:var(--green2);margin-top:1px}
@@ -4478,21 +4484,42 @@ function nominaList(){
       <button class="iconbtn del" title="Eliminar" onclick="deleteNom(${n.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>
     </div></div>`;}).join('');
 }
+/* Quincena a partir del último día (domingo de la semana 2): empieza 13 días antes (lunes), cuenta en el mes de ese último día
+   y su número es el orden dentro de ese mes (la 1.ª que termina en diciembre = Q1, la siguiente = Q2…). */
+const NOM_DOW=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function nomDow(iso){return NOM_DOW[new Date(iso+'T00:00:00').getDay()];}
+function nomAutoQ(hasta,exceptId){const y=+hasta.slice(0,4),m=+hasta.slice(5,7)-1;return NOMINAS.filter(n=>n.id!==exceptId&&n.year===y&&n.mes===m&&(n.hasta||'')<hasta).length+1;}
+function nomDefaultHasta(){const last=NOMINAS.slice().sort((a,b)=>(b.hasta||'').localeCompare(a.hasta||''))[0];
+  if(last&&last.hasta)return addDaysISO(last.hasta,14);
+  const t=todayISO();return addDaysISO(t,(7-new Date(t+'T00:00:00').getDay())%7);}
+function nqPreview(){const h=document.getElementById('nq_h').value;const el=document.getElementById('nq_prev');const qs=document.getElementById('nq_q');if(!el||!qs)return;
+  if(!h){el.innerHTML='<span style="color:var(--muted)">Elige el último día de la quincena.</span>';return;}
+  const d=addDaysISO(h,-13),q=nomAutoQ(h),mes=MES_FULL[+h.slice(5,7)-1],y=+h.slice(0,4);
+  if(!qs.dataset.touched){const mx=Math.max(3,q);qs.innerHTML=Array.from({length:mx},(_,i)=>`<option value="${i+1}">Quincena ${i+1}</option>`).join('');qs.value=String(q);}
+  const dup=NOMINAS.find(n=>n.hasta===h);const notSun=new Date(h+'T00:00:00').getDay()!==0;
+  el.innerHTML=`<div class="nq-range"><div><span>Empieza</span><b class="tnum">${nomDow(d)} ${fmtFecha(d)}</b></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><div><span>Termina</span><b class="tnum">${nomDow(h)} ${fmtFecha(h)}</b></div></div>
+    <div class="nq-name">${mes.charAt(0).toUpperCase()+mes.slice(1)} ${y} · <b>Quincena ${qs.value}</b>${String(q)===qs.value?` <span style="color:var(--muted);font-size:12px">${q===1?'(la primera que termina en '+mes.toLowerCase()+')':'(ya hay '+(q-1)+' antes en '+mes.toLowerCase()+')'}</span>`:''}</div>
+    ${notSun?`<div class="fac-warn" style="margin-top:8px">Ese día es ${nomDow(h)}, no domingo. Normalmente la quincena termina el domingo de la semana 2.</div>`:''}
+    ${dup?`<div class="fac-warn" style="margin-top:8px">Ya existe una quincena que termina ese día (${MES_FULL[dup.mes]} ${dup.year} · Q${dup.q}).</div>`:''}`;}
 function newQuincena(){
+  const h0=nomDefaultHasta();
   showModal('Nueva quincena',`
    <div class="form-grid">
-     <div class="field full"><label>Fecha de inicio (primer día de la quincena)</label><input class="input tnum" type="date" id="nq_d" value="${todayISO()}"></div>
-     <div class="field"><label>Número de quincena</label><select class="input" id="nq_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
-     <div class="field"><label>Duración</label><input class="input" value="14 días (2 semanas)" disabled></div>
+     <div class="field full"><label>Último día de la quincena (domingo de la semana 2)</label><input class="input tnum" type="date" id="nq_h" value="${h0}" oninput="nqPreview()" onchange="nqPreview()"></div>
+     <div class="field full" id="nq_prev"></div>
+     <div class="field"><label>Número de quincena</label><select class="input" id="nq_q" onchange="this.dataset.touched=1;nqPreview()"></select></div>
+     <div class="field"><label>Duración</label><input class="input" value="14 días (lunes a domingo, 2 semanas)" disabled></div>
    </div>
-   <div class="note">La quincena abarca 14 días desde la fecha de inicio. El mes en que se contabiliza se toma del <b>último día</b> de la quincena: si ese día cae el 31 de diciembre, cuenta en diciembre; si cae el 1 de enero, cuenta en enero. Puedes registrar hasta 3 quincenas en un mismo mes si necesitas pagar un periodo extra. Luego agregas los empleados que trabajaron y registras su jornada y finca día por día.</div>`,
+   <div class="note">Pon el <b>domingo en que termina</b> la quincena y la app calcula sola el lunes en que empezó (13 días antes). Se contabiliza en el mes de ese domingo y se numera según cuántas quincenas de ese mes terminan antes: la primera que termina en diciembre es la <b>Quincena 1</b>, la siguiente la <b>Quincena 2</b>. Si hace falta, puedes cambiar el número a mano.</div>`,
    [{label:'Cancelar',cls:'btn',fn:closeModal},{label:'Crear quincena',cls:'btn primary',fn:async()=>{
-     const d=document.getElementById('nq_d').value;if(!d){toast('Indica la fecha de inicio');return;}
-     const q=+document.getElementById('nq_q').value;
-     const hasta=addDaysISO(d,13);
+     const hasta=document.getElementById('nq_h').value;if(!hasta){toast('Indica el último día de la quincena');return;}
+     const dup=NOMINAS.find(n=>n.hasta===hasta);if(dup){toast('Ya existe una quincena que termina ese día');return;}
+     const q=+document.getElementById('nq_q').value||nomAutoQ(hasta);
+     const d=addDaysISO(hasta,-13);
      const nom={id:nseq++,year:+hasta.slice(0,4),mes:+hasta.slice(5,7)-1,q,desde:d,hasta,estado:'abierta',entries:[],movIds:[],tarifas:tarifasSnapshot(),daySetMig:1};
-     NOMINAS.push(nom);await persistNom();ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();closeModal();renderNomina();toast('Quincena creada');
+     NOMINAS.push(nom);await persistNom();ui.nomView='edit';ui.nomId=nom.id;ui.nomExp=new Set();closeModal();renderNomina();toast(`Quincena ${q} de ${MES_FULL[nom.mes].toLowerCase()} creada`);
    }}]);
+  nqPreview();
 }
 function openNom(id){ui.nomView='edit';ui.nomId=id;ui.nomExp=new Set();renderNomina();}
 function deleteNom(id){const nom=NOMINAS.find(x=>x.id===id);
@@ -8236,7 +8263,7 @@ function omrReview(res){
    <p style="font-size:12px;color:var(--muted);margin-top:6px">Toca la lupa de cualquier día para ver cómo quedó esa parte de la foto.</p>
    <div class="form-grid" style="margin-top:12px">
      <div class="field full"><label>Aplicar a</label><select class="input" id="omr_target">${ex?`<option value="ex">Quincena existente: ${esc(MES_FULL[ex.mes])} ${ex.year} · Q${ex.q} (desde ${esc(fmtFecha(ex.desde))})</option>`:''}<option value="new" ${ex?'':'selected'}>Crear nueva quincena desde ${esc(fmtFecha(tpl.desde))}</option></select></div>
-     <div class="field" id="omr_qwrap"${ex?' style="display:none"':''}><label>Número de quincena (si es nueva)</label><select class="input" id="omr_q"><option value="1">Quincena 1</option><option value="2">Quincena 2</option><option value="3">Quincena 3</option></select></div>
+     <div class="field" id="omr_qwrap"${ex?' style="display:none"':''}><label>Número de quincena (si es nueva)</label><select class="input" id="omr_q">${(()=>{const aq=nomAutoQ(addDaysISO(tpl.desde,13));return Array.from({length:Math.max(3,aq)},(_,i)=>`<option value="${i+1}" ${i+1===aq?'selected':''}>Quincena ${i+1}${i+1===aq?' (automático)':''}</option>`).join('');})()}</select></div>
    </div>
    <div class="note">Los días marcados se registran en la finca <b>${esc(tpl.finca)}</b>. Los días sin marca no borran lo que el empleado tenga registrado en otra finca.</div>`,
    [{label:'Cancelar',cls:'btn',fn:()=>{ui._omrQ=null;closeModal();}}].concat(ui._omrQ&&ui._omrQ.files.length>1?[{label:'Omitir esta hoja',cls:'btn',fn:()=>omrSkipPage()}]:[]).concat([{label:'Aplicar a la nómina',cls:'btn primary',fn:()=>omrApply()}]));
