@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Frutas La Estrella — Contabilidad</title>
-<meta name="theme-color" content="#1E5631">
+<meta name="theme-color" content="#0c1611">
+<meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -910,8 +911,8 @@ img{max-width:100%}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
-/* ===== MODO OSCURO EJECUTIVO — solo pantallas de computador ===== */
-@media screen and (min-width:900px){
+/* ===== MODO OSCURO — siempre, en computador y en celular ===== */
+@media screen{
   :root{
     color-scheme:dark;
     --bg:#0c1611; --surface:#122019; --surface2:#16271e; --surface3:#1c3025;
@@ -1156,9 +1157,14 @@ const Store=(()=>{
 })();
 
 /* ===== Cloud sync (Supabase) ===== */
+/* ===== NUBE FIJA =====
+   Conexión a Supabase incrustada en la app: todos los dispositivos se conectan solos y no se puede desactivar ni cambiar desde la app. */
+const CLOUD_FIJA={url:'',key:'',id:'',table:'app_data'};
+const CLOUD_FIJA_ON=!!(CLOUD_FIJA.url&&CLOUD_FIJA.key&&CLOUD_FIJA.id);
 const Cloud={
-  cfg:{enabled:false}, localTs:0, pushT:null, pushing:false, pulling:false, status:'off',
-  async load(){const c=await Store.get('cloudcfg');this.cfg=c?JSON.parse(c):{enabled:false};if(!this.cfg.table)this.cfg.table='app_data';},
+  cfg:{enabled:false}, localTs:0, pushT:null, pushing:false, pulling:false, status:'off', ready:!CLOUD_FIJA_ON,
+  async load(){const c=await Store.get('cloudcfg');this.cfg=c?JSON.parse(c):{enabled:false};if(!this.cfg.table)this.cfg.table='app_data';
+    if(CLOUD_FIJA_ON){this.cfg={lastSync:this.cfg.lastSync||0,...CLOUD_FIJA,enabled:true};await this.save();}},
   async save(){await Store.set('cloudcfg',JSON.stringify(this.cfg));},
   headers(){const h={'apikey':this.cfg.key,'Content-Type':'application/json'};if(/^eyJ/.test(this.cfg.key||''))h['Authorization']='Bearer '+this.cfg.key;return h;},
   rowUrl(){return (this.cfg.url||'').replace(/\/+$/,'')+'/rest/v1/'+(this.cfg.table||'app_data');},
@@ -1181,15 +1187,17 @@ const Cloud={
       if(rows.length&&rows[0].data){
         const d=rows[0].data;
         if(force||(d.ts||0)>this.localTs){applyCloud(d);this.localTs=d.ts||Date.now();if(!initial)toast('Datos actualizados desde la nube');render();updateCloudBadge();}
-        this.setStatus('ok');this.cfg.lastSync=Date.now();this.pulling=false;return true;
+        this.setStatus('ok');this.cfg.lastSync=Date.now();this.pulling=false;this.ready=true;return true;
       }
-      this.setStatus('ok');this.pulling=false;return false;
+      this.setStatus('ok');this.pulling=false;this.ready=true;return false;
     }catch(e){this.setStatus('err');this.pulling=false;return false;}
   },
   schedulePush(){if(!this.cfg.enabled)return;this.dirty=true;clearTimeout(this.pushT);this.pushT=setTimeout(()=>this.push(),800);},
   flush(){if(this.pushT){clearTimeout(this.pushT);this.pushT=null;}if(this.cfg.enabled&&this.dirty&&!this.pushing)this.push();},
   async push(){
     if(!this.cfg.enabled)return false;
+    if(!this.ready){/* aún no se ha leído la nube en este dispositivo: primero traer, luego subir */
+      if(!this.pulling){const had=this.dirty;await this.pull(true,true);if(this.ready&&had){this.dirty=true;this.schedulePush();}}return false;}
     this.pushing=true;this.setStatus('sync');
     try{
       const ts=Date.now();const blob={v:1,ts,config:CFG,movimientos:MOVS,nominas:NOMINAS,dron:DRON,crono:CRONO,cronoab:CRONOA,pedidos:PEDIDOS,tareas:TAREAS,prestamos:PRESTAMOS,mixdraft:{ha:ui.mixHa,lxha:ui.mixLxHa,tank:ui.mixTank,finca:ui.mixFinca,mode:ui.mixMode,trees:ui.mixTrees,lines:ui.mixLines,applyK:ui.cronoApplyK||'',applyId:ui.cronoApplyId||0}};
@@ -8408,21 +8416,22 @@ function renderConfig(){
    <div class="card panel" style="margin-top:16px">
      <div class="ph"><div><h2>Sincronización en la nube</h2><p>Accede y edita desde varios dispositivos con los cambios actualizados en todos</p></div>
        <span class="chip ${Cloud.cfg.enabled?(Cloud.status==='err'?'pend':'pay'):'pend'}">${Cloud.cfg.enabled?(Cloud.status==='err'?'Error de conexión':'Activada'):'Desactivada'}</span></div>
+     ${CLOUD_FIJA_ON?`<div class="fav-note" style="margin-top:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b>Conexión fija.</b> Esta app ya trae incluida la conexión a la nube (proyecto <b>${esc((CLOUD_FIJA.url.match(/\/\/([a-z0-9]+)\./i)||[])[1]||CLOUD_FIJA.url)}</b>). Todos los dispositivos que abran la app quedan sincronizados solos y no se puede desactivar ni cambiar desde aquí.</span></div>`:`
      <div class="form-grid" style="grid-template-columns:1fr 1fr">
        <div class="field full"><label>URL del proyecto (o solo el código del proyecto)</label><input class="input" id="cl_url" value="${esc(Cloud.cfg.url||'')}" placeholder="https://xxxxxxxx.supabase.co  ·  o pega solo: xxxxxxxx"></div>
        <div class="field full"><label>Clave pública (anon / publishable key)</label><input class="input" id="cl_key" value="${esc(Cloud.cfg.key||'')}" placeholder="eyJhbGciOiJI..."></div>
        <div class="field"><label>ID de tu espacio (secreto, invéntalo)</label><input class="input" id="cl_id" value="${esc(Cloud.cfg.id||'')}" placeholder="fincas-martinez-2026"></div>
        <div class="field"><label>Tabla</label><input class="input" id="cl_table" value="${esc(Cloud.cfg.table||'app_data')}"></div>
-     </div>
+     </div>`}
      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
        <button class="btn" onclick="cloudTest()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Probar conexión</button>
-       <button class="btn primary" onclick="cloudConnect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>Guardar y activar</button>
+       ${CLOUD_FIJA_ON?'':`<button class="btn primary" onclick="cloudConnect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>Guardar y activar</button>`}
        <button class="btn" onclick="cloudPushNow()" ${Cloud.cfg.enabled?'':'disabled style="opacity:.5"'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16l-4-4-4 4M12 12v9"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Subir mis datos</button>
        <button class="btn" onclick="cloudPullNow()" ${Cloud.cfg.enabled?'':'disabled style="opacity:.5"'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17l4 4 4-4M12 12v9"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Traer de la nube</button>
-       ${Cloud.cfg.enabled?`<button class="btn danger" onclick="cloudDisable()">Desactivar</button>`:''}
+       ${Cloud.cfg.enabled&&!CLOUD_FIJA_ON?`<button class="btn danger" onclick="cloudDisable()">Desactivar</button>`:''}
      </div>
      ${Cloud.cfg.enabled&&Cloud.cfg.lastSync?`<p style="font-size:12px;color:var(--muted);margin-top:10px">Última sincronización: ${new Date(Cloud.cfg.lastSync).toLocaleString('es-CO')}</p>`:''}
-     <details style="margin-top:14px" open><summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--green2)">Guía paso a paso (una sola vez · gratis · ~5 min)</summary>
+     <details style="margin-top:14px;${CLOUD_FIJA_ON?'display:none':''}" open><summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--green2)">Guía paso a paso (una sola vez · gratis · ~5 min)</summary>
        <div class="note" style="margin-top:10px;line-height:1.85">
          <b>1.</b> Entra a <b>supabase.com</b> y pulsa <b>Start your project</b>. Crea la cuenta (puedes entrar con tu cuenta de Google).<br>
          <b>2.</b> Pulsa <b>New project</b>. Escribe un nombre, crea una contraseña de base de datos (guárdala por si acaso, aquí no se usa) y elige la región más cercana. Espera 1–2 minutos a que el proyecto quede listo.<br>
@@ -8478,12 +8487,12 @@ function normalizeSupaUrl(s){s=(s||'').trim();if(!s)return '';
   if(/^[a-z0-9]{12,}$/i.test(s))return 'https://'+s+'.supabase.co';
   return s.replace(/\/+$/,'');}
 function readCloudInputs(){Cloud.cfg.url=normalizeSupaUrl(document.getElementById('cl_url').value);Cloud.cfg.key=document.getElementById('cl_key').value.trim();Cloud.cfg.id=document.getElementById('cl_id').value.trim();Cloud.cfg.table=document.getElementById('cl_table').value.trim()||'app_data';}
-async function cloudTest(){readCloudInputs();await Cloud.save();if(!Cloud.cfg.url||!Cloud.cfg.key){toast('Completa URL y clave');return;}toast('Probando…');const r=await Cloud.test();toast(r.ok?'Conexión correcta ✓':('Error: '+r.msg));}
-async function cloudConnect(){readCloudInputs();if(!Cloud.cfg.url||!Cloud.cfg.key||!Cloud.cfg.id){toast('Completa URL, clave e ID de espacio');return;}
+async function cloudTest(){if(CLOUD_FIJA_ON){toast('Probando…');const r=await Cloud.test();toast(r.ok?'Conexión correcta ✓':('Error: '+r.msg));return;}readCloudInputs();await Cloud.save();if(!Cloud.cfg.url||!Cloud.cfg.key){toast('Completa URL y clave');return;}toast('Probando…');const r=await Cloud.test();toast(r.ok?'Conexión correcta ✓':('Error: '+r.msg));}
+async function cloudConnect(){if(CLOUD_FIJA_ON)return;readCloudInputs();if(!Cloud.cfg.url||!Cloud.cfg.key||!Cloud.cfg.id){toast('Completa URL, clave e ID de espacio');return;}
   toast('Conectando…');const r=await Cloud.test();if(!r.ok){toast('Error: '+r.msg);return;}
   Cloud.cfg.enabled=true;if(MOVS.length||NOMINAS.length)Cloud.localTs=Date.now();await Cloud.save();startCloudTimer();updateCloudBadge();renderConfig();
   toast('Nube activada. Usa "Subir mis datos" en tu equipo principal y "Traer de la nube" en los demás.');}
-async function cloudDisable(){Cloud.cfg.enabled=false;await Cloud.save();clearInterval(cloudTimer);Cloud.setStatus('off');renderConfig();toast('Sincronización desactivada');}
+async function cloudDisable(){if(CLOUD_FIJA_ON){toast('La nube está fija en esta app y no se puede desactivar');return;}Cloud.cfg.enabled=false;await Cloud.save();clearInterval(cloudTimer);Cloud.setStatus('off');renderConfig();toast('Sincronización desactivada');}
 async function cloudPushNow(){if(!Cloud.cfg.enabled){toast('Activa la nube primero');return;}toast('Subiendo…');const ok=await Cloud.push();renderConfig();toast(ok?'Datos subidos a la nube ✓':'No se pudo subir');}
 function cloudPullNow(){if(!Cloud.cfg.enabled){toast('Activa la nube primero');return;}confirmModal('Traer de la nube','Se reemplazarán los datos de ESTE dispositivo con los de la nube. ¿Continuar?',async()=>{closeModal();toast('Trayendo…');const found=await Cloud.pull(true);renderConfig();toast(found?'Datos traídos de la nube ✓':'La nube aún no tiene datos');});}
 
