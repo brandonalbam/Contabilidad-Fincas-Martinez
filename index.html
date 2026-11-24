@@ -164,6 +164,18 @@ td.r,th.r{text-align:right}
 .nq-range b{text-transform:capitalize;font-size:13.5px}
 .nq-range svg{width:18px;height:18px;color:var(--green2);flex:0 0 18px}
 .nq-name{margin-top:8px;font-size:14px}
+.share-files{margin:0 0 14px 18px;padding:0;font-size:12.5px;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}
+.share-opts{display:flex;flex-direction:column;gap:10px}
+.share-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer;font:inherit}
+.share-opt:hover{border-color:var(--green)}
+.share-opt.sug{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.so-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:0 0 40px;background:var(--green-soft);color:var(--green2)}
+.so-ic svg{width:20px;height:20px}
+.so-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.so-tx b{font-size:14.5px;font-family:var(--display)}
+.so-tx b em{font-style:normal;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--green2);background:var(--green-soft);padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle;font-family:var(--body,inherit)}
+.so-tx span{font-size:12.5px;color:var(--muted);line-height:1.45}
+.so-go{width:18px;height:18px;color:var(--muted);flex:0 0 18px}
 .chip.fav{background:var(--green-soft);color:var(--green2);font-weight:600}
 .fav-note{display:flex;gap:9px;align-items:flex-start;background:var(--green-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-top:8px}
 .fav-note svg{width:16px;height:16px;flex:0 0 16px;color:var(--green2);margin-top:1px}
@@ -2831,10 +2843,11 @@ function vzPreviewHTML(r){
 function facPick(){
   let inp=document.getElementById('fac_in');
   if(!inp){inp=document.createElement('input');inp.type='file';inp.id='fac_in';inp.multiple=true;inp.accept='application/pdf,.pdf,.zip,application/zip,application/x-zip-compressed';inp.style.display='none';
-    inp.onchange=()=>{const fs=[...(inp.files||[])];inp.value='';if(!fs.length)return;
-      if(fs.length===1&&(/pdf$/i.test(fs[0].type||'')||/\.pdf$/i.test(fs[0].name||'')))facLoadFile(fs[0]);else facBatchLoad(fs);};document.body.appendChild(inp);}
+    inp.onchange=()=>{const fs=[...(inp.files||[])];inp.value='';facOpenFiles(fs);};document.body.appendChild(inp);}
   inp.click();
 }
+function facOpenFiles(fs){fs=(fs||[]).filter(Boolean);if(!fs.length)return;
+  if(fs.length===1&&(/pdf$/i.test(fs[0].type||'')||/\.pdf$/i.test(fs[0].name||'')))facLoadFile(fs[0]);else facBatchLoad(fs);}
 /* ===== Varias facturas PDF a la vez (un .zip de un chat de WhatsApp o varios PDF) ===== */
 async function facBatchLoad(files){
   showModal('Abriendo archivos…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Buscando las facturas en PDF…</span></div>`,[]);
@@ -3204,9 +3217,27 @@ async function shareInbox(){
     if(!files.length&&meta.text)files.push(new File([meta.text],'chat.txt',{type:'text/plain'}));
     if(!files.length){toast('No llegó ningún archivo. Comparte el chat otra vez');return;}
     if(ui.view!=='movs'){ui.view='movs';render();}
-    await waLoadFiles(files);
+    shareChooser(files);
   }catch(e){console.warn(e);toast('No se pudo abrir el chat compartido');}
 }
+/* Antes de leer lo compartido, elegir con qué botón de Movimientos abrirlo */
+function shareChooser(files){
+  ui._shareFiles=files;
+  const isPdf=f=>/pdf$/i.test(f.type||'')||/\.pdf$/i.test(f.name||'');
+  const nPdf=files.filter(isPdf).length;const sugPdf=nPdf>0&&nPdf>=files.filter(f=>/\.txt$/i.test(f.name||'')||/^text\//i.test(f.type||'')).length;
+  const names=files.slice(0,4).map(f=>`<li>${esc(f.name||'archivo')}</li>`).join('')+(files.length>4?`<li>y ${files.length-4} más…</li>`:'');
+  const opt=(k,ico,t,d,sug)=>`<button class="share-opt${sug?' sug':''}" onclick="shareOpen('${k}')"><span class="so-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></span><span class="so-tx"><b>${t}${sug?' <em>Sugerido</em>':''}</b><span>${d}</span></span><svg class="so-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>`;
+  showModal('¿Cómo quieres abrirlo?',`
+    <p style="color:var(--muted);margin-bottom:8px">Llegó${files.length===1?'':'ron'} <b>${files.length}</b> archivo${files.length===1?'':'s'} desde WhatsApp:</p>
+    <ul class="share-files">${names}</ul>
+    <div class="share-opts">
+      ${opt('wa','<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>','WhatsApp','Leer los mensajes del chat: abonos, ventas de fruta, gastos y fotos de consignaciones.',!sugPdf)}
+      ${opt('pdf','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>','Subir PDF','Leer las facturas en PDF que vengan en lo compartido y crear sus movimientos.',sugPdf)}
+    </div>`,
+    [{label:'Cancelar',cls:'btn',fn:()=>{ui._shareFiles=null;closeModal();}}]);
+}
+function shareOpen(k){const fs=ui._shareFiles||[];ui._shareFiles=null;closeModal();if(!fs.length)return;
+  if(k==='pdf')facOpenFiles(fs);else waLoadFiles(fs);}
 async function waLoadFile(file){
   showModal('Leyendo chat…',`<div style="display:flex;align-items:center;gap:10px;padding:8px 0">${omrSpin()}<span>Leyendo <b>${esc(file.name)}</b>…</span></div>`,[]);
   try{
