@@ -1159,7 +1159,7 @@ const Store=(()=>{
 /* ===== Cloud sync (Supabase) ===== */
 /* ===== NUBE FIJA =====
    Conexión a Supabase incrustada en la app: todos los dispositivos se conectan solos y no se puede desactivar ni cambiar desde la app. */
-const CLOUD_FIJA={url:'',key:'',id:'',table:'app_data'};
+const CLOUD_FIJA={url:'https://smhrydcnvggekeotvruc.supabase.co',key:'sb_publishable_c3y3CCgDCLWJYN-CqG1zjw_PMlni_QB',id:'Salesiano02',table:'app_data'};
 const CLOUD_FIJA_ON=!!(CLOUD_FIJA.url&&CLOUD_FIJA.key&&CLOUD_FIJA.id);
 const Cloud={
   cfg:{enabled:false}, localTs:0, pushT:null, pushing:false, pulling:false, status:'off', ready:!CLOUD_FIJA_ON,
